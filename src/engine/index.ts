@@ -63,3 +63,17 @@ export {
   type AIDecision,
   type AIDifficultyConfig,
 } from './ai';
+
+export {
+  EXPLOSION_RADIUS,
+  EXPLOSION_DURATION_MS,
+  createExplosion,
+  getExplosionProgress,
+  isExplosionComplete,
+  updateExplosion,
+  renderExplosion,
+  isPointInExplosion,
+  getDistanceToExplosion,
+  type ExplosionState,
+  type ExplosionParticle,
+} from './explosion';
