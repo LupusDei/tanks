@@ -99,4 +99,5 @@ describe('App', () => {
     const canvas = container.querySelector('canvas')
     expect(canvas).toBeInTheDocument()
   })
+
 })

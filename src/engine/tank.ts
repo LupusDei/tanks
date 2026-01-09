@@ -450,15 +450,16 @@ function renderChevrons(
   ctx: CanvasRenderingContext2D,
   count: number
 ): void {
-  const chevronWidth = 4.5;
-  const chevronHeight = 1.9;
-  const chevronSpacing = 0.75;
+  const chevronWidth = 5.6;
+  const chevronHeight = 2.4;
+  const chevronSpacing = 0.94;
+  const verticalOffset = 2; // Lower on tank body
   const totalHeight = count * (chevronHeight + chevronSpacing) - chevronSpacing;
-  const startY = -totalHeight / 2;
+  const startY = -totalHeight / 2 + verticalOffset;
 
   ctx.save();
   ctx.strokeStyle = '#ffd700'; // Gold color for chevrons
-  ctx.lineWidth = 0.75;
+  ctx.lineWidth = 0.94;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
@@ -488,8 +489,9 @@ function renderStars(
   ctx: CanvasRenderingContext2D,
   count: number
 ): void {
-  const starSize = 4;
-  const starSpacing = 6;
+  const starSize = 5;
+  const starSpacing = 7.5;
+  const verticalOffset = 2; // Lower on tank body
   const totalWidth = count * starSpacing - (starSpacing - starSize);
   const startX = -totalWidth / 2 + starSize / 2;
 
@@ -502,7 +504,7 @@ function renderStars(
 
   for (let i = 0; i < count; i++) {
     const x = startX + i * starSpacing;
-    drawStar(ctx, x, 0, starSize, 5);
+    drawStar(ctx, x, verticalOffset, starSize, 5);
   }
 
   ctx.restore();
