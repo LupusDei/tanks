@@ -9,16 +9,18 @@
 
 ### ⚠️ BEFORE YOU WRITE ANY CODE:
 
-1. ✅ **CREATE/CLAIM A BEAD** - Every change needs a beads issue
-2. ✅ **CREATE FEATURE BRANCH** - `git checkout -b <issue-id>`
-3. ✅ **PUSH EMPTY BRANCH** - `git push -u origin <issue-id>` for visibility
-4. ✅ **NEVER WORK ON MASTER** - All work on feature branches
-5. ✅ **WRITE TESTS** - Every feature needs tests
-6. ✅ **RUN QUALITY GATES** - Build + lint + test must pass
+1. ✅ **REFRESH TASK LIST** - `git pull && bd sync --import-only` to get latest state
+2. ✅ **CREATE/CLAIM A BEAD** - Every change needs a beads issue
+3. ✅ **CREATE FEATURE BRANCH** - `git checkout -b <issue-id>`
+4. ✅ **PUSH EMPTY BRANCH** - `git push -u origin <issue-id>` for visibility
+5. ✅ **NEVER WORK ON MASTER** - All work on feature branches
+6. ✅ **WRITE TESTS** - Every feature needs tests
+7. ✅ **RUN QUALITY GATES** - Build + lint + test must pass
 
 ### ❌ NEVER DO THIS:
 
 - ❌ **Commit directly to master** (always use feature branches)
+- ❌ Skip refreshing task list before choosing work (`git pull && bd sync --import-only`)
 - ❌ Skip creating a bead
 - ❌ Skip `bd sync` after claiming a task (prevents other agents taking same task)
 - ❌ Skip pushing the feature branch before starting work (gives visibility to others)
@@ -30,25 +32,28 @@
 ## Feature Branch Workflow (MANDATORY)
 
 ```bash
-# 1. Find/create and claim work
+# 1. Refresh and find available work
+git pull && bd sync --import-only     # ALWAYS refresh before choosing work!
 bd ready                              # Find available work
+
+# 2. Claim work
 bd update <issue-id> --status=in_progress
 bd sync                               # IMMEDIATELY sync to prevent conflicts!
 
-# 2. CREATE FEATURE BRANCH (critical!)
+# 3. CREATE FEATURE BRANCH (critical!)
 git checkout master && git pull
 git checkout -b <issue-id>            # Branch name = issue ID
 
-# 3. PUSH EMPTY BRANCH (for visibility!)
+# 4. PUSH EMPTY BRANCH (for visibility!)
 git push -u origin <issue-id>         # Others can see you're working on it
 
-# 4. Do the work
+# 5. Do the work
 # ... implement feature, write tests ...
 
-# 5. Run quality gates (MUST pass)
+# 6. Run quality gates (MUST pass)
 npm run build && npm run lint && npm test
 
-# 6. Commit to feature branch
+# 7. Commit to feature branch
 git add <files>
 git commit -m "Description
 
@@ -56,16 +61,16 @@ Closes <issue-id>
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
-# 7. Push commits
+# 8. Push commits
 git push
 
-# 8. Merge to master
+# 9. Merge to master
 git checkout master
 git pull
 git merge <issue-id>
 git push
 
-# 9. Clean up (keep remote branch for history)
+# 10. Clean up (keep remote branch for history)
 git branch -d <issue-id>              # Delete local only
 bd close <issue-id>
 bd sync
@@ -108,7 +113,8 @@ bd sync
 - `bd blocked` - Show blocked issues
 
 ### Sync & Status
-- `bd sync` - Sync with git (run after closing issues)
+- `git pull && bd sync --import-only` - Refresh task list (run BEFORE choosing work)
+- `bd sync` - Full sync with git (run after closing issues)
 - `bd stats` - Project statistics
 
 ---
@@ -126,6 +132,7 @@ npm test          # Test suite
 
 ## Core Rules
 
+- **Refresh before choosing work** - Always `git pull && bd sync --import-only` before `bd ready`
 - **Every change needs a bead** - Create issue first
 - **Sync after claiming** - Run `bd sync` immediately after claiming to prevent conflicts
 - **Push branch early** - Push feature branch before starting work for visibility
