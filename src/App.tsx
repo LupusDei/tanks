@@ -72,8 +72,10 @@ function App() {
       return
     }
 
-    const aiTank = state.tanks.find((t) => t.id === state.currentPlayerId)
-    const playerTank = state.tanks.find((t) => t.id === 'player')
+    // Use refs to get current state to avoid re-running effect when tank state changes
+    const currentState = stateRef.current
+    const aiTank = currentState.tanks.find((t) => t.id === currentState.currentPlayerId)
+    const playerTank = currentState.tanks.find((t) => t.id === 'player')
 
     if (!aiTank || !playerTank) {
       return
@@ -86,8 +88,8 @@ function App() {
     const aiDecision = calculateAIShot(
       aiTank,
       playerTank,
-      state.terrain,
-      state.aiDifficulty
+      currentState.terrain,
+      currentState.aiDifficulty
     )
 
     // Update AI tank's angle and power (rounded to integers)
@@ -102,14 +104,14 @@ function App() {
       fireProjectileForTank(tankIdToFire)
     }, aiDecision.thinkingTimeMs)
 
-    // Cleanup timeout on unmount
+    // Cleanup timeout on unmount or when no longer AI's turn
     return () => {
       if (aiTimeoutRef.current !== null) {
         window.clearTimeout(aiTimeoutRef.current)
         aiTimeoutRef.current = null
       }
     }
-  }, [isAITurn, state.currentPlayerId, state.tanks, state.terrain, state.aiDifficulty, actions, fireProjectileForTank])
+  }, [isAITurn, actions, fireProjectileForTank])
 
   const handleStartGame = () => {
     actions.setPhase('color_select')
