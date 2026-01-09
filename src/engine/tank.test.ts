@@ -169,6 +169,7 @@ describe('tank', () => {
         stroke: vi.fn(),
         moveTo: vi.fn(),
         lineTo: vi.fn(),
+        closePath: vi.fn(),
         createLinearGradient: vi.fn(() => ({
           addColorStop: vi.fn(),
         })),
