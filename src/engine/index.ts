@@ -31,3 +31,13 @@ export {
 } from './tank';
 
 export { initializeGame, type GameInitConfig, type GameInitResult } from './game';
+
+export {
+  calculateAIShot,
+  calculateOptimalShot,
+  applyDifficultyVariance,
+  getAvailableDifficulties,
+  AI_DIFFICULTY_CONFIGS,
+  type AIDecision,
+  type AIDifficultyConfig,
+} from './ai';

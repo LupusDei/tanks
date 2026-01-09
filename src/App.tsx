@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import './App.css'
 import {
   Canvas,
@@ -7,7 +8,7 @@ import {
   TurnIndicator,
 } from './components'
 import { useGame } from './context/useGame'
-import { initializeGame, renderTank } from './engine'
+import { initializeGame, renderTank, calculateAIShot } from './engine'
 import { TankColor } from './types/game'
 
 const CANVAS_WIDTH = 800
@@ -15,6 +16,57 @@ const CANVAS_HEIGHT = 600
 
 function App() {
   const { state, actions } = useGame()
+  const aiTimeoutRef = useRef<number | null>(null)
+
+  // AI turn handler - only runs when turn changes to AI
+  const isAITurn = state.phase === 'playing' && state.currentPlayerId !== 'player'
+  const aiProcessingRef = useRef(false)
+
+  useEffect(() => {
+    // Only process when it's AI's turn and not already processing
+    if (!isAITurn || aiProcessingRef.current) {
+      return
+    }
+
+    const aiTank = state.tanks.find((t) => t.id === state.currentPlayerId)
+    const playerTank = state.tanks.find((t) => t.id === 'player')
+
+    if (!aiTank || !playerTank) {
+      return
+    }
+
+    // Mark as processing to prevent re-entry
+    aiProcessingRef.current = true
+
+    // Calculate AI shot
+    const aiDecision = calculateAIShot(
+      aiTank,
+      playerTank,
+      state.terrain,
+      state.aiDifficulty
+    )
+
+    // Update AI tank's angle and power
+    actions.updateTank(aiTank.id, {
+      angle: aiDecision.angle,
+      power: aiDecision.power,
+    })
+
+    // Fire after thinking delay
+    aiTimeoutRef.current = window.setTimeout(() => {
+      aiProcessingRef.current = false
+      actions.nextTurn()
+    }, aiDecision.thinkingTimeMs)
+
+    // Cleanup timeout on unmount or turn change
+    return () => {
+      if (aiTimeoutRef.current !== null) {
+        window.clearTimeout(aiTimeoutRef.current)
+        aiTimeoutRef.current = null
+      }
+      aiProcessingRef.current = false
+    }
+  }, [isAITurn, state.currentPlayerId, state.tanks, state.terrain, state.aiDifficulty, actions])
 
   const handleStartGame = () => {
     actions.setPhase('color_select')
