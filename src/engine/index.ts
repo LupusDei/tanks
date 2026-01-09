@@ -9,6 +9,8 @@ export {
 
 export {
   GRAVITY,
+  POWER_SCALE,
+  powerToVelocity,
   degreesToRadians,
   calculatePosition,
   calculateVelocity,

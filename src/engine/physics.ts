@@ -1,9 +1,29 @@
 import type { Position } from '../types/game';
 
 /**
- * Gravity constant in meters per second squared.
+ * Gravity constant in pixels per second squared.
+ * Set to 10 for easy calculations.
  */
 export const GRAVITY = 10;
+
+/**
+ * Power scaling factor to convert UI power (10-100) to velocity.
+ * Calibrated so that full power (100) at 70° covers approximately
+ * the full canvas width (800px).
+ *
+ * Calculation:
+ * - Range = v² × sin(2θ) / g
+ * - For 800px at 70°: v = sqrt(800 × 10 / sin(140°)) ≈ 112
+ * - POWER_SCALE = 112 / 100 = 1.12
+ */
+export const POWER_SCALE = 1.12;
+
+/**
+ * Convert UI power value to actual velocity for physics calculations.
+ */
+export function powerToVelocity(power: number): number {
+  return power * POWER_SCALE;
+}
 
 /**
  * Configuration for projectile launch.
@@ -40,9 +60,10 @@ export function degreesToRadians(degrees: number): number {
 export function calculatePosition(config: LaunchConfig, time: number): Position {
   const { position, angle, power } = config;
   const angleRad = degreesToRadians(angle);
+  const velocity = powerToVelocity(power);
 
-  const vx = power * Math.cos(angleRad);
-  const vy = power * Math.sin(angleRad);
+  const vx = velocity * Math.cos(angleRad);
+  const vy = velocity * Math.sin(angleRad);
 
   // In screen coordinates, positive y is down, so gravity adds to y
   const x = position.x + vx * time;
@@ -60,10 +81,11 @@ export function calculateVelocity(
 ): { vx: number; vy: number } {
   const { angle, power } = config;
   const angleRad = degreesToRadians(angle);
+  const velocity = powerToVelocity(power);
 
-  const vx = power * Math.cos(angleRad);
+  const vx = velocity * Math.cos(angleRad);
   // In screen coordinates, gravity pulls down (increases y), so vy decreases
-  const vy = power * Math.sin(angleRad) - GRAVITY * time;
+  const vy = velocity * Math.sin(angleRad) - GRAVITY * time;
 
   return { vx, vy };
 }
@@ -75,7 +97,8 @@ export function calculateVelocity(
 export function calculateApexTime(config: LaunchConfig): number {
   const { angle, power } = config;
   const angleRad = degreesToRadians(angle);
-  const vy = power * Math.sin(angleRad);
+  const velocity = powerToVelocity(power);
+  const vy = velocity * Math.sin(angleRad);
 
   // Apex occurs when vertical velocity = 0
   // vy - g*t = 0, so t = vy/g
