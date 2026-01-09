@@ -1,5 +1,5 @@
 import './App.css'
-import { AngleControl, Canvas, ColorSelectionScreen, LoadingScreen } from './components'
+import { AngleControl, Canvas, ColorSelectionScreen, LoadingScreen, PowerControl } from './components'
 import { useGame } from './context/useGame'
 import { initializeGame, renderTank } from './engine'
 import { TankColor } from './types/game'
@@ -37,6 +37,13 @@ function App() {
     const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
     if (currentTank) {
       actions.updateTank(currentTank.id, { angle: newAngle })
+    }
+  }
+
+  const handlePowerChange = (newPower: number) => {
+    const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
+    if (currentTank) {
+      actions.updateTank(currentTank.id, { power: newPower })
     }
   }
 
@@ -86,10 +93,16 @@ function App() {
       <h1>Scorched Earth Tanks</h1>
       <Canvas width={CANVAS_WIDTH} height={CANVAS_HEIGHT} onRender={handleRender} />
       {currentPlayerTank && (
-        <AngleControl
-          angle={currentPlayerTank.angle}
-          onAngleChange={handleAngleChange}
-        />
+        <>
+          <AngleControl
+            angle={currentPlayerTank.angle}
+            onAngleChange={handleAngleChange}
+          />
+          <PowerControl
+            power={currentPlayerTank.power}
+            onPowerChange={handlePowerChange}
+          />
+        </>
       )}
     </div>
   )
