@@ -32,6 +32,7 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
+bd sync               # IMMEDIATELY sync to prevent other agents taking same task
 bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
@@ -59,7 +60,9 @@ bd sync               # Sync with git
    # bd create --title="..." --type=task|bug|feature --priority=0-4
    bd show <issue-id>                          # Review task details
    bd update <issue-id> --status=in_progress  # Claim the task
+   bd sync                                     # IMMEDIATELY sync to prevent conflicts
    ```
+   **CRITICAL**: Run `bd sync` immediately after claiming to prevent other agents from taking the same task.
 
 2. **Create and switch to feature branch**
    ```bash
@@ -130,9 +133,10 @@ bd sync               # Sync with git
 ### Workflow Example
 
 ```bash
-# 1. Find work
+# 1. Find and claim work
 bd ready
 bd update tanks-13h --status=in_progress
+bd sync                                      # IMMEDIATELY sync!
 
 # 2. Create branch
 git checkout master && git pull
@@ -238,6 +242,7 @@ src/
 
 ⚠️ **NEVER make changes without a bead** - ALL changes must be tied to a beads issue (create one first if needed)
 ⚠️ **NEVER work directly on master** - Always use feature branches
+⚠️ **NEVER skip sync after claiming** - Run `bd sync` immediately after `bd update --status=in_progress` to prevent other agents taking the same task
 ⚠️ **NEVER commit without tests** - Add/update tests for every change
 ⚠️ **NEVER skip verification** - Always run build/lint/test before committing
 ⚠️ **NEVER leave branches unpushed** - Push branch, merge to master, push master
