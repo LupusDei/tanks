@@ -120,7 +120,7 @@ describe('calculateOptimalShot', () => {
     expect(typeof result.power).toBe('number');
   });
 
-  it('should calculate angle > 90 when shooting left (opponent)', () => {
+  it('should calculate positive UI angle when shooting left (opponent)', () => {
     const shooter = createMockTank({
       id: 'opponent',
       position: { x: 680, y: 120 },
@@ -133,12 +133,12 @@ describe('calculateOptimalShot', () => {
 
     const result = calculateOptimalShot(shooter, target, terrain);
 
-    // When shooting left, angle should be > 90 (firing leftward)
-    expect(result.angle).toBeGreaterThan(90);
-    expect(result.angle).toBeLessThanOrEqual(180);
+    // When shooting left, UI angle should be positive (0 to 120)
+    expect(result.angle).toBeGreaterThan(0);
+    expect(result.angle).toBeLessThanOrEqual(120);
   });
 
-  it('should calculate angle <= 90 when shooting right (player)', () => {
+  it('should calculate negative UI angle when shooting right (player)', () => {
     const shooter = createMockTank({
       id: 'player',
       position: { x: 120, y: 120 },
@@ -151,9 +151,9 @@ describe('calculateOptimalShot', () => {
 
     const result = calculateOptimalShot(shooter, target, terrain);
 
-    // When shooting right, angle should be <= 90
-    expect(result.angle).toBeGreaterThanOrEqual(0);
-    expect(result.angle).toBeLessThanOrEqual(90);
+    // When shooting right, UI angle should be negative (-120 to 0)
+    expect(result.angle).toBeGreaterThanOrEqual(-120);
+    expect(result.angle).toBeLessThan(0);
   });
 
   it('should return valid power range (10-100)', () => {
