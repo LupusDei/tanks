@@ -5,6 +5,7 @@ import {
   calculateAIShot,
   getAvailableDifficulties,
   getChevronCount,
+  getStarCount,
   getNextDifficulty,
   AI_DIFFICULTY_CONFIGS,
 } from './ai';
@@ -321,12 +322,34 @@ describe('getChevronCount', () => {
     expect(getChevronCount('veteran')).toBe(3);
   });
 
-  it('should return 4 for centurion', () => {
-    expect(getChevronCount('centurion')).toBe(4);
+  it('should return 0 for centurion (uses stars)', () => {
+    expect(getChevronCount('centurion')).toBe(0);
   });
 
-  it('should return 5 for primus', () => {
-    expect(getChevronCount('primus')).toBe(5);
+  it('should return 0 for primus (uses stars)', () => {
+    expect(getChevronCount('primus')).toBe(0);
+  });
+});
+
+describe('getStarCount', () => {
+  it('should return 0 for blind_fool', () => {
+    expect(getStarCount('blind_fool')).toBe(0);
+  });
+
+  it('should return 0 for private', () => {
+    expect(getStarCount('private')).toBe(0);
+  });
+
+  it('should return 0 for veteran', () => {
+    expect(getStarCount('veteran')).toBe(0);
+  });
+
+  it('should return 1 for centurion', () => {
+    expect(getStarCount('centurion')).toBe(1);
+  });
+
+  it('should return 2 for primus', () => {
+    expect(getStarCount('primus')).toBe(2);
   });
 });
 

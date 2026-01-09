@@ -56,6 +56,7 @@ export {
   applyDifficultyVariance,
   getAvailableDifficulties,
   getChevronCount,
+  getStarCount,
   getNextDifficulty,
   AI_DIFFICULTY_CONFIGS,
   AI_DIFFICULTY_ORDER,

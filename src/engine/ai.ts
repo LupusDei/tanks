@@ -274,11 +274,34 @@ export function getAvailableDifficulties(): Array<{
 
 /**
  * Get the number of chevrons to display for a difficulty level.
- * Returns 1-5 chevrons based on rank.
+ * Returns 1-3 chevrons for blind_fool, private, veteran.
+ * Returns 0 for centurion and primus (they use stars instead).
  */
 export function getChevronCount(difficulty: AIDifficulty): number {
-  const index = AI_DIFFICULTY_ORDER.indexOf(difficulty);
-  return index >= 0 ? index + 1 : 1;
+  const chevronMap: Record<AIDifficulty, number> = {
+    blind_fool: 1,
+    private: 2,
+    veteran: 3,
+    centurion: 0,
+    primus: 0,
+  };
+  return chevronMap[difficulty] ?? 1;
+}
+
+/**
+ * Get the number of stars to display for a difficulty level.
+ * Returns 0 for blind_fool, private, veteran.
+ * Returns 1 for centurion, 2 for primus.
+ */
+export function getStarCount(difficulty: AIDifficulty): number {
+  const starMap: Record<AIDifficulty, number> = {
+    blind_fool: 0,
+    private: 0,
+    veteran: 0,
+    centurion: 1,
+    primus: 2,
+  };
+  return starMap[difficulty] ?? 0;
 }
 
 /**

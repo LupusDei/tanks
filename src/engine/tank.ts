@@ -40,7 +40,8 @@ export function getTankColorHex(color: TankColor | string): string {
 export interface RenderTankOptions {
   dimensions?: TankDimensions;
   isCurrentTurn?: boolean;
-  chevronCount?: number; // Number of chevrons to display (0-4 for AI rank)
+  chevronCount?: number; // Number of chevrons to display (1-3 for lower ranks)
+  starCount?: number; // Number of stars to display (1-2 for higher ranks)
 }
 
 /**
@@ -54,7 +55,7 @@ export function renderTank(
   canvasHeight: number,
   options: RenderTankOptions = {}
 ): void {
-  const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false, chevronCount = 0 } = options;
+  const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false, chevronCount = 0, starCount = 0 } = options;
   const { position, angle, color, health } = tank;
   const { bodyWidth, bodyHeight, turretLength, turretWidth, wheelRadius } = dimensions;
 
@@ -190,9 +191,12 @@ export function renderTank(
     ctx.fill();
   }
 
-  // Draw rank chevrons on tank body (centered)
+  // Draw rank insignia on tank body (centered)
   if (chevronCount > 0) {
     renderChevrons(ctx, chevronCount);
+  }
+  if (starCount > 0) {
+    renderStars(ctx, starCount);
   }
 
   // Draw turret barrel FIRST (behind dome)
@@ -474,4 +478,63 @@ function renderChevrons(
   }
 
   ctx.restore();
+}
+
+/**
+ * Render rank stars on tank body.
+ * Stars indicate higher AI difficulty ranks (centurion, primus).
+ */
+function renderStars(
+  ctx: CanvasRenderingContext2D,
+  count: number
+): void {
+  const starSize = 4;
+  const starSpacing = 6;
+  const totalWidth = count * starSpacing - (starSpacing - starSize);
+  const startX = -totalWidth / 2 + starSize / 2;
+
+  ctx.save();
+  ctx.fillStyle = '#ffd700'; // Gold color for stars
+
+  // Add subtle glow effect
+  ctx.shadowColor = '#ffd700';
+  ctx.shadowBlur = 2;
+
+  for (let i = 0; i < count; i++) {
+    const x = startX + i * starSpacing;
+    drawStar(ctx, x, 0, starSize, 5);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Draw a 5-pointed star at the given position.
+ */
+function drawStar(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  size: number,
+  points: number
+): void {
+  const outerRadius = size / 2;
+  const innerRadius = outerRadius * 0.4;
+  const angleStep = Math.PI / points;
+
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+    const angle = i * angleStep - Math.PI / 2; // Start from top
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.closePath();
+  ctx.fill();
 }

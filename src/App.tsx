@@ -19,6 +19,7 @@ import {
   getInterpolatedHeightAt,
   calculateAIShot,
   getChevronCount,
+  getStarCount,
   getNextDifficulty,
   type ProjectileState,
 } from './engine'
@@ -216,9 +217,10 @@ function App() {
     // Render tanks
     for (const tank of tanks) {
       const isCurrentTurn = tank.id === state.currentPlayerId && !projectileRef.current?.isActive
-      // Show chevrons on opponent tank to indicate AI difficulty
+      // Show rank insignia on opponent tank to indicate AI difficulty
       const chevronCount = tank.id === 'opponent' ? getChevronCount(state.aiDifficulty) : 0
-      renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount })
+      const starCount = tank.id === 'opponent' ? getStarCount(state.aiDifficulty) : 0
+      renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount })
     }
 
     // Render and update projectile
