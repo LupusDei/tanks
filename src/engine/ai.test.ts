@@ -4,6 +4,8 @@ import {
   applyDifficultyVariance,
   calculateAIShot,
   getAvailableDifficulties,
+  getChevronCount,
+  getNextDifficulty,
   AI_DIFFICULTY_CONFIGS,
 } from './ai';
 import type { TankState, TerrainData } from '../types/game';
@@ -38,34 +40,34 @@ describe('AI_DIFFICULTY_CONFIGS', () => {
     expect(AI_DIFFICULTY_CONFIGS.private).toBeDefined();
     expect(AI_DIFFICULTY_CONFIGS.veteran).toBeDefined();
     expect(AI_DIFFICULTY_CONFIGS.centurion).toBeDefined();
-    expect(AI_DIFFICULTY_CONFIGS.emperor).toBeDefined();
+    expect(AI_DIFFICULTY_CONFIGS.primus).toBeDefined();
   });
 
-  it('should have decreasing variance from blind_fool to emperor', () => {
+  it('should have decreasing variance from blind_fool to primus', () => {
     const blindFool = AI_DIFFICULTY_CONFIGS.blind_fool;
     const private_ = AI_DIFFICULTY_CONFIGS.private;
     const veteran = AI_DIFFICULTY_CONFIGS.veteran;
     const centurion = AI_DIFFICULTY_CONFIGS.centurion;
-    const emperor = AI_DIFFICULTY_CONFIGS.emperor;
+    const primus = AI_DIFFICULTY_CONFIGS.primus;
 
     // Angle variance should decrease
     expect(blindFool.angleVariance).toBeGreaterThan(private_.angleVariance);
     expect(private_.angleVariance).toBeGreaterThan(veteran.angleVariance);
     expect(veteran.angleVariance).toBeGreaterThan(centurion.angleVariance);
-    expect(centurion.angleVariance).toBeGreaterThan(emperor.angleVariance);
+    expect(centurion.angleVariance).toBeGreaterThan(primus.angleVariance);
 
     // Power variance should decrease
     expect(blindFool.powerVariance).toBeGreaterThan(private_.powerVariance);
     expect(private_.powerVariance).toBeGreaterThan(veteran.powerVariance);
     expect(veteran.powerVariance).toBeGreaterThan(centurion.powerVariance);
-    expect(centurion.powerVariance).toBeGreaterThan(emperor.powerVariance);
+    expect(centurion.powerVariance).toBeGreaterThan(primus.powerVariance);
   });
 
-  it('should have increasing thinking time from blind_fool to emperor', () => {
+  it('should have increasing thinking time from blind_fool to primus', () => {
     const blindFool = AI_DIFFICULTY_CONFIGS.blind_fool;
-    const emperor = AI_DIFFICULTY_CONFIGS.emperor;
+    const primus = AI_DIFFICULTY_CONFIGS.primus;
 
-    expect(emperor.thinkingTimeMs).toBeGreaterThan(blindFool.thinkingTimeMs);
+    expect(primus.thinkingTimeMs).toBeGreaterThan(blindFool.thinkingTimeMs);
   });
 
   it('should have name and description for each difficulty', () => {
@@ -86,7 +88,7 @@ describe('getAvailableDifficulties', () => {
     expect(difficulties.map(d => d.id)).toContain('private');
     expect(difficulties.map(d => d.id)).toContain('veteran');
     expect(difficulties.map(d => d.id)).toContain('centurion');
-    expect(difficulties.map(d => d.id)).toContain('emperor');
+    expect(difficulties.map(d => d.id)).toContain('primus');
   });
 
   it('should include name and description for each', () => {
@@ -211,23 +213,23 @@ describe('applyDifficultyVariance', () => {
     }
   });
 
-  it('should produce less variance for emperor than blind_fool', () => {
+  it('should produce less variance for primus than blind_fool', () => {
     const decision = { angle: 45, power: 50 };
-    const emperorResults: number[] = [];
+    const primusResults: number[] = [];
     const blindFoolResults: number[] = [];
 
     // Collect multiple samples
     for (let i = 0; i < 100; i++) {
-      emperorResults.push(applyDifficultyVariance(decision, 'emperor').angle);
+      primusResults.push(applyDifficultyVariance(decision, 'primus').angle);
       blindFoolResults.push(applyDifficultyVariance(decision, 'blind_fool').angle);
     }
 
     // Calculate standard deviation
-    const emperorStdDev = standardDeviation(emperorResults);
+    const primusStdDev = standardDeviation(primusResults);
     const blindFoolStdDev = standardDeviation(blindFoolResults);
 
     // Emperor should have much less variance
-    expect(emperorStdDev).toBeLessThan(blindFoolStdDev);
+    expect(primusStdDev).toBeLessThan(blindFoolStdDev);
   });
 
   it('should not modify original decision object', () => {
@@ -272,10 +274,10 @@ describe('calculateAIShot', () => {
     const terrain = createMockTerrain();
 
     const blindFoolResult = calculateAIShot(shooter, target, terrain, 'blind_fool');
-    const emperorResult = calculateAIShot(shooter, target, terrain, 'emperor');
+    const primusResult = calculateAIShot(shooter, target, terrain, 'primus');
 
     expect(blindFoolResult.thinkingTimeMs).toBe(AI_DIFFICULTY_CONFIGS.blind_fool.thinkingTimeMs);
-    expect(emperorResult.thinkingTimeMs).toBe(AI_DIFFICULTY_CONFIGS.emperor.thinkingTimeMs);
+    expect(primusResult.thinkingTimeMs).toBe(AI_DIFFICULTY_CONFIGS.primus.thinkingTimeMs);
   });
 
   it('should apply variance based on difficulty', () => {
@@ -293,16 +295,77 @@ describe('calculateAIShot', () => {
     const optimal = calculateOptimalShot(shooter, target, terrain);
 
     // Emperor should be very close to optimal
-    let emperorCloseCount = 0;
+    let primusCloseCount = 0;
     for (let i = 0; i < 50; i++) {
-      const result = calculateAIShot(shooter, target, terrain, 'emperor');
+      const result = calculateAIShot(shooter, target, terrain, 'primus');
       if (Math.abs(result.angle - optimal.angle) < 3) {
-        emperorCloseCount++;
+        primusCloseCount++;
       }
     }
 
-    // Most emperor shots should be close to optimal
-    expect(emperorCloseCount).toBeGreaterThan(40);
+    // Most primus shots should be close to optimal
+    expect(primusCloseCount).toBeGreaterThan(40);
+  });
+});
+
+describe('getChevronCount', () => {
+  it('should return 0 for blind_fool', () => {
+    expect(getChevronCount('blind_fool')).toBe(0);
+  });
+
+  it('should return 1 for private', () => {
+    expect(getChevronCount('private')).toBe(1);
+  });
+
+  it('should return 2 for veteran', () => {
+    expect(getChevronCount('veteran')).toBe(2);
+  });
+
+  it('should return 3 for centurion', () => {
+    expect(getChevronCount('centurion')).toBe(3);
+  });
+
+  it('should return 4 for primus', () => {
+    expect(getChevronCount('primus')).toBe(4);
+  });
+});
+
+describe('getNextDifficulty', () => {
+  it('should cycle from blind_fool to private', () => {
+    expect(getNextDifficulty('blind_fool')).toBe('private');
+  });
+
+  it('should cycle from private to veteran', () => {
+    expect(getNextDifficulty('private')).toBe('veteran');
+  });
+
+  it('should cycle from veteran to centurion', () => {
+    expect(getNextDifficulty('veteran')).toBe('centurion');
+  });
+
+  it('should cycle from centurion to primus', () => {
+    expect(getNextDifficulty('centurion')).toBe('primus');
+  });
+
+  it('should cycle from primus back to blind_fool', () => {
+    expect(getNextDifficulty('primus')).toBe('blind_fool');
+  });
+
+  it('should complete a full cycle through all difficulties', () => {
+    let current = getNextDifficulty('blind_fool');
+    expect(current).toBe('private');
+
+    current = getNextDifficulty(current);
+    expect(current).toBe('veteran');
+
+    current = getNextDifficulty(current);
+    expect(current).toBe('centurion');
+
+    current = getNextDifficulty(current);
+    expect(current).toBe('primus');
+
+    current = getNextDifficulty(current);
+    expect(current).toBe('blind_fool');
   });
 });
 

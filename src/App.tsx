@@ -18,12 +18,19 @@ import {
   isProjectileOutOfBounds,
   getInterpolatedHeightAt,
   calculateAIShot,
+  getChevronCount,
+  getNextDifficulty,
   type ProjectileState,
 } from './engine'
 import { TankColor } from './types/game'
 
 const CANVAS_WIDTH = 800
 const CANVAS_HEIGHT = 600
+
+// Tank dimensions for hit detection (must match tank.ts)
+const TANK_BODY_WIDTH = 40
+const TANK_BODY_HEIGHT = 20
+const TANK_WHEEL_RADIUS = 6
 
 function App() {
   const { state, actions } = useGame()
@@ -140,6 +147,37 @@ function App() {
     fireProjectile(currentTank.id)
   }
 
+  // Handle canvas click to cycle AI difficulty when clicking on opponent tank
+  const handleCanvasClick = useCallback((canvasX: number, canvasY: number) => {
+    // Only allow clicking during player's turn and not during projectile animation
+    if (state.phase !== 'playing' || isProjectileActive) return
+
+    const opponentTank = state.tanks.find((t) => t.id === 'opponent')
+    if (!opponentTank) return
+
+    // Convert world coordinates to canvas coordinates for hit detection
+    const tankCanvasX = opponentTank.position.x
+    const tankCanvasY = CANVAS_HEIGHT - opponentTank.position.y
+
+    // Calculate tank bounding box (approximate)
+    const tankLeft = tankCanvasX - TANK_BODY_WIDTH / 2
+    const tankRight = tankCanvasX + TANK_BODY_WIDTH / 2
+    const tankTop = tankCanvasY - TANK_BODY_HEIGHT / 2 - TANK_BODY_HEIGHT // Include dome
+    const tankBottom = tankCanvasY + TANK_BODY_HEIGHT / 2 + TANK_WHEEL_RADIUS
+
+    // Check if click is within tank bounds
+    if (
+      canvasX >= tankLeft &&
+      canvasX <= tankRight &&
+      canvasY >= tankTop &&
+      canvasY <= tankBottom
+    ) {
+      // Cycle to next difficulty
+      const nextDifficulty = getNextDifficulty(state.aiDifficulty)
+      actions.setAIDifficulty(nextDifficulty)
+    }
+  }, [state.phase, state.tanks, state.aiDifficulty, isProjectileActive, actions])
+
   const currentPlayerTank = state.tanks.find((t) => t.id === state.currentPlayerId)
   const isPlayerTurn = state.currentPlayerId === 'player'
 
@@ -171,7 +209,9 @@ function App() {
     // Render tanks
     for (const tank of tanks) {
       const isCurrentTurn = tank.id === state.currentPlayerId && !projectileRef.current?.isActive
-      renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn })
+      // Show chevrons on opponent tank to indicate AI difficulty
+      const chevronCount = tank.id === 'opponent' ? getChevronCount(state.aiDifficulty) : 0
+      renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount })
     }
 
     // Render and update projectile
@@ -209,7 +249,7 @@ function App() {
 
   return (
     <div className="app">
-      <Canvas width={CANVAS_WIDTH} height={CANVAS_HEIGHT} onRender={handleRender} />
+      <Canvas width={CANVAS_WIDTH} height={CANVAS_HEIGHT} onRender={handleRender} onClick={handleCanvasClick} />
       <TurnIndicator
         turnNumber={state.currentTurn}
         isPlayerTurn={isPlayerTurn}

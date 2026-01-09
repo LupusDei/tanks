@@ -40,6 +40,7 @@ export function getTankColorHex(color: TankColor | string): string {
 export interface RenderTankOptions {
   dimensions?: TankDimensions;
   isCurrentTurn?: boolean;
+  chevronCount?: number; // Number of chevrons to display (0-4 for AI rank)
 }
 
 /**
@@ -53,7 +54,7 @@ export function renderTank(
   canvasHeight: number,
   options: RenderTankOptions = {}
 ): void {
-  const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false } = options;
+  const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false, chevronCount = 0 } = options;
   const { position, angle, color, health } = tank;
   const { bodyWidth, bodyHeight, turretLength, turretWidth, wheelRadius } = dimensions;
 
@@ -187,6 +188,11 @@ export function renderTank(
     ctx.beginPath();
     ctx.arc(rx, ry, 1.5, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  // Draw rank chevrons on tank body (centered)
+  if (chevronCount > 0) {
+    renderChevrons(ctx, chevronCount);
   }
 
   // Draw turret barrel FIRST (behind dome)
@@ -430,4 +436,42 @@ function createDomeGradient(
   gradient.addColorStop(1, shadow);
 
   return gradient;
+}
+
+/**
+ * Render rank chevrons on tank body.
+ * Chevrons are V-shaped stripes indicating AI difficulty rank.
+ */
+function renderChevrons(
+  ctx: CanvasRenderingContext2D,
+  count: number
+): void {
+  const chevronWidth = 8;
+  const chevronHeight = 4;
+  const chevronSpacing = 2;
+  const totalHeight = count * (chevronHeight + chevronSpacing) - chevronSpacing;
+  const startY = -totalHeight / 2;
+
+  ctx.save();
+  ctx.strokeStyle = '#ffd700'; // Gold color for chevrons
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Add subtle glow effect
+  ctx.shadowColor = '#ffd700';
+  ctx.shadowBlur = 2;
+
+  for (let i = 0; i < count; i++) {
+    const y = startY + i * (chevronHeight + chevronSpacing);
+
+    ctx.beginPath();
+    // Draw V-shape (chevron pointing up)
+    ctx.moveTo(-chevronWidth / 2, y + chevronHeight);
+    ctx.lineTo(0, y);
+    ctx.lineTo(chevronWidth / 2, y + chevronHeight);
+    ctx.stroke();
+  }
+
+  ctx.restore();
 }

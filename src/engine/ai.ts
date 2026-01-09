@@ -1,8 +1,10 @@
 import type { TankState, TerrainData, Position, AIDifficulty } from '../types/game';
+import { AI_DIFFICULTY_ORDER } from '../types/game';
 import { GRAVITY, degreesToRadians } from './physics';
 import { getInterpolatedHeightAt } from './terrain';
 
 export type { AIDifficulty } from '../types/game';
+export { AI_DIFFICULTY_ORDER } from '../types/game';
 
 export interface AIDifficultyConfig {
   name: string;
@@ -41,8 +43,8 @@ export const AI_DIFFICULTY_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
     powerVariance: 8,
     thinkingTimeMs: 1500,
   },
-  emperor: {
-    name: 'Emperor',
+  primus: {
+    name: 'Primus',
     description: 'Deadly accurate - nearly perfect calculations',
     angleVariance: 1,
     powerVariance: 3,
@@ -267,4 +269,23 @@ export function getAvailableDifficulties(): Array<{
     name: AI_DIFFICULTY_CONFIGS[id].name,
     description: AI_DIFFICULTY_CONFIGS[id].description,
   }));
+}
+
+/**
+ * Get the number of chevrons to display for a difficulty level.
+ * Returns 0-4 chevrons based on rank.
+ */
+export function getChevronCount(difficulty: AIDifficulty): number {
+  const index = AI_DIFFICULTY_ORDER.indexOf(difficulty);
+  return index >= 0 ? index : 0;
+}
+
+/**
+ * Get the next difficulty in the cycle.
+ * Wraps around from primus back to blind_fool.
+ */
+export function getNextDifficulty(current: AIDifficulty): AIDifficulty {
+  const currentIndex = AI_DIFFICULTY_ORDER.indexOf(current);
+  const nextIndex = (currentIndex + 1) % AI_DIFFICULTY_ORDER.length;
+  return AI_DIFFICULTY_ORDER[nextIndex]!;
 }
