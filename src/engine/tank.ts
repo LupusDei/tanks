@@ -189,22 +189,7 @@ export function renderTank(
     ctx.fill();
   }
 
-  // Draw turret base (dome) with metallic gradient
-  const domeRadius = bodyWidth / 4;
-  const domeGradient = createDomeGradient(ctx, 0, -bodyHeight / 4, domeRadius, darkerColor);
-  ctx.fillStyle = domeGradient;
-  ctx.beginPath();
-  ctx.arc(0, -bodyHeight / 4, domeRadius, Math.PI, 0);
-  ctx.fill();
-
-  // Dome rim highlight
-  ctx.strokeStyle = lightenColor(darkerColor, 0.3);
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(0, -bodyHeight / 4, domeRadius - 1, Math.PI + 0.2, -0.2);
-  ctx.stroke();
-
-  // Draw turret barrel (from dome center)
+  // Draw turret barrel FIRST (behind dome)
   ctx.save();
   // Move to dome center before rotating
   ctx.translate(0, -bodyHeight / 4);
@@ -238,6 +223,21 @@ export function renderTank(
   ctx.fill();
 
   ctx.restore();
+
+  // Draw turret base (dome) SECOND (in front of barrel)
+  const domeRadius = bodyWidth / 4;
+  const domeGradient = createDomeGradient(ctx, 0, -bodyHeight / 4, domeRadius, darkerColor);
+  ctx.fillStyle = domeGradient;
+  ctx.beginPath();
+  ctx.arc(0, -bodyHeight / 4, domeRadius, Math.PI, 0);
+  ctx.fill();
+
+  // Dome rim highlight
+  ctx.strokeStyle = lightenColor(darkerColor, 0.3);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(0, -bodyHeight / 4, domeRadius - 1, Math.PI + 0.2, -0.2);
+  ctx.stroke();
 
   // Draw health bar if not at full health
   if (health < 100) {
