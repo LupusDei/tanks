@@ -20,3 +20,12 @@ export {
   type LaunchConfig,
   type TrajectoryPoint,
 } from './physics';
+
+export {
+  renderTank,
+  calculateTankPosition,
+  createInitialTanks,
+  getOpponentColor,
+  getTankColorHex,
+  type TankDimensions,
+} from './tank';
