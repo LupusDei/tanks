@@ -156,6 +156,10 @@ describe('tank', () => {
         translate: vi.fn(),
         rotate: vi.fn(),
         fillStyle: '',
+        strokeStyle: '',
+        lineWidth: 0,
+        shadowColor: '',
+        shadowBlur: 0,
         fillRect: vi.fn(),
         beginPath: vi.fn(),
         arc: vi.fn(),
@@ -232,6 +236,23 @@ describe('tank', () => {
 
       tank.color = '#ff00ff';
       expect(() => renderTank(ctx, tank, 600)).not.toThrow();
+    });
+
+    it('renders highlight when isCurrentTurn is true', () => {
+      renderTank(ctx, tank, 600, { isCurrentTurn: true });
+      // Should call stroke for the highlight outline
+      expect(ctx.stroke).toHaveBeenCalled();
+    });
+
+    it('renders without highlight when isCurrentTurn is false', () => {
+      renderTank(ctx, tank, 600, { isCurrentTurn: false });
+      expect(() => renderTank(ctx, tank, 600, { isCurrentTurn: false })).not.toThrow();
+    });
+
+    it('accepts options parameter', () => {
+      expect(() => renderTank(ctx, tank, 600, {})).not.toThrow();
+      expect(() => renderTank(ctx, tank, 600, { isCurrentTurn: true })).not.toThrow();
+      expect(() => renderTank(ctx, tank, 600, { isCurrentTurn: false })).not.toThrow();
     });
   });
 });
