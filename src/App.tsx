@@ -1,5 +1,5 @@
 import './App.css'
-import { AngleControl, Canvas, ColorSelectionScreen, LoadingScreen, PowerControl } from './components'
+import { Canvas, ColorSelectionScreen, ControlPanel, LoadingScreen } from './components'
 import { useGame } from './context/useGame'
 import { initializeGame, renderTank } from './engine'
 import { TankColor } from './types/game'
@@ -93,16 +93,12 @@ function App() {
       <h1>Scorched Earth Tanks</h1>
       <Canvas width={CANVAS_WIDTH} height={CANVAS_HEIGHT} onRender={handleRender} />
       {currentPlayerTank && (
-        <>
-          <AngleControl
-            angle={currentPlayerTank.angle}
-            onAngleChange={handleAngleChange}
-          />
-          <PowerControl
-            power={currentPlayerTank.power}
-            onPowerChange={handlePowerChange}
-          />
-        </>
+        <ControlPanel
+          angle={currentPlayerTank.angle}
+          power={currentPlayerTank.power}
+          onAngleChange={handleAngleChange}
+          onPowerChange={handlePowerChange}
+        />
       )}
     </div>
   )
