@@ -67,22 +67,25 @@ export function renderTank(
   ctx.save();
   ctx.translate(canvasX, canvasY);
 
-  // Draw highlight glow for current turn
+  // Draw yellow arrow indicator for current turn (below tank)
   if (isCurrentTurn) {
     ctx.save();
-    ctx.shadowColor = tankColor;
-    ctx.shadowBlur = 20;
-    ctx.strokeStyle = lightenColor(tankColor, 0.5);
-    ctx.lineWidth = 3;
+    const arrowY = bodyHeight / 2 + wheelRadius + 12;
+    const arrowHeight = 12;
+    const arrowWidth = 10;
+
+    // Glow effect
+    ctx.shadowColor = '#ffff00';
+    ctx.shadowBlur = 8;
+
+    // Draw arrow pointing up
+    ctx.fillStyle = '#ffff00';
     ctx.beginPath();
-    ctx.roundRect(
-      -bodyWidth / 2 - 6,
-      -bodyHeight - 8,
-      bodyWidth + 12,
-      bodyHeight + wheelRadius + 14,
-      8
-    );
-    ctx.stroke();
+    ctx.moveTo(0, arrowY); // Top point
+    ctx.lineTo(-arrowWidth / 2, arrowY + arrowHeight); // Bottom left
+    ctx.lineTo(arrowWidth / 2, arrowY + arrowHeight); // Bottom right
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
   }
 
