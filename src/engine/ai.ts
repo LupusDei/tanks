@@ -51,8 +51,30 @@ export const AI_DIFFICULTY_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
 };
 
 export interface AIDecision {
-  angle: number;
+  angle: number;  // UI angle: 0 = up, positive = left, negative = right, range -120 to +120
   power: number;
+}
+
+/**
+ * UI angle limits.
+ */
+const MIN_UI_ANGLE = -120;
+const MAX_UI_ANGLE = 120;
+
+/**
+ * Convert physics angle to UI angle.
+ * Physics: 0 = right, 90 = up, 180 = left
+ * UI: 0 = up, positive = left, negative = right
+ */
+function physicsAngleToUIAngle(physicsAngle: number): number {
+  return physicsAngle - 90;
+}
+
+/**
+ * Clamp UI angle to valid range.
+ */
+function clampUIAngle(angle: number): number {
+  return Math.max(MIN_UI_ANGLE, Math.min(MAX_UI_ANGLE, angle));
 }
 
 /**
@@ -131,8 +153,11 @@ export function calculateOptimalShot(
     }
   }
 
+  // Convert physics angle to UI angle and clamp to valid range
+  const uiAngle = clampUIAngle(physicsAngleToUIAngle(bestAngle));
+
   return {
-    angle: bestAngle,
+    angle: uiAngle,
     power: bestPower,
   };
 }
@@ -195,7 +220,7 @@ export function applyDifficultyVariance(
   const powerError = (Math.random() - 0.5) * 2 * config.powerVariance;
 
   // Apply variance and clamp to valid ranges
-  const adjustedAngle = decision.angle + angleError;
+  const adjustedAngle = clampUIAngle(decision.angle + angleError);
   const adjustedPower = Math.max(10, Math.min(100, decision.power + powerError));
 
   return {
