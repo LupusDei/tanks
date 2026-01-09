@@ -29,3 +29,5 @@ export {
   getTankColorHex,
   type TankDimensions,
 } from './tank';
+
+export { initializeGame, type GameInitConfig, type GameInitResult } from './game';
