@@ -8,6 +8,7 @@ describe('ControlPanel', () => {
     power: 50,
     onAngleChange: vi.fn(),
     onPowerChange: vi.fn(),
+    onFire: vi.fn(),
   }
 
   it('renders the control panel', () => {
@@ -146,19 +147,55 @@ describe('ControlPanel', () => {
   it('does not respond to keyboard when disabled', () => {
     const onAngleChange = vi.fn()
     const onPowerChange = vi.fn()
+    const onFire = vi.fn()
     render(
       <ControlPanel
         {...defaultProps}
         onAngleChange={onAngleChange}
         onPowerChange={onPowerChange}
+        onFire={onFire}
         enabled={false}
       />
     )
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
 
     expect(onAngleChange).not.toHaveBeenCalled()
     expect(onPowerChange).not.toHaveBeenCalled()
+    expect(onFire).not.toHaveBeenCalled()
+  })
+
+  it('renders the fire button', () => {
+    render(<ControlPanel {...defaultProps} />)
+    expect(screen.getByTestId('fire-button')).toBeInTheDocument()
+  })
+
+  it('calls onFire when Space is pressed', () => {
+    const onFire = vi.fn()
+    render(<ControlPanel {...defaultProps} onFire={onFire} />)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+
+    expect(onFire).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onFire when Enter is pressed', () => {
+    const onFire = vi.fn()
+    render(<ControlPanel {...defaultProps} onFire={onFire} />)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+
+    expect(onFire).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls onFire when fire button is clicked', () => {
+    const onFire = vi.fn()
+    render(<ControlPanel {...defaultProps} onFire={onFire} />)
+
+    screen.getByTestId('fire-button').click()
+
+    expect(onFire).toHaveBeenCalledTimes(1)
   })
 })

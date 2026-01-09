@@ -6,6 +6,7 @@ interface ControlPanelProps {
   power: number
   onAngleChange: (angle: number) => void
   onPowerChange: (power: number) => void
+  onFire: () => void
   enabled?: boolean
 }
 
@@ -23,6 +24,7 @@ export function ControlPanel({
   power,
   onAngleChange,
   onPowerChange,
+  onFire,
   enabled = true,
 }: ControlPanelProps) {
   const clampAngle = useCallback(
@@ -64,9 +66,14 @@ export function ControlPanel({
           event.preventDefault()
           onPowerChange(clampPower(power - (shiftHeld ? POWER_STEP_FAST : POWER_STEP)))
           break
+        case ' ':
+        case 'Enter':
+          event.preventDefault()
+          onFire()
+          break
       }
     },
-    [angle, power, onAngleChange, onPowerChange, clampAngle, clampPower]
+    [angle, power, onAngleChange, onPowerChange, onFire, clampAngle, clampPower]
   )
 
   useKeyboard({
@@ -118,6 +125,18 @@ export function ControlPanel({
       <div className="control-panel__hint">
         <kbd>Shift</kbd> for faster
       </div>
+
+      <button
+        className="control-panel__fire-button"
+        data-testid="fire-button"
+        onClick={onFire}
+        disabled={!enabled}
+      >
+        Fire!
+        <span className="control-panel__fire-keys">
+          <kbd>Space</kbd> / <kbd>Enter</kbd>
+        </span>
+      </button>
     </div>
   )
 }
