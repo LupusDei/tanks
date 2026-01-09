@@ -58,7 +58,7 @@ describe('App', () => {
     expect(screen.queryByText('Scorched Earth Tanks')).not.toBeInTheDocument()
   })
 
-  it('transitions to game when start button clicked and transition ends', () => {
+  it('transitions to color selection when start button clicked', () => {
     renderWithProvider(<App />)
 
     fireEvent.click(screen.getByTestId('start-button'))
@@ -67,14 +67,33 @@ describe('App', () => {
     fireEvent.transitionEnd(loadingScreen)
 
     expect(screen.queryByTestId('loading-screen')).not.toBeInTheDocument()
+    expect(screen.getByTestId('color-selection-screen')).toBeInTheDocument()
+    expect(screen.getByText('Choose Your Tank')).toBeInTheDocument()
+  })
+
+  it('transitions to game when color is selected', () => {
+    renderWithProvider(<App />)
+
+    // Go through loading screen
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Select a color
+    fireEvent.click(screen.getByTestId('color-button-red'))
+
+    expect(screen.queryByTestId('color-selection-screen')).not.toBeInTheDocument()
     expect(screen.getByText('Scorched Earth Tanks')).toBeInTheDocument()
   })
 
-  it('renders the canvas component after starting', () => {
+  it('renders the canvas component after selecting color', () => {
     const { container } = renderWithProvider(<App />)
 
+    // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Select a color
+    fireEvent.click(screen.getByTestId('color-button-blue'))
 
     const canvas = container.querySelector('canvas')
     expect(canvas).toBeInTheDocument()

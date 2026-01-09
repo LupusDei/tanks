@@ -1,11 +1,17 @@
 import './App.css'
-import { Canvas, LoadingScreen } from './components'
+import { Canvas, ColorSelectionScreen, LoadingScreen } from './components'
 import { useGame } from './context/useGame'
+import { TankColor } from './types/game'
 
 function App() {
   const { state, actions } = useGame()
 
   const handleStartGame = () => {
+    actions.setPhase('color_select')
+  }
+
+  const handleColorSelect = (color: TankColor) => {
+    actions.setPlayerColor(color)
     actions.setPhase('playing')
   }
 
@@ -24,6 +30,10 @@ function App() {
 
   if (state.phase === 'loading') {
     return <LoadingScreen onStart={handleStartGame} />
+  }
+
+  if (state.phase === 'color_select') {
+    return <ColorSelectionScreen onColorSelect={handleColorSelect} />
   }
 
   return (

@@ -1,4 +1,6 @@
-export type GamePhase = 'loading' | 'playing' | 'gameover';
+export type GamePhase = 'loading' | 'color_select' | 'playing' | 'gameover';
+
+export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
 
 export interface Position {
   x: number;
@@ -28,6 +30,7 @@ export interface GameState {
   tanks: TankState[];
   terrain: TerrainData | null;
   winner: string | null;
+  playerColor: TankColor | null;
 }
 
 export interface GameActions {
@@ -39,4 +42,5 @@ export interface GameActions {
   damageTank: (tankId: string, damage: number) => void;
   setWinner: (tankId: string) => void;
   resetGame: () => void;
+  setPlayerColor: (color: TankColor) => void;
 }

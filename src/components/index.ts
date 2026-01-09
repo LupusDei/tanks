@@ -1,4 +1,5 @@
 export { Canvas } from './Canvas'
 export type { CanvasProps } from './Canvas'
+export { ColorSelectionScreen } from './ColorSelectionScreen'
 export { LoadingScreen } from './LoadingScreen'
 export { ParticleTextEffect } from './ui/ParticleTextEffect'
