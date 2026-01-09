@@ -173,8 +173,10 @@ export function renderTank(
   ctx.arc(0, -bodyHeight / 4, domeRadius - 1, Math.PI + 0.2, -0.2);
   ctx.stroke();
 
-  // Draw turret barrel
+  // Draw turret barrel (from dome center)
   ctx.save();
+  // Move to dome center before rotating
+  ctx.translate(0, -bodyHeight / 4);
   // Angle is measured from horizontal, with 0 = right, 90 = up
   // Convert to canvas rotation (negative because canvas y is inverted)
   const turretAngle = -angle * (Math.PI / 180);
