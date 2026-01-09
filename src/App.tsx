@@ -111,7 +111,8 @@ function App() {
         aiTimeoutRef.current = null
       }
     }
-  }, [isAITurn, actions, fireProjectileForTank])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAITurn])
 
   const handleStartGame = () => {
     actions.setPhase('color_select')
