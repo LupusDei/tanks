@@ -58,34 +58,120 @@ export function renderTank(
   ctx.save();
   ctx.translate(canvasX, canvasY);
 
-  // Draw wheels/treads
-  ctx.fillStyle = '#333';
+  // Draw shadow under tank
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
   ctx.beginPath();
-  ctx.ellipse(-bodyWidth / 3, bodyHeight / 2, wheelRadius, wheelRadius * 0.7, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(bodyWidth / 3, bodyHeight / 2, wheelRadius, wheelRadius * 0.7, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, bodyHeight / 2 + wheelRadius, bodyWidth / 2 + 4, 4, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Draw track between wheels
-  ctx.fillStyle = '#222';
-  ctx.fillRect(-bodyWidth / 2, bodyHeight / 2 - wheelRadius * 0.5, bodyWidth, wheelRadius);
+  // Draw track base
+  const trackGradient = ctx.createLinearGradient(
+    -bodyWidth / 2, bodyHeight / 2 - wheelRadius,
+    -bodyWidth / 2, bodyHeight / 2 + wheelRadius * 0.5
+  );
+  trackGradient.addColorStop(0, '#1a1a1a');
+  trackGradient.addColorStop(0.5, '#333');
+  trackGradient.addColorStop(1, '#222');
+  ctx.fillStyle = trackGradient;
+  ctx.beginPath();
+  ctx.roundRect(-bodyWidth / 2 - 2, bodyHeight / 2 - wheelRadius * 0.6, bodyWidth + 4, wheelRadius * 1.2, 3);
+  ctx.fill();
 
-  // Draw tank body
-  ctx.fillStyle = tankColor;
+  // Draw track segments
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  for (let i = -bodyWidth / 2; i < bodyWidth / 2; i += 4) {
+    ctx.beginPath();
+    ctx.moveTo(i, bodyHeight / 2 - wheelRadius * 0.5);
+    ctx.lineTo(i, bodyHeight / 2 + wheelRadius * 0.5);
+    ctx.stroke();
+  }
+
+  // Draw wheels with metallic gradient
+  const wheelColor = '#555';
+  const wheelPositions = [-bodyWidth / 3, 0, bodyWidth / 3];
+  for (const wheelX of wheelPositions) {
+    const wheelGradient = createDomeGradient(ctx, wheelX, bodyHeight / 2, wheelRadius * 0.8, wheelColor);
+    ctx.fillStyle = wheelGradient;
+    ctx.beginPath();
+    ctx.arc(wheelX, bodyHeight / 2, wheelRadius * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wheel hub
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.arc(wheelX, bodyHeight / 2, wheelRadius * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw tank body with metallic gradient
+  const bodyGradient = createMetallicGradient(
+    ctx,
+    -bodyWidth / 2, -bodyHeight / 2,
+    bodyWidth, bodyHeight,
+    tankColor
+  );
+  ctx.fillStyle = bodyGradient;
   ctx.beginPath();
   ctx.roundRect(-bodyWidth / 2, -bodyHeight / 2, bodyWidth, bodyHeight, 4);
   ctx.fill();
 
-  // Draw body highlight
-  ctx.fillStyle = lightenColor(tankColor, 0.2);
-  ctx.fillRect(-bodyWidth / 2 + 4, -bodyHeight / 2 + 2, bodyWidth - 8, 4);
-
-  // Draw turret base (dome)
-  ctx.fillStyle = darkerColor;
+  // Body edge highlight (top edge gleam)
+  ctx.strokeStyle = lightenColor(tankColor, 0.5);
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(0, -bodyHeight / 4, bodyWidth / 4, Math.PI, 0);
+  ctx.moveTo(-bodyWidth / 2 + 4, -bodyHeight / 2 + 1);
+  ctx.lineTo(bodyWidth / 2 - 4, -bodyHeight / 2 + 1);
+  ctx.stroke();
+
+  // Body bottom edge shadow
+  ctx.strokeStyle = darkenColor(tankColor, 0.5);
+  ctx.beginPath();
+  ctx.moveTo(-bodyWidth / 2 + 4, bodyHeight / 2 - 1);
+  ctx.lineTo(bodyWidth / 2 - 4, bodyHeight / 2 - 1);
+  ctx.stroke();
+
+  // Panel line details
+  ctx.strokeStyle = darkenColor(tankColor, 0.4);
+  ctx.lineWidth = 0.5;
+  // Vertical panel lines
+  ctx.beginPath();
+  ctx.moveTo(-bodyWidth / 4, -bodyHeight / 2 + 3);
+  ctx.lineTo(-bodyWidth / 4, bodyHeight / 2 - 3);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(bodyWidth / 4, -bodyHeight / 2 + 3);
+  ctx.lineTo(bodyWidth / 4, bodyHeight / 2 - 3);
+  ctx.stroke();
+
+  // Rivet details
+  ctx.fillStyle = darkenColor(tankColor, 0.3);
+  const rivetPositions: Array<[number, number]> = [
+    [-bodyWidth / 2 + 4, -bodyHeight / 2 + 4],
+    [bodyWidth / 2 - 4, -bodyHeight / 2 + 4],
+    [-bodyWidth / 2 + 4, bodyHeight / 2 - 4],
+    [bodyWidth / 2 - 4, bodyHeight / 2 - 4],
+  ];
+  for (const [rx, ry] of rivetPositions) {
+    ctx.beginPath();
+    ctx.arc(rx, ry, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw turret base (dome) with metallic gradient
+  const domeRadius = bodyWidth / 4;
+  const domeGradient = createDomeGradient(ctx, 0, -bodyHeight / 4, domeRadius, darkerColor);
+  ctx.fillStyle = domeGradient;
+  ctx.beginPath();
+  ctx.arc(0, -bodyHeight / 4, domeRadius, Math.PI, 0);
   ctx.fill();
+
+  // Dome rim highlight
+  ctx.strokeStyle = lightenColor(darkerColor, 0.3);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(0, -bodyHeight / 4, domeRadius - 1, Math.PI + 0.2, -0.2);
+  ctx.stroke();
 
   // Draw turret barrel
   ctx.save();
@@ -94,12 +180,28 @@ export function renderTank(
   const turretAngle = -angle * (Math.PI / 180);
   ctx.rotate(turretAngle);
 
-  ctx.fillStyle = darkerColor;
-  ctx.fillRect(0, -turretWidth / 2, turretLength, turretWidth);
+  // Barrel with gradient
+  const barrelGradient = createMetallicGradient(
+    ctx,
+    0, -turretWidth / 2,
+    turretLength, turretWidth,
+    darkerColor,
+    'vertical'
+  );
+  ctx.fillStyle = barrelGradient;
+  ctx.beginPath();
+  ctx.roundRect(0, -turretWidth / 2, turretLength, turretWidth, 2);
+  ctx.fill();
 
-  // Barrel tip
+  // Barrel tip / muzzle brake
   ctx.fillStyle = '#222';
   ctx.fillRect(turretLength - 4, -turretWidth / 2 - 1, 4, turretWidth + 2);
+
+  // Muzzle opening
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(turretLength, 0, turretWidth / 3, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.restore();
 
@@ -237,4 +339,61 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 
 function rgbToHex(r: number, g: number, b: number): string {
   return '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Create a metallic gradient for tank surfaces.
+ * Simulates light reflecting off curved metal.
+ */
+function createMetallicGradient(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  baseColor: string,
+  direction: 'vertical' | 'horizontal' = 'vertical'
+): CanvasGradient {
+  const gradient = direction === 'vertical'
+    ? ctx.createLinearGradient(x, y, x, y + height)
+    : ctx.createLinearGradient(x, y, x + width, y);
+
+  const highlight = lightenColor(baseColor, 0.4);
+  const midHighlight = lightenColor(baseColor, 0.15);
+  const midDark = darkenColor(baseColor, 0.1);
+  const shadow = darkenColor(baseColor, 0.35);
+
+  gradient.addColorStop(0, highlight);
+  gradient.addColorStop(0.15, midHighlight);
+  gradient.addColorStop(0.5, baseColor);
+  gradient.addColorStop(0.85, midDark);
+  gradient.addColorStop(1, shadow);
+
+  return gradient;
+}
+
+/**
+ * Create a radial metallic gradient for domes/curved surfaces.
+ */
+function createDomeGradient(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  baseColor: string
+): CanvasGradient {
+  // Offset highlight to top-left for 3D effect
+  const gradient = ctx.createRadialGradient(
+    x - radius * 0.3, y - radius * 0.3, 0,
+    x, y, radius
+  );
+
+  const highlight = lightenColor(baseColor, 0.5);
+  const shadow = darkenColor(baseColor, 0.4);
+
+  gradient.addColorStop(0, highlight);
+  gradient.addColorStop(0.4, baseColor);
+  gradient.addColorStop(1, shadow);
+
+  return gradient;
 }

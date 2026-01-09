@@ -162,6 +162,15 @@ describe('tank', () => {
         ellipse: vi.fn(),
         fill: vi.fn(),
         roundRect: vi.fn(),
+        stroke: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        createLinearGradient: vi.fn(() => ({
+          addColorStop: vi.fn(),
+        })),
+        createRadialGradient: vi.fn(() => ({
+          addColorStop: vi.fn(),
+        })),
       } as unknown as CanvasRenderingContext2D;
 
       tank = {
