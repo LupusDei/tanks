@@ -21,16 +21,16 @@ describe('GRAVITY constant', () => {
 });
 
 describe('POWER_SCALE constant', () => {
-  it('equals 1.12 (calibrated for 800px canvas)', () => {
-    expect(POWER_SCALE).toBe(1.12);
+  it('equals 1.49 (33% faster than original 1.12)', () => {
+    expect(POWER_SCALE).toBe(1.49);
   });
 });
 
 describe('powerToVelocity', () => {
   it('converts power to velocity using scale factor', () => {
-    expect(powerToVelocity(100)).toBeCloseTo(112, 5);
-    expect(powerToVelocity(50)).toBeCloseTo(56, 5);
-    expect(powerToVelocity(10)).toBeCloseTo(11.2, 5);
+    expect(powerToVelocity(100)).toBeCloseTo(149, 5);
+    expect(powerToVelocity(50)).toBeCloseTo(74.5, 5);
+    expect(powerToVelocity(10)).toBeCloseTo(14.9, 5);
   });
 
   it('scales linearly with power', () => {
@@ -87,9 +87,9 @@ describe('calculatePosition', () => {
     };
     const position = calculatePosition(config, 1);
 
-    // velocity = 50 * 1.12 = 56
-    // x = 56 * 1 = 56
-    expect(position.x).toBeCloseTo(56, 5);
+    // velocity = 50 * 1.49 = 74.5
+    // x = 74.5 * 1 = 74.5
+    expect(position.x).toBeCloseTo(74.5, 5);
     // y = 0 - 0 + 0.5 * 10 * 1 = 5 (gravity pulls down)
     expect(position.y).toBeCloseTo(5, 5);
   });
@@ -104,9 +104,9 @@ describe('calculatePosition', () => {
 
     // x should remain at starting position (no horizontal velocity)
     expect(position.x).toBeCloseTo(100, 5);
-    // velocity = 50 * 1.12 = 56
-    // y = 200 - 56*1 + 0.5*10*1 = 200 - 56 + 5 = 149
-    expect(position.y).toBeCloseTo(149, 5);
+    // velocity = 50 * 1.49 = 74.5
+    // y = 200 - 74.5*1 + 0.5*10*1 = 200 - 74.5 + 5 = 130.5
+    expect(position.y).toBeCloseTo(130.5, 5);
   });
 
   it('calculates correct position for 45-degree launch', () => {
@@ -132,9 +132,9 @@ describe('calculatePosition', () => {
     };
     const position = calculatePosition(config, 1);
 
-    // velocity = 20 * 1.12 = 22.4
-    // x = 100 + 22.4 = 122.4
-    expect(position.x).toBeCloseTo(122.4, 5);
+    // velocity = 20 * 1.49 = 29.8
+    // x = 100 + 29.8 = 129.8
+    expect(position.x).toBeCloseTo(129.8, 5);
     expect(position.y).toBeCloseTo(55, 5); // 50 + 0.5*10*1
   });
 
@@ -193,10 +193,10 @@ describe('calculateVelocity', () => {
     const v1 = calculateVelocity(config, 1);
     const v2 = calculateVelocity(config, 2);
 
-    // velocity = 50 * 1.12 = 56
-    expect(v0.vy).toBeCloseTo(56, 5);
-    expect(v1.vy).toBeCloseTo(46, 5); // 56 - 10*1
-    expect(v2.vy).toBeCloseTo(36, 5); // 56 - 10*2
+    // velocity = 50 * 1.49 = 74.5
+    expect(v0.vy).toBeCloseTo(74.5, 5);
+    expect(v1.vy).toBeCloseTo(64.5, 5); // 74.5 - 10*1
+    expect(v2.vy).toBeCloseTo(54.5, 5); // 74.5 - 10*2
   });
 
   it('vertical velocity becomes negative after apex', () => {
@@ -223,9 +223,9 @@ describe('calculateApexTime', () => {
       power: 50,
     };
 
-    // velocity = 50 * 1.12 = 56
-    // t = vy/g = 56/10 = 5.6
-    expect(calculateApexTime(config)).toBeCloseTo(5.6, 5);
+    // velocity = 50 * 1.49 = 74.5
+    // t = vy/g = 74.5/10 = 7.45
+    expect(calculateApexTime(config)).toBeCloseTo(7.45, 5);
   });
 
   it('calculates correct apex time for 45-degree launch', () => {
@@ -436,7 +436,8 @@ describe('physics integration', () => {
       power: 100,
     };
 
-    const trajectory = calculateTrajectory(config, 0.5, 10);
+    // With POWER_SCALE = 1.49, apex time at 45° is ~10.5s, so use 25s max
+    const trajectory = calculateTrajectory(config, 0.5, 25);
 
     // Check that the trajectory has a turning point (goes up then down)
     const yValues = trajectory.map((p) => p.y);
@@ -450,9 +451,9 @@ describe('physics integration', () => {
 });
 
 describe('physics calibration', () => {
-  it('full power at 70° covers approximately 800 pixels horizontally', () => {
-    // This test verifies the POWER_SCALE calibration is correct
-    // A shot at 70° with power 100 should cover ~800px (full canvas width)
+  it('full power at 70° covers more than canvas width (33% faster projectiles)', () => {
+    // With POWER_SCALE = 1.49 (33% faster than original 1.12)
+    // Range at 70° ≈ 149² * sin(140°) / 10 ≈ 1427px
     const config: LaunchConfig = {
       position: { x: 0, y: 0 },
       angle: 70,
@@ -465,14 +466,14 @@ describe('physics calibration', () => {
 
     if (time !== null) {
       const position = calculatePosition(config, time);
-      // Should travel approximately 800 pixels (+/- 50 pixels tolerance)
-      expect(position.x).toBeGreaterThan(750);
-      expect(position.x).toBeLessThan(850);
+      // Should travel approximately 1400 pixels (+/- 100 pixels tolerance)
+      expect(position.x).toBeGreaterThan(1300);
+      expect(position.x).toBeLessThan(1500);
     }
   });
 
-  it('max range at 45° is greater than canvas width', () => {
-    // At 45° with full power, range should exceed 800px (more than canvas width)
+  it('max range at 45° exceeds 2000 pixels', () => {
+    // At 45° with full power, range = 149² / 10 ≈ 2220px
     const config: LaunchConfig = {
       position: { x: 0, y: 0 },
       angle: 45,
@@ -484,8 +485,8 @@ describe('physics calibration', () => {
 
     if (time !== null) {
       const position = calculatePosition(config, time);
-      // At 45° should travel more than at 70°
-      expect(position.x).toBeGreaterThan(1000);
+      // At 45° should travel more than 2000px
+      expect(position.x).toBeGreaterThan(2000);
     }
   });
 });

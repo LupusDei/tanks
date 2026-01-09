@@ -21,7 +21,12 @@ import {
   getChevronCount,
   getStarCount,
   getNextDifficulty,
+  createExplosion,
+  updateExplosion,
+  renderExplosion,
+  isExplosionComplete,
   type ProjectileState,
+  type ExplosionState,
 } from './engine'
 import { TankColor } from './types/game'
 
@@ -36,11 +41,14 @@ const TANK_WHEEL_RADIUS = 6
 function App() {
   const { state, actions } = useGame()
   const projectileRef = useRef<ProjectileState | null>(null)
+  const explosionRef = useRef<ExplosionState | null>(null)
+  const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
+  const [isExplosionActive, setIsExplosionActive] = useState(false)
   const aiTimeoutRef = useRef<number | null>(null)
 
-  // AI turn handler - only runs when turn changes to AI
-  const isAITurn = state.phase === 'playing' && state.currentPlayerId !== 'player' && !isProjectileActive
+  // AI turn handler - only runs when turn changes to AI (and no active projectile/explosion)
+  const isAITurn = state.phase === 'playing' && state.currentPlayerId !== 'player' && !isProjectileActive && !isExplosionActive
   const aiProcessingRef = useRef(false)
 
   // Keep refs to latest state for use in timeouts
@@ -160,8 +168,8 @@ function App() {
 
   // Handle canvas click to cycle AI difficulty when clicking on opponent tank
   const handleCanvasClick = useCallback((canvasX: number, canvasY: number) => {
-    // Only allow clicking during player's turn and not during projectile animation
-    if (state.phase !== 'playing' || isProjectileActive) return
+    // Only allow clicking during player's turn and not during projectile/explosion animation
+    if (state.phase !== 'playing' || isProjectileActive || isExplosionActive) return
 
     const opponentTank = state.tanks.find((t) => t.id === 'opponent')
     if (!opponentTank) return
@@ -187,7 +195,7 @@ function App() {
       const nextDifficulty = getNextDifficulty(state.aiDifficulty)
       actions.setAIDifficulty(nextDifficulty)
     }
-  }, [state.phase, state.tanks, state.aiDifficulty, isProjectileActive, actions])
+  }, [state.phase, state.tanks, state.aiDifficulty, isProjectileActive, isExplosionActive, actions])
 
   const currentPlayerTank = state.tanks.find((t) => t.id === state.currentPlayerId)
   const isPlayerTurn = state.currentPlayerId === 'player'
@@ -226,9 +234,12 @@ function App() {
       renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount })
     }
 
+    const currentTime = performance.now()
+    const deltaTime = currentTime - lastFrameTimeRef.current
+    lastFrameTimeRef.current = currentTime
+
     // Render and update projectile
     if (projectileRef.current?.isActive) {
-      const currentTime = performance.now()
       const projectile = projectileRef.current
 
       // Update trace points
@@ -240,13 +251,34 @@ function App() {
       // Check if projectile is out of bounds
       const terrainHeight = terrain ? getInterpolatedHeightAt(terrain, position.x) ?? 0 : 0
       if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight)) {
-        // Projectile has landed - end animation and switch turns
+        // Projectile has landed - create explosion at impact point
         projectileRef.current = { ...projectile, isActive: false }
         setIsProjectileActive(false)
-        actions.nextTurn()
+
+        // Create explosion at the landing position (in screen coordinates)
+        explosionRef.current = createExplosion(position, currentTime)
+        setIsExplosionActive(true)
       } else {
         // Render projectile
         renderProjectile(ctx, projectile, currentTime)
+      }
+    }
+
+    // Render and update explosion
+    if (explosionRef.current?.isActive) {
+      const explosion = explosionRef.current
+
+      // Update explosion state
+      explosionRef.current = updateExplosion(explosion, currentTime, deltaTime)
+
+      // Render explosion
+      renderExplosion(ctx, explosionRef.current, currentTime)
+
+      // Check if explosion is complete
+      if (isExplosionComplete(explosionRef.current, currentTime)) {
+        explosionRef.current = { ...explosionRef.current, isActive: false }
+        setIsExplosionActive(false)
+        actions.nextTurn()
       }
     }
   }
@@ -274,7 +306,7 @@ function App() {
             onAngleChange={handleAngleChange}
             onPowerChange={handlePowerChange}
             onFire={handleFire}
-            enabled={!isProjectileActive && isPlayerTurn}
+            enabled={!isProjectileActive && !isExplosionActive && isPlayerTurn}
           />
         </>
       )}

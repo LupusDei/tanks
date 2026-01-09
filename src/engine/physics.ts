@@ -8,15 +8,12 @@ export const GRAVITY = 10;
 
 /**
  * Power scaling factor to convert UI power (10-100) to velocity.
- * Calibrated so that full power (100) at 70° covers approximately
- * the full canvas width (800px).
+ * Increased by 33% for faster projectiles.
  *
- * Calculation:
- * - Range = v² × sin(2θ) / g
- * - For 800px at 70°: v = sqrt(800 × 10 / sin(140°)) ≈ 112
- * - POWER_SCALE = 112 / 100 = 1.12
+ * Original: 1.12 (calibrated for 800px at 70°)
+ * Current: 1.49 (1.12 × 1.33 for 33% speed increase)
  */
-export const POWER_SCALE = 1.12;
+export const POWER_SCALE = 1.49;
 
 /**
  * Convert UI power value to actual velocity for physics calculations.
