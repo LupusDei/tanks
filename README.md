@@ -109,7 +109,146 @@ npm run dev      # Start development server with hot reload
 npm run build    # Build for production (TypeScript compile + Vite build)
 npm run preview  # Preview production build locally
 npm run lint     # Run ESLint to check code quality
+npm test         # Run test suite
+npm test -- --watch    # Run tests in watch mode
+npm test -- --coverage # Run tests with coverage report
 ```
+
+## Testing Strategy
+
+**Tests are MANDATORY** - Every feature must have corresponding tests.
+
+### Testing Framework
+- **Vitest**: Fast unit testing framework (Vite-native)
+- **React Testing Library**: Component testing
+- **Coverage Target**: >80% for critical code paths
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode (auto-rerun on changes)
+npm test -- --watch
+
+# Coverage report
+npm test -- --coverage
+
+# Run specific test file
+npm test physics.test.ts
+```
+
+### Test Organization
+
+Tests live alongside the code they test:
+
+```
+src/
+├── engine/
+│   ├── physics.ts
+│   ├── physics.test.ts        # Unit tests for physics
+│   ├── collision.ts
+│   └── collision.test.ts
+├── components/
+│   ├── Canvas.tsx
+│   └── Canvas.test.tsx        # Component tests
+└── utils/
+    ├── math.ts
+    └── math.test.ts
+```
+
+### Testing Requirements
+
+- ✅ Write tests BEFORE or ALONGSIDE implementation
+- ✅ Test edge cases and error conditions
+- ✅ Keep tests fast and independent
+- ✅ Use descriptive test names
+- ✅ Mock external dependencies
+- ❌ Never commit code without tests
+- ❌ Never skip failing tests
+
+### Example Test Structure
+
+```typescript
+// physics.test.ts
+import { describe, it, expect } from 'vitest'
+import { calculateTrajectory } from './physics'
+
+describe('calculateTrajectory', () => {
+  it('should calculate correct position at t=0', () => {
+    const result = calculateTrajectory(45, 100, 0)
+    expect(result).toEqual({ x: 0, y: 0 })
+  })
+
+  it('should account for gravity over time', () => {
+    const result = calculateTrajectory(45, 100, 1)
+    expect(result.y).toBeLessThan(0) // Falling due to gravity
+  })
+})
+```
+
+## Code Quality & Modularity
+
+### Modularity Principles
+
+This project is designed for **parallel development**. Multiple agents must be able to work simultaneously without conflicts.
+
+**Key Principles:**
+- ✅ **One responsibility per module**: Each file has a single, clear purpose
+- ✅ **Clear interfaces**: Modules communicate through well-defined APIs
+- ✅ **Minimal coupling**: Changes in one module shouldn't break others
+- ✅ **Independent testing**: Each module can be tested in isolation
+- ✅ **No circular dependencies**: Keep dependency graph acyclic
+
+### Module Boundaries
+
+```
+src/engine/          → Pure game logic (no React dependencies)
+src/components/      → React UI (no direct game logic)
+src/utils/           → Shared utilities (no dependencies on engine or components)
+```
+
+**Example of Good Modularity:**
+```typescript
+// ✅ GOOD: Clear interface, no coupling
+// engine/physics.ts
+export function calculateTrajectory(angle: number, power: number, time: number): Position {
+  // Pure calculation, no side effects
+}
+
+// components/Canvas.tsx
+import { calculateTrajectory } from '../engine/physics'
+// Uses physics as a dependency, but physics doesn't know about Canvas
+```
+
+**Example of Poor Modularity:**
+```typescript
+// ❌ BAD: Tight coupling
+// engine/physics.ts
+import { Canvas } from '../components/Canvas'  // Engine shouldn't import components!
+```
+
+### Clean Code Standards
+
+- **TypeScript Strict Mode**: No `any` types, proper type definitions
+- **Descriptive Names**: `calculateProjectileVelocity()` not `calc()`
+- **Small Functions**: <50 lines, single responsibility
+- **DRY Principle**: Extract common logic into utilities
+- **Error Handling**: Handle edge cases gracefully
+- **Comments**: Only when necessary - prefer self-documenting code
+
+### Quality Gates
+
+Before committing, ALL of these must pass:
+
+```bash
+npm run build     # TypeScript compilation
+npm run lint      # Code style and quality
+npm test          # Test suite
+```
+
+If any fail, fix them before committing.
 
 ## Issue Tracking with Beads
 
@@ -126,25 +265,60 @@ bd close <id>         # Mark task complete
 bd stats              # Project statistics
 ```
 
-### Workflow for Agents
+### Branching Workflow
 
-1. **Find work**: `bd ready` to see available tasks
-2. **Claim task**: `bd update <id> --status=in_progress`
-3. **Do the work**: Implement the feature/fix
-4. **Verify**: Test that changes work as expected
-5. **Commit**: Add files and commit with descriptive message
-6. **Push**: `git push` to remote origin
-7. **Close task**: `bd close <id>` only after push succeeds
-8. **Sync**: `bd sync` to update beads tracking
+**ALL work MUST be done on feature branches**. Each issue gets its own branch named after the issue ID.
+
+#### Standard Workflow
+
+```bash
+# 1. Find and claim work
+bd ready
+bd update <issue-id> --status=in_progress
+
+# 2. Create feature branch from master
+git checkout master && git pull
+git checkout -b <issue-id>
+
+# 3. Implement the feature
+# ... make changes, write tests ...
+
+# 4. Verify ALL quality gates pass
+npm run build && npm run lint && npm test
+
+# 5. Commit to feature branch
+git add <files>
+git commit -m "Description
+
+Closes <issue-id>
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+
+# 6. Push feature branch to remote
+git push -u origin <issue-id>
+
+# 7. Merge to master
+git checkout master
+git pull
+git merge <issue-id>
+git push
+
+# 8. Clean up
+git branch -d <issue-id>
+git push origin --delete <issue-id>
+bd close <issue-id>
+bd sync
+```
 
 ### Critical Workflow Rules
 
-⚠️ **Work is NOT complete until code is pushed to remote origin**
-- Always verify changes work before committing
-- Always push commits before closing issues
-- Never leave work stranded locally
+⚠️ **NEVER work directly on master** - Always use feature branches
+⚠️ **NEVER commit without tests** - Add/update tests for every change
+⚠️ **NEVER skip quality gates** - Build, lint, and test must ALL pass
+⚠️ **Work is NOT complete until pushed to master** - Push branch, merge, push master
+⚠️ **Clean up branches** - Delete both local and remote branches after merging
 
-See `AGENTS.md` for detailed agent workflow instructions.
+See `AGENTS.md` for complete detailed workflow instructions with examples.
 
 ## Current Status
 
