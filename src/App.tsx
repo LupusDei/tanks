@@ -5,7 +5,7 @@ import { useGame } from './context/useGame'
 function App() {
   const { state, actions } = useGame()
 
-  const handleLoadingComplete = () => {
+  const handleStartGame = () => {
     actions.setPhase('playing')
   }
 
@@ -22,11 +22,12 @@ function App() {
     ctx.fillText('Canvas Ready', ctx.canvas.width / 2, ctx.canvas.height / 2 + 40)
   }
 
+  if (state.phase === 'loading') {
+    return <LoadingScreen onStart={handleStartGame} />
+  }
+
   return (
     <div className="app">
-      {state.phase === 'loading' && (
-        <LoadingScreen duration={6000} onComplete={handleLoadingComplete} />
-      )}
       <h1>Scorched Earth Tanks</h1>
       <Canvas width={800} height={600} onRender={handleRender} />
     </div>

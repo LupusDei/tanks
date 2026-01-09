@@ -1,11 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { LoadingScreen } from './LoadingScreen'
 
 describe('LoadingScreen', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
-
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
       writable: true,
       value: vi.fn(() => ({
@@ -41,7 +39,6 @@ describe('LoadingScreen', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -50,9 +47,10 @@ describe('LoadingScreen', () => {
     expect(screen.getByTestId('loading-screen')).toBeInTheDocument()
   })
 
-  it('renders the loading text', () => {
+  it('renders the start button', () => {
     render(<LoadingScreen />)
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    expect(screen.getByTestId('start-button')).toBeInTheDocument()
+    expect(screen.getByText('Start Game')).toBeInTheDocument()
   })
 
   it('renders particle canvas', () => {
@@ -61,53 +59,35 @@ describe('LoadingScreen', () => {
     expect(canvas).toBeInTheDocument()
   })
 
-  it('starts fade out after duration', async () => {
-    render(<LoadingScreen duration={3000} />)
-
-    expect(screen.getByTestId('loading-screen')).not.toHaveClass('loading-screen--fade-out')
-
-    await act(async () => {
-      vi.advanceTimersByTime(3000)
-    })
-
-    expect(screen.getByTestId('loading-screen')).toHaveClass('loading-screen--fade-out')
-  })
-
-  it('calls onComplete callback after transition', async () => {
-    const handleComplete = vi.fn()
-    render(<LoadingScreen duration={3000} onComplete={handleComplete} />)
-
-    await act(async () => {
-      vi.advanceTimersByTime(3000)
-    })
-
-    const loadingScreen = screen.getByTestId('loading-screen')
-    fireEvent.transitionEnd(loadingScreen)
-
-    expect(handleComplete).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not call onComplete if not transitioning', () => {
-    const handleComplete = vi.fn()
-    render(<LoadingScreen duration={3000} onComplete={handleComplete} />)
-
-    const loadingScreen = screen.getByTestId('loading-screen')
-    fireEvent.transitionEnd(loadingScreen)
-
-    expect(handleComplete).not.toHaveBeenCalled()
-  })
-
-  it('uses default duration of 6000ms', async () => {
+  it('starts fade out when start button is clicked', () => {
     render(<LoadingScreen />)
 
-    await act(async () => {
-      vi.advanceTimersByTime(5000)
-    })
     expect(screen.getByTestId('loading-screen')).not.toHaveClass('loading-screen--fade-out')
 
-    await act(async () => {
-      vi.advanceTimersByTime(1000)
-    })
+    fireEvent.click(screen.getByTestId('start-button'))
+
     expect(screen.getByTestId('loading-screen')).toHaveClass('loading-screen--fade-out')
+  })
+
+  it('calls onStart callback after transition', () => {
+    const handleStart = vi.fn()
+    render(<LoadingScreen onStart={handleStart} />)
+
+    fireEvent.click(screen.getByTestId('start-button'))
+
+    const loadingScreen = screen.getByTestId('loading-screen')
+    fireEvent.transitionEnd(loadingScreen)
+
+    expect(handleStart).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not call onStart if not transitioning', () => {
+    const handleStart = vi.fn()
+    render(<LoadingScreen onStart={handleStart} />)
+
+    const loadingScreen = screen.getByTestId('loading-screen')
+    fireEvent.transitionEnd(loadingScreen)
+
+    expect(handleStart).not.toHaveBeenCalled()
   })
 })

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import App from './App'
 import { GameProvider } from './context/GameContext'
 
@@ -9,8 +9,6 @@ function renderWithProvider(ui: React.ReactElement) {
 
 describe('App', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
-
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
       writable: true,
       value: vi.fn(() => ({
@@ -27,6 +25,16 @@ describe('App', () => {
       })),
     })
 
+    Object.defineProperty(HTMLCanvasElement.prototype, 'offsetWidth', {
+      writable: true,
+      value: 800,
+    })
+
+    Object.defineProperty(HTMLCanvasElement.prototype, 'offsetHeight', {
+      writable: true,
+      value: 600,
+    })
+
     globalThis.requestAnimationFrame = vi.fn((cb) => {
       setTimeout(cb, 16)
       return 0
@@ -36,36 +44,39 @@ describe('App', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     vi.restoreAllMocks()
-  })
-
-  it('renders the title', () => {
-    renderWithProvider(<App />)
-    expect(screen.getByText('Scorched Earth Tanks')).toBeInTheDocument()
-  })
-
-  it('renders the canvas component', () => {
-    const { container } = renderWithProvider(<App />)
-    const canvas = container.querySelector('canvas')
-    expect(canvas).toBeInTheDocument()
   })
 
   it('shows loading screen initially', () => {
     renderWithProvider(<App />)
     expect(screen.getByTestId('loading-screen')).toBeInTheDocument()
+    expect(screen.getByTestId('start-button')).toBeInTheDocument()
   })
 
-  it('hides loading screen after duration', async () => {
+  it('does not show game content during loading phase', () => {
+    renderWithProvider(<App />)
+    expect(screen.queryByText('Scorched Earth Tanks')).not.toBeInTheDocument()
+  })
+
+  it('transitions to game when start button clicked and transition ends', () => {
     renderWithProvider(<App />)
 
-    expect(screen.getByTestId('loading-screen')).toBeInTheDocument()
-
-    await act(async () => {
-      vi.advanceTimersByTime(6000)
-    })
+    fireEvent.click(screen.getByTestId('start-button'))
 
     const loadingScreen = screen.getByTestId('loading-screen')
-    expect(loadingScreen).toHaveClass('loading-screen--fade-out')
+    fireEvent.transitionEnd(loadingScreen)
+
+    expect(screen.queryByTestId('loading-screen')).not.toBeInTheDocument()
+    expect(screen.getByText('Scorched Earth Tanks')).toBeInTheDocument()
+  })
+
+  it('renders the canvas component after starting', () => {
+    const { container } = renderWithProvider(<App />)
+
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    const canvas = container.querySelector('canvas')
+    expect(canvas).toBeInTheDocument()
   })
 })

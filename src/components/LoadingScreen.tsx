@@ -1,27 +1,22 @@
-import { useEffect, useState, useCallback } from "react"
+import { useState, useCallback } from "react"
 import { ParticleTextEffect } from "./ui/ParticleTextEffect"
 
 interface LoadingScreenProps {
-  duration?: number
-  onComplete?: () => void
+  onStart?: () => void
 }
 
-export function LoadingScreen({ duration = 6000, onComplete }: LoadingScreenProps) {
+export function LoadingScreen({ onStart }: LoadingScreenProps) {
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   const handleTransitionEnd = useCallback(() => {
-    if (isTransitioning && onComplete) {
-      onComplete()
+    if (isTransitioning && onStart) {
+      onStart()
     }
-  }, [isTransitioning, onComplete])
+  }, [isTransitioning, onStart])
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsTransitioning(true)
-    }, duration)
-
-    return () => clearTimeout(timer)
-  }, [duration])
+  const handleStartClick = () => {
+    setIsTransitioning(true)
+  }
 
   return (
     <div
@@ -30,13 +25,19 @@ export function LoadingScreen({ duration = 6000, onComplete }: LoadingScreenProp
       data-testid="loading-screen"
     >
       <ParticleTextEffect
-        words={["Scorched", "eAIrth"]}
-        wordDuration={2500}
+        words={["The new", "Tank Game", "Scorched AI Earth"]}
+        wordDuration={4000}
         backgroundColor="#1a1a1a"
         className="loading-screen__particles"
       />
-      <div className="loading-screen__subtitle">
-        <span className="loading-screen__subtitle-text">Loading...</span>
+      <div className="loading-screen__overlay">
+        <button
+          className="loading-screen__start-button"
+          onClick={handleStartClick}
+          data-testid="start-button"
+        >
+          Start Game
+        </button>
       </div>
     </div>
   )
