@@ -446,21 +446,21 @@ function renderChevrons(
   ctx: CanvasRenderingContext2D,
   count: number
 ): void {
-  const chevronWidth = 8;
-  const chevronHeight = 4;
-  const chevronSpacing = 2;
+  const chevronWidth = 6;
+  const chevronHeight = 2.5;
+  const chevronSpacing = 1;
   const totalHeight = count * (chevronHeight + chevronSpacing) - chevronSpacing;
   const startY = -totalHeight / 2;
 
   ctx.save();
   ctx.strokeStyle = '#ffd700'; // Gold color for chevrons
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
   // Add subtle glow effect
   ctx.shadowColor = '#ffd700';
-  ctx.shadowBlur = 2;
+  ctx.shadowBlur = 1;
 
   for (let i = 0; i < count; i++) {
     const y = startY + i * (chevronHeight + chevronSpacing);
