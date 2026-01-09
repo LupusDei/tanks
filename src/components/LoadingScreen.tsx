@@ -26,7 +26,7 @@ export function LoadingScreen({ onStart }: LoadingScreenProps) {
     >
       <ParticleTextEffect
         words={["The new", "Tank Game", "Scorched AI Earth"]}
-        wordDuration={4000}
+        wordDuration={7000}
         backgroundColor="#1a1a1a"
         className="loading-screen__particles"
       />
