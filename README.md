@@ -269,10 +269,12 @@ bd stats              # Project statistics
 
 **ALL work MUST be done on feature branches**. Each issue gets its own branch named after the issue ID.
 
+**⚠️ CRITICAL:** Every change must be tied to a beads issue. If no issue exists for your work, create one first using `bd create`.
+
 #### Standard Workflow
 
 ```bash
-# 1. Find and claim work
+# 1. Find and claim work (or create new issue if needed)
 bd ready
 bd update <issue-id> --status=in_progress
 
@@ -312,11 +314,14 @@ bd sync
 
 ### Critical Workflow Rules
 
+⚠️ **EVERY change MUST be tied to a bead** - Create an issue first if one doesn't exist
 ⚠️ **NEVER work directly on master** - Always use feature branches
 ⚠️ **NEVER commit without tests** - Add/update tests for every change
 ⚠️ **NEVER skip quality gates** - Build, lint, and test must ALL pass
 ⚠️ **Work is NOT complete until pushed to master** - Push branch, merge, push master
 ⚠️ **Clean up branches** - Delete both local and remote branches after merging
+
+**Traceability:** Every commit must reference its beads issue ID (e.g., "Closes tanks-xyz") to maintain complete project history and enable proper tracking.
 
 See `AGENTS.md` for complete detailed workflow instructions with examples.
 

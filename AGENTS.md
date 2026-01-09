@@ -16,11 +16,23 @@ bd sync               # Sync with git
 
 **ALL work MUST be done on feature branches**, never directly on master. Each issue gets its own branch.
 
+### ⚠️ CRITICAL REQUIREMENT: Every Change Needs a Bead
+
+**EVERY change to this codebase MUST be tied to a beads issue.** Before making any changes:
+- If working on an existing task: Use that issue
+- If fixing a bug you discovered: Create a new bug issue first
+- If adding documentation: Create a task issue first
+- If refactoring: Create a task issue first
+
+**No exceptions.** This ensures complete traceability and enables proper workflow adherence.
+
 ### Standard Workflow for Every Task
 
-1. **Find and claim work**
+1. **Find and claim work (OR create new issue)**
    ```bash
    bd ready                                    # Find available tasks
+   # OR create new issue if needed:
+   # bd create --title="..." --type=task|bug|feature --priority=0-4
    bd show <issue-id>                          # Review task details
    bd update <issue-id> --status=in_progress  # Claim the task
    ```
@@ -194,6 +206,7 @@ src/
 
 ## Critical Rules
 
+⚠️ **NEVER make changes without a bead** - ALL changes must be tied to a beads issue (create one first if needed)
 ⚠️ **NEVER work directly on master** - Always use feature branches
 ⚠️ **NEVER commit without tests** - Add/update tests for every change
 ⚠️ **NEVER skip verification** - Always run build/lint/test before committing
