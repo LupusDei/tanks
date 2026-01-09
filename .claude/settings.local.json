@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bd ready:*)",
+      "Bash(bd --no-db ready:*)",
+      "Bash(bd --no-db show tanks-ldq)",
+      "Bash(bd init:*)",
+      "Bash(bd show:*)",
+      "Bash(bd sync:*)",
+      "Bash(bd list:*)",
+      "Bash(git pull:*)",
+      "Bash(xargs ls:*)",
+      "Bash(tree:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

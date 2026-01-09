@@ -105,7 +105,7 @@ describe('tank', () => {
       expect(player?.id).toBe('player');
       expect(player?.color).toBe('red');
       expect(player?.health).toBe(100);
-      expect(player?.angle).toBe(45);
+      expect(player?.angle).toBe(-45); // Aiming right toward opponent
       expect(player?.power).toBe(50);
       expect(player?.isActive).toBe(true);
     });
@@ -117,7 +117,7 @@ describe('tank', () => {
       expect(opponent?.id).toBe('opponent');
       expect(opponent?.color).toBe('blue');
       expect(opponent?.health).toBe(100);
-      expect(opponent?.angle).toBe(135);
+      expect(opponent?.angle).toBe(45); // Aiming left toward player
       expect(opponent?.power).toBe(50);
       expect(opponent?.isActive).toBe(false);
     });

@@ -177,9 +177,10 @@ export function renderTank(
   ctx.save();
   // Move to dome center before rotating
   ctx.translate(0, -bodyHeight / 4);
-  // Angle is measured from horizontal, with 0 = right, 90 = up
-  // Convert to canvas rotation (negative because canvas y is inverted)
-  const turretAngle = -angle * (Math.PI / 180);
+  // Angle is measured from vertical: 0 = straight up, positive = left, negative = right
+  // Range: -120 to +120 degrees
+  // Convert to canvas rotation: add 90° to shift from vertical to horizontal reference
+  const turretAngle = -(90 + angle) * (Math.PI / 180);
   ctx.rotate(turretAngle);
 
   // Barrel with gradient
@@ -270,7 +271,7 @@ export function createInitialTanks(
       id: 'player',
       position: leftPosition,
       health: 100,
-      angle: 45,
+      angle: -45, // Aiming right (toward opponent)
       power: 50,
       color: playerColor,
       isActive: true,
@@ -279,7 +280,7 @@ export function createInitialTanks(
       id: 'opponent',
       position: rightPosition,
       health: 100,
-      angle: 135,
+      angle: 45, // Aiming left (toward player)
       power: 50,
       color: opponentColor,
       isActive: false,

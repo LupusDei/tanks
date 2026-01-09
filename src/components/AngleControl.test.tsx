@@ -78,20 +78,20 @@ describe('AngleControl', () => {
 
   it('clamps angle to max value', () => {
     const handleAngleChange = vi.fn()
-    render(<AngleControl angle={89} onAngleChange={handleAngleChange} />)
+    render(<AngleControl angle={118} onAngleChange={handleAngleChange} />)
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
 
-    expect(handleAngleChange).toHaveBeenCalledWith(90)
+    expect(handleAngleChange).toHaveBeenCalledWith(120)
   })
 
   it('clamps angle to min value', () => {
     const handleAngleChange = vi.fn()
-    render(<AngleControl angle={3} onAngleChange={handleAngleChange} />)
+    render(<AngleControl angle={-118} onAngleChange={handleAngleChange} />)
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true }))
 
-    expect(handleAngleChange).toHaveBeenCalledWith(0)
+    expect(handleAngleChange).toHaveBeenCalledWith(-120)
   })
 
   it('respects custom min/max angles', () => {
