@@ -267,9 +267,15 @@ bd stats              # Project statistics
 
 ### Branching Workflow
 
+🚨 **STOP - READ BEFORE CODING** 🚨
+
 **ALL work MUST be done on feature branches**. Each issue gets its own branch named after the issue ID.
 
-**⚠️ CRITICAL:** Every change must be tied to a beads issue. If no issue exists for your work, create one first using `bd create`.
+**⚠️ CRITICAL REQUIREMENTS:**
+1. **NEVER work directly on master** - Always create a feature branch first
+2. **Every change needs a bead** - Create issue first using `bd create`
+3. **Write tests** - No code without tests
+4. **Run quality gates** - Build + lint + test must ALL pass
 
 #### Standard Workflow
 
@@ -305,12 +311,14 @@ git pull
 git merge <issue-id>
 git push
 
-# 8. Clean up
+# 8. Clean up (keep remote branch for history)
 git branch -d <issue-id>
-git push origin --delete <issue-id>
+# Do NOT delete remote branch - keep for reference
 bd close <issue-id>
 bd sync
 ```
+
+**Note:** Remote feature branches are preserved for historical reference and traceability.
 
 ### Critical Workflow Rules
 
@@ -319,7 +327,7 @@ bd sync
 ⚠️ **NEVER commit without tests** - Add/update tests for every change
 ⚠️ **NEVER skip quality gates** - Build, lint, and test must ALL pass
 ⚠️ **Work is NOT complete until pushed to master** - Push branch, merge, push master
-⚠️ **Clean up branches** - Delete both local and remote branches after merging
+⚠️ **Clean up local branches only** - Delete local branch, keep remote for history
 
 **Traceability:** Every commit must reference its beads issue ID (e.g., "Closes tanks-xyz") to maintain complete project history and enable proper tracking.
 

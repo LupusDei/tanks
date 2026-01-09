@@ -1,6 +1,30 @@
 # Agent Instructions
 
+⚠️ **READ THIS ENTIRE FILE BEFORE STARTING ANY WORK** ⚠️
+
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+
+---
+
+## 🚨 STOP - READ THIS FIRST 🚨
+
+### BEFORE YOU WRITE ANY CODE:
+
+1. ✅ **CREATE A BEAD FIRST** - Every change needs a beads issue
+2. ✅ **CREATE A FEATURE BRANCH** - NEVER work on master directly
+3. ✅ **WRITE TESTS** - Every feature needs tests
+4. ✅ **RUN QUALITY GATES** - Build + lint + test must ALL pass
+5. ✅ **FOLLOW THE WORKFLOW** - See complete steps below
+
+### ❌ NEVER DO THIS:
+
+- ❌ Commit directly to master (always use feature branches)
+- ❌ Skip creating a bead for your work
+- ❌ Skip writing tests
+- ❌ Skip quality gates (build/lint/test)
+- ❌ Push without merging to master first
+
+---
 
 ## Quick Reference
 
@@ -12,7 +36,7 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
-## Branching Workflow (MANDATORY)
+## Branching Workflow (MANDATORY - READ CAREFULLY)
 
 **ALL work MUST be done on feature branches**, never directly on master. Each issue gets its own branch.
 
@@ -87,10 +111,16 @@ bd sync               # Sync with git
 8. **Clean up and close**
    ```bash
    git branch -d <issue-id>                    # Delete local branch
-   git push origin --delete <issue-id>         # Delete remote branch
+   # NOTE: Keep remote branch for history - do NOT delete it
    bd close <issue-id>                         # Close the issue
    bd sync                                     # Sync beads with git
    ```
+
+   **Important:** Remote feature branches are preserved for:
+   - Historical reference
+   - Code review tracking
+   - Future reference when debugging
+   - Traceability of when changes were made
 
 9. **Verify completion**
    ```bash
@@ -135,9 +165,9 @@ git pull
 git merge tanks-13h
 git push
 
-# 8. Clean up
+# 8. Clean up (keep remote branch for history)
 git branch -d tanks-13h
-git push origin --delete tanks-13h
+# Do NOT delete remote branch - keep it for reference
 bd close tanks-13h
 bd sync
 

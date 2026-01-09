@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { GameProvider, useGame } from './GameContext';
+import { GameProvider } from './GameContext';
+import { useGame } from './useGame';
 
 describe('GameContext', () => {
   it('provides initial game state', () => {

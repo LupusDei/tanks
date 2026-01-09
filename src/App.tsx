@@ -2,7 +2,7 @@ import './App.css'
 import { Canvas } from './components'
 
 function App() {
-  const handleRender = (ctx: CanvasRenderingContext2D, _deltaTime: number) => {
+  const handleRender = (ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = '#1a1a1a'
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 

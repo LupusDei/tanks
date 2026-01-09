@@ -1,12 +1,12 @@
-import { createContext, ReactNode, useContext, useState, useCallback } from 'react';
+import { createContext, ReactNode, useState, useCallback } from 'react';
 import { GameState, GameActions, GamePhase, TankState, TerrainData } from '../types/game';
 
-interface GameContextValue {
+export interface GameContextValue {
   state: GameState;
   actions: GameActions;
 }
 
-const GameContext = createContext<GameContextValue | null>(null);
+export const GameContext = createContext<GameContextValue | null>(null);
 
 const initialState: GameState = {
   phase: 'loading',
@@ -122,10 +122,4 @@ export function GameProvider({ children }: GameProviderProps) {
   );
 }
 
-export function useGame(): GameContextValue {
-  const context = useContext(GameContext);
-  if (!context) {
-    throw new Error('useGame must be used within a GameProvider');
-  }
-  return context;
-}
+// Note: useGame hook moved to useGame.ts for fast refresh compatibility
