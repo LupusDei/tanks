@@ -45,6 +45,13 @@ function App() {
     setIsProjectileActive(true)
   }, [state.tanks, isProjectileActive])
 
+  // Reset AI processing flag when it's no longer AI's turn
+  useEffect(() => {
+    if (!isAITurn) {
+      aiProcessingRef.current = false
+    }
+  }, [isAITurn])
+
   useEffect(() => {
     // Only process when it's AI's turn and not already processing
     if (!isAITurn || aiProcessingRef.current) {
@@ -77,19 +84,17 @@ function App() {
 
     // Fire after thinking delay
     aiTimeoutRef.current = window.setTimeout(() => {
-      aiProcessingRef.current = false
       fireProjectile(aiTank.id)
     }, aiDecision.thinkingTimeMs)
 
-    // Cleanup timeout on unmount or turn change
+    // Cleanup timeout on unmount
     return () => {
       if (aiTimeoutRef.current !== null) {
         window.clearTimeout(aiTimeoutRef.current)
         aiTimeoutRef.current = null
       }
-      aiProcessingRef.current = false
     }
-  }, [isAITurn, state.currentPlayerId, state.tanks, state.terrain, state.aiDifficulty, actions, isProjectileActive, fireProjectile])
+  }, [isAITurn, state.currentPlayerId, state.tanks, state.terrain, state.aiDifficulty, actions, fireProjectile])
 
   const handleStartGame = () => {
     actions.setPhase('color_select')
