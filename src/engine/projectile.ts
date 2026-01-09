@@ -3,8 +3,11 @@ import { calculatePosition, degreesToRadians, type LaunchConfig } from './physic
 
 /**
  * Tank turret dimensions for calculating barrel tip position.
+ * These must match the values in tank.ts for correct alignment.
  */
 const TURRET_LENGTH = 25;
+const BODY_HEIGHT = 20;
+const DOME_OFFSET = BODY_HEIGHT / 4; // Dome center is above tank center
 
 /**
  * State of an active projectile animation.
@@ -42,14 +45,19 @@ export function uiAngleToPhysicsAngle(uiAngle: number): number {
 /**
  * Calculate the barrel tip position for a tank in world coordinates.
  * This is where projectiles should spawn from.
+ * The barrel extends from the turret dome, which is offset above the tank center.
  */
 export function getBarrelTipPosition(tank: TankState): Position {
   // Convert UI angle to physics angle for position calculation
   const physicsAngle = uiAngleToPhysicsAngle(tank.angle);
   const angleRad = degreesToRadians(physicsAngle);
+
+  // Dome center is above tank center in world coordinates
+  const domeCenterY = tank.position.y + DOME_OFFSET;
+
   return {
     x: tank.position.x + TURRET_LENGTH * Math.cos(angleRad),
-    y: tank.position.y + TURRET_LENGTH * Math.sin(angleRad),
+    y: domeCenterY + TURRET_LENGTH * Math.sin(angleRad),
   };
 }
 
