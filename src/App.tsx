@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import './App.css'
 import {
   Canvas,
@@ -7,7 +8,17 @@ import {
   TurnIndicator,
 } from './components'
 import { useGame } from './context/useGame'
-import { initializeGame, renderTank } from './engine'
+import {
+  initializeGame,
+  renderTank,
+  createProjectileState,
+  getProjectilePosition,
+  renderProjectile,
+  updateProjectileTrace,
+  isProjectileOutOfBounds,
+  getInterpolatedHeightAt,
+  type ProjectileState,
+} from './engine'
 import { TankColor } from './types/game'
 
 const CANVAS_WIDTH = 800
@@ -15,6 +26,8 @@ const CANVAS_HEIGHT = 600
 
 function App() {
   const { state, actions } = useGame()
+  const projectileRef = useRef<ProjectileState | null>(null)
+  const [isProjectileActive, setIsProjectileActive] = useState(false)
 
   const handleStartGame = () => {
     actions.setPhase('color_select')
@@ -54,9 +67,12 @@ function App() {
   }
 
   const handleFire = () => {
-    // For now, just switch turns
-    // Projectile animation will be added in tanks-xfa
-    actions.nextTurn()
+    const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
+    if (!currentTank || isProjectileActive) return
+
+    // Start projectile animation
+    projectileRef.current = createProjectileState(currentTank, performance.now(), CANVAS_HEIGHT)
+    setIsProjectileActive(true)
   }
 
   const currentPlayerTank = state.tanks.find((t) => t.id === state.currentPlayerId)
@@ -91,6 +107,30 @@ function App() {
     for (const tank of tanks) {
       renderTank(ctx, tank, ctx.canvas.height)
     }
+
+    // Render and update projectile
+    if (projectileRef.current?.isActive) {
+      const currentTime = performance.now()
+      const projectile = projectileRef.current
+
+      // Update trace points
+      projectileRef.current = updateProjectileTrace(projectile, currentTime)
+
+      // Get current position
+      const position = getProjectilePosition(projectile, currentTime)
+
+      // Check if projectile is out of bounds
+      const terrainHeight = terrain ? getInterpolatedHeightAt(terrain, position.x) ?? 0 : 0
+      if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight)) {
+        // Projectile has landed - end animation and switch turns
+        projectileRef.current = { ...projectile, isActive: false }
+        setIsProjectileActive(false)
+        actions.nextTurn()
+      } else {
+        // Render projectile
+        renderProjectile(ctx, projectile, currentTime)
+      }
+    }
   }
 
   if (state.phase === 'loading') {
@@ -116,6 +156,7 @@ function App() {
             onAngleChange={handleAngleChange}
             onPowerChange={handlePowerChange}
             onFire={handleFire}
+            enabled={!isProjectileActive}
           />
         </>
       )}
