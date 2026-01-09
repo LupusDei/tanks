@@ -19,6 +19,7 @@
 
 - ❌ **Commit directly to master** (always use feature branches)
 - ❌ Skip creating a bead
+- ❌ Skip `bd sync` after claiming a task (prevents other agents taking same task)
 - ❌ Skip writing tests
 - ❌ Skip quality gates
 
@@ -30,6 +31,7 @@
 # 1. Find/create and claim work
 bd ready                              # Find available work
 bd update <issue-id> --status=in_progress
+bd sync                               # IMMEDIATELY sync to prevent conflicts!
 
 # 2. CREATE FEATURE BRANCH (critical!)
 git checkout master && git pull
@@ -120,6 +122,7 @@ npm test          # Test suite
 ## Core Rules
 
 - **Every change needs a bead** - Create issue first
+- **Sync after claiming** - Run `bd sync` immediately after claiming to prevent conflicts
 - **Feature branches only** - NEVER work on master
 - **Tests are mandatory** - No code without tests
 - **Quality gates required** - Build/lint/test must pass
@@ -128,4 +131,4 @@ npm test          # Test suite
 
 ---
 
-See `AGENTS.md` for detailed examples and complete workflow documentation.
+See `AGENTS.md` for project-specific code quality and testing guidelines.
