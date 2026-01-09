@@ -91,11 +91,40 @@ export function renderTank(
     ctx.restore();
   }
 
-  // Draw shadow under tank
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  // Draw layered shadow under tank for depth
+  // Outer soft shadow (larger, lighter)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+  ctx.beginPath();
+  ctx.ellipse(0, bodyHeight / 2 + wheelRadius + 2, bodyWidth / 2 + 10, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Middle shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(0, bodyHeight / 2 + wheelRadius + 1, bodyWidth / 2 + 6, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner shadow (darker, sharper)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, bodyHeight / 2 + wheelRadius, bodyWidth / 2 + 2, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ambient occlusion - darker area where tank contacts ground
+  const aoGradient = ctx.createRadialGradient(
+    0, bodyHeight / 2 + wheelRadius, 0,
+    0, bodyHeight / 2 + wheelRadius, bodyWidth / 2 + 4
+  );
+  aoGradient.addColorStop(0, 'rgba(0, 0, 0, 0.4)');
+  aoGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.15)');
+  aoGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = aoGradient;
   ctx.beginPath();
   ctx.ellipse(0, bodyHeight / 2 + wheelRadius, bodyWidth / 2 + 4, 4, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Draw dust/dirt particles around tracks
+  renderGroundDust(ctx, bodyWidth, bodyHeight, wheelRadius);
 
   // Draw track base
   const trackGradient = ctx.createLinearGradient(
@@ -539,4 +568,57 @@ function drawStar(
   }
   ctx.closePath();
   ctx.fill();
+}
+
+/**
+ * Render dust/dirt particles around the tank tracks.
+ * Creates a subtle grounding effect with small debris particles.
+ */
+function renderGroundDust(
+  ctx: CanvasRenderingContext2D,
+  bodyWidth: number,
+  bodyHeight: number,
+  wheelRadius: number
+): void {
+  ctx.save();
+
+  // Use a seeded pattern for consistent dust placement
+  const dustPositions = [
+    { x: -bodyWidth / 2 - 6, y: bodyHeight / 2 + wheelRadius - 1, size: 1.5 },
+    { x: -bodyWidth / 2 - 3, y: bodyHeight / 2 + wheelRadius + 1, size: 1 },
+    { x: -bodyWidth / 2 + 2, y: bodyHeight / 2 + wheelRadius + 2, size: 0.8 },
+    { x: bodyWidth / 2 + 6, y: bodyHeight / 2 + wheelRadius - 1, size: 1.5 },
+    { x: bodyWidth / 2 + 3, y: bodyHeight / 2 + wheelRadius + 1, size: 1 },
+    { x: bodyWidth / 2 - 2, y: bodyHeight / 2 + wheelRadius + 2, size: 0.8 },
+    { x: -bodyWidth / 4, y: bodyHeight / 2 + wheelRadius + 3, size: 0.6 },
+    { x: bodyWidth / 4, y: bodyHeight / 2 + wheelRadius + 3, size: 0.6 },
+    { x: 0, y: bodyHeight / 2 + wheelRadius + 2, size: 0.7 },
+  ];
+
+  // Draw dust particles with varying opacity
+  for (const dust of dustPositions) {
+    const opacity = 0.2 + dust.size * 0.15;
+    ctx.fillStyle = `rgba(101, 67, 33, ${opacity})`; // Brown dirt color
+    ctx.beginPath();
+    ctx.arc(dust.x, dust.y, dust.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Add small dirt streaks near track edges
+  ctx.strokeStyle = 'rgba(101, 67, 33, 0.15)';
+  ctx.lineWidth = 0.5;
+
+  // Left track dirt
+  ctx.beginPath();
+  ctx.moveTo(-bodyWidth / 2 - 4, bodyHeight / 2 + wheelRadius);
+  ctx.lineTo(-bodyWidth / 2 - 8, bodyHeight / 2 + wheelRadius + 3);
+  ctx.stroke();
+
+  // Right track dirt
+  ctx.beginPath();
+  ctx.moveTo(bodyWidth / 2 + 4, bodyHeight / 2 + wheelRadius);
+  ctx.lineTo(bodyWidth / 2 + 8, bodyHeight / 2 + wheelRadius + 3);
+  ctx.stroke();
+
+  ctx.restore();
 }
