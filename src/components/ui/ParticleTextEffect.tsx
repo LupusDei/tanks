@@ -13,9 +13,9 @@ class Particle {
   acc: Vector2D = { x: 0, y: 0 }
   target: Vector2D = { x: 0, y: 0 }
 
-  closeEnoughTarget = 100
-  maxSpeed = 4.8
-  maxForce = 0.5
+  closeEnoughTarget = 50
+  maxSpeed = 12
+  maxForce = 1.0
   particleSize = 3
   isKilled = false
 
@@ -210,7 +210,7 @@ export function ParticleTextEffect({
         existingParticle.colorWeight = 0
       } else {
         const particle = new Particle()
-        const randomPos = generateRandomPos(canvas.width / 2, canvas.height / 2, canvas.width)
+        const randomPos = generateRandomPos(canvas.width / 2, canvas.height / 2, canvas.width / 3)
         particle.pos.x = randomPos.x
         particle.pos.y = randomPos.y
         particle.target.x = coord.x
