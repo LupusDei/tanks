@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useState, useCallback } from 'react';
-import { GameState, GameActions, GamePhase, TankState, TerrainData, TankColor } from '../types/game';
+import { GameState, GameActions, GamePhase, TankState, TerrainData, TankColor, AIDifficulty } from '../types/game';
 
 export interface GameContextValue {
   state: GameState;
@@ -16,6 +16,7 @@ const initialState: GameState = {
   terrain: null,
   winner: null,
   playerColor: null,
+  aiDifficulty: 'veteran',
 };
 
 interface GameProviderProps {
@@ -109,6 +110,10 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, playerColor: color }));
   }, []);
 
+  const setAIDifficulty = useCallback((difficulty: AIDifficulty) => {
+    setState((prev) => ({ ...prev, aiDifficulty: difficulty }));
+  }, []);
+
   const actions: GameActions = {
     setPhase,
     initializeTanks,
@@ -119,6 +124,7 @@ export function GameProvider({ children }: GameProviderProps) {
     setWinner,
     resetGame,
     setPlayerColor,
+    setAIDifficulty,
   };
 
   return (

@@ -2,6 +2,13 @@ export type GamePhase = 'loading' | 'color_select' | 'playing' | 'gameover';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
 
+export type AIDifficulty =
+  | 'blind_fool'
+  | 'private'
+  | 'veteran'
+  | 'centurion'
+  | 'emperor';
+
 export interface Position {
   x: number;
   y: number;
@@ -31,6 +38,7 @@ export interface GameState {
   terrain: TerrainData | null;
   winner: string | null;
   playerColor: TankColor | null;
+  aiDifficulty: AIDifficulty;
 }
 
 export interface GameActions {
@@ -43,4 +51,5 @@ export interface GameActions {
   setWinner: (tankId: string) => void;
   resetGame: () => void;
   setPlayerColor: (color: TankColor) => void;
+  setAIDifficulty: (difficulty: AIDifficulty) => void;
 }

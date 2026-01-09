@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
   Canvas,
@@ -17,6 +17,7 @@ import {
   updateProjectileTrace,
   isProjectileOutOfBounds,
   getInterpolatedHeightAt,
+  calculateAIShot,
   type ProjectileState,
 } from './engine'
 import { TankColor } from './types/game'
@@ -28,6 +29,67 @@ function App() {
   const { state, actions } = useGame()
   const projectileRef = useRef<ProjectileState | null>(null)
   const [isProjectileActive, setIsProjectileActive] = useState(false)
+  const aiTimeoutRef = useRef<number | null>(null)
+
+  // AI turn handler - only runs when turn changes to AI
+  const isAITurn = state.phase === 'playing' && state.currentPlayerId !== 'player' && !isProjectileActive
+  const aiProcessingRef = useRef(false)
+
+  // Function to fire projectile (used by both player and AI)
+  const fireProjectile = useCallback((tankId: string) => {
+    const tank = state.tanks.find((t) => t.id === tankId)
+    if (!tank || isProjectileActive) return
+
+    // Start projectile animation
+    projectileRef.current = createProjectileState(tank, performance.now(), CANVAS_HEIGHT)
+    setIsProjectileActive(true)
+  }, [state.tanks, isProjectileActive])
+
+  useEffect(() => {
+    // Only process when it's AI's turn and not already processing
+    if (!isAITurn || aiProcessingRef.current) {
+      return
+    }
+
+    const aiTank = state.tanks.find((t) => t.id === state.currentPlayerId)
+    const playerTank = state.tanks.find((t) => t.id === 'player')
+
+    if (!aiTank || !playerTank) {
+      return
+    }
+
+    // Mark as processing to prevent re-entry
+    aiProcessingRef.current = true
+
+    // Calculate AI shot
+    const aiDecision = calculateAIShot(
+      aiTank,
+      playerTank,
+      state.terrain,
+      state.aiDifficulty
+    )
+
+    // Update AI tank's angle and power
+    actions.updateTank(aiTank.id, {
+      angle: aiDecision.angle,
+      power: aiDecision.power,
+    })
+
+    // Fire after thinking delay
+    aiTimeoutRef.current = window.setTimeout(() => {
+      aiProcessingRef.current = false
+      fireProjectile(aiTank.id)
+    }, aiDecision.thinkingTimeMs)
+
+    // Cleanup timeout on unmount or turn change
+    return () => {
+      if (aiTimeoutRef.current !== null) {
+        window.clearTimeout(aiTimeoutRef.current)
+        aiTimeoutRef.current = null
+      }
+      aiProcessingRef.current = false
+    }
+  }, [isAITurn, state.currentPlayerId, state.tanks, state.terrain, state.aiDifficulty, actions, isProjectileActive, fireProjectile])
 
   const handleStartGame = () => {
     actions.setPhase('color_select')
@@ -70,9 +132,7 @@ function App() {
     const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
     if (!currentTank || isProjectileActive) return
 
-    // Start projectile animation
-    projectileRef.current = createProjectileState(currentTank, performance.now(), CANVAS_HEIGHT)
-    setIsProjectileActive(true)
+    fireProjectile(currentTank.id)
   }
 
   const currentPlayerTank = state.tanks.find((t) => t.id === state.currentPlayerId)
@@ -157,7 +217,7 @@ function App() {
             onAngleChange={handleAngleChange}
             onPowerChange={handlePowerChange}
             onFire={handleFire}
-            enabled={!isProjectileActive}
+            enabled={!isProjectileActive && isPlayerTurn}
           />
         </>
       )}

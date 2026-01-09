@@ -44,3 +44,13 @@ export {
   worldToScreen,
   type ProjectileState,
 } from './projectile';
+
+export {
+  calculateAIShot,
+  calculateOptimalShot,
+  applyDifficultyVariance,
+  getAvailableDifficulties,
+  AI_DIFFICULTY_CONFIGS,
+  type AIDecision,
+  type AIDifficultyConfig,
+} from './ai';
