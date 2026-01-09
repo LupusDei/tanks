@@ -31,11 +31,22 @@ export function worldToScreen(worldPos: Position, canvasHeight: number): Positio
 }
 
 /**
+ * Convert UI angle to physics angle.
+ * UI angle: 0 = up, positive = left, negative = right, range -120 to +120
+ * Physics angle: 0 = right, 90 = up, standard mathematical convention
+ */
+export function uiAngleToPhysicsAngle(uiAngle: number): number {
+  return 90 + uiAngle;
+}
+
+/**
  * Calculate the barrel tip position for a tank in world coordinates.
  * This is where projectiles should spawn from.
  */
 export function getBarrelTipPosition(tank: TankState): Position {
-  const angleRad = degreesToRadians(tank.angle);
+  // Convert UI angle to physics angle for position calculation
+  const physicsAngle = uiAngleToPhysicsAngle(tank.angle);
+  const angleRad = degreesToRadians(physicsAngle);
   return {
     x: tank.position.x + TURRET_LENGTH * Math.cos(angleRad),
     y: tank.position.y + TURRET_LENGTH * Math.sin(angleRad),
@@ -45,13 +56,14 @@ export function getBarrelTipPosition(tank: TankState): Position {
 /**
  * Create a launch configuration from tank state.
  * Converts tank position from world to screen coordinates for physics engine.
+ * Converts UI angle to physics angle for trajectory calculation.
  */
 export function createLaunchConfig(tank: TankState, canvasHeight: number): LaunchConfig {
   const barrelTipWorld = getBarrelTipPosition(tank);
   const barrelTipScreen = worldToScreen(barrelTipWorld, canvasHeight);
   return {
     position: barrelTipScreen,
-    angle: tank.angle,
+    angle: uiAngleToPhysicsAngle(tank.angle), // Convert to physics angle
     power: tank.power,
   };
 }

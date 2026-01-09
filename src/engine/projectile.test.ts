@@ -7,16 +7,19 @@ import {
   updateProjectileTrace,
   isProjectileOutOfBounds,
   worldToScreen,
+  uiAngleToPhysicsAngle,
 } from './projectile';
 import type { TankState } from '../types/game';
 
 const CANVAS_HEIGHT = 600;
 
+// UI angle system: 0 = up, positive = left, negative = right
+// Physics angle system: 0 = right, 90 = up
 const createMockTank = (overrides: Partial<TankState> = {}): TankState => ({
   id: 'test-tank',
   position: { x: 100, y: 200 }, // World coordinates
   health: 100,
-  angle: 45,
+  angle: -45, // UI angle: 45° right of up (aiming toward right)
   power: 50,
   color: 'red',
   isActive: true,
@@ -44,28 +47,33 @@ describe('worldToScreen', () => {
 });
 
 describe('getBarrelTipPosition', () => {
-  it('calculates barrel tip at 0 degrees (pointing right) in world coords', () => {
+  it('calculates barrel tip at UI angle 0 (pointing up) in world coords', () => {
     const tank = createMockTank({ angle: 0 });
     const tip = getBarrelTipPosition(tank);
 
-    // At 0 degrees, barrel points right (positive x)
-    expect(tip.x).toBeCloseTo(125, 1); // 100 + 25 * cos(0)
-    expect(tip.y).toBeCloseTo(200, 1); // 200 + 25 * sin(0)
+    // UI angle 0 = straight up, physics angle = 90
+    // barrel tip.x = 100 + 25 * cos(90°) = 100
+    // barrel tip.y = 200 + 25 * sin(90°) = 225
+    expect(tip.x).toBeCloseTo(100, 1);
+    expect(tip.y).toBeCloseTo(225, 1);
   });
 
-  it('calculates barrel tip at 90 degrees (pointing up) in world coords', () => {
-    const tank = createMockTank({ angle: 90 });
+  it('calculates barrel tip at UI angle -90 (pointing right) in world coords', () => {
+    const tank = createMockTank({ angle: -90 });
     const tip = getBarrelTipPosition(tank);
 
-    // At 90 degrees, barrel points up (positive y in world coords)
-    expect(tip.x).toBeCloseTo(100, 1); // 100 + 25 * cos(90)
-    expect(tip.y).toBeCloseTo(225, 1); // 200 + 25 * sin(90)
+    // UI angle -90 = pointing right, physics angle = 0
+    // barrel tip.x = 100 + 25 * cos(0°) = 125
+    // barrel tip.y = 200 + 25 * sin(0°) = 200
+    expect(tip.x).toBeCloseTo(125, 1);
+    expect(tip.y).toBeCloseTo(200, 1);
   });
 
-  it('calculates barrel tip at 45 degrees', () => {
-    const tank = createMockTank({ angle: 45 });
+  it('calculates barrel tip at UI angle -45 (45° right of up)', () => {
+    const tank = createMockTank({ angle: -45 });
     const tip = getBarrelTipPosition(tank);
 
+    // UI angle -45 = 45° right of up, physics angle = 45
     const offset = 25 * Math.cos(Math.PI / 4); // ~17.68
     expect(tip.x).toBeCloseTo(100 + offset, 1);
     expect(tip.y).toBeCloseTo(200 + offset, 1);
@@ -73,22 +81,25 @@ describe('getBarrelTipPosition', () => {
 });
 
 describe('createLaunchConfig', () => {
-  it('creates launch config with angle and power', () => {
+  it('creates launch config with physics angle and power', () => {
     const tank = createMockTank({ angle: 60, power: 75 });
     const config = createLaunchConfig(tank, CANVAS_HEIGHT);
 
-    expect(config.angle).toBe(60);
+    // UI angle 60 converts to physics angle 150 (90 + 60)
+    expect(config.angle).toBe(150);
     expect(config.power).toBe(75);
   });
 
   it('converts barrel tip from world to screen coordinates', () => {
+    // UI angle 0 = straight up, physics angle = 90
     const tank = createMockTank({ position: { x: 50, y: 100 }, angle: 0 });
     const config = createLaunchConfig(tank, CANVAS_HEIGHT);
 
-    // Barrel tip in world coords: { x: 75, y: 100 }
-    // In screen coords: { x: 75, y: 600 - 100 = 500 }
-    expect(config.position.x).toBe(75);
-    expect(config.position.y).toBe(500);
+    // UI angle 0 = straight up, so barrel tip is directly above tank
+    // Barrel tip in world coords: { x: 50, y: 125 } (50 + 0, 100 + 25)
+    // In screen coords: { x: 50, y: 600 - 125 = 475 }
+    expect(config.position.x).toBe(50);
+    expect(config.position.y).toBe(475);
   });
 });
 
@@ -100,26 +111,30 @@ describe('createProjectileState', () => {
 
     expect(state.isActive).toBe(true);
     expect(state.startTime).toBe(1000);
-    expect(state.launchConfig.angle).toBe(tank.angle);
+    // UI angle -45 converts to physics angle 45 (90 + -45)
+    expect(state.launchConfig.angle).toBe(uiAngleToPhysicsAngle(tank.angle));
     expect(state.launchConfig.power).toBe(tank.power);
     expect(state.tracePoints.length).toBe(1);
     expect(state.canvasHeight).toBe(CANVAS_HEIGHT);
   });
 
   it('initializes trace with barrel tip in screen coordinates', () => {
+    // UI angle 0 = straight up
     const tank = createMockTank({ position: { x: 100, y: 200 }, angle: 0 });
     const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
 
-    // Barrel tip world: { x: 125, y: 200 }
-    // Screen: { x: 125, y: 400 }
-    expect(state.tracePoints[0]!.x).toBeCloseTo(125, 1);
-    expect(state.tracePoints[0]!.y).toBeCloseTo(400, 1);
+    // UI angle 0 = straight up, barrel tip directly above tank
+    // Barrel tip world: { x: 100, y: 225 } (100 + 0, 200 + 25)
+    // Screen: { x: 100, y: 600 - 225 = 375 }
+    expect(state.tracePoints[0]!.x).toBeCloseTo(100, 1);
+    expect(state.tracePoints[0]!.y).toBeCloseTo(375, 1);
   });
 });
 
 describe('getProjectilePosition', () => {
   it('returns launch position at time 0', () => {
-    const tank = createMockTank({ angle: 45, power: 50 });
+    // UI angle -45 = 45° right of up (toward opponent)
+    const tank = createMockTank({ angle: -45, power: 50 });
     const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
     const pos = getProjectilePosition(state, 0);
 
@@ -128,18 +143,20 @@ describe('getProjectilePosition', () => {
   });
 
   it('moves projectile over time', () => {
-    const tank = createMockTank({ angle: 45, power: 50 });
+    // UI angle -45 = 45° right of up, physics angle = 45
+    const tank = createMockTank({ angle: -45, power: 50 });
     const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
 
     const pos1 = getProjectilePosition(state, 500); // 0.5 seconds
     const pos2 = getProjectilePosition(state, 1000); // 1 second
 
-    // Projectile should move right
+    // Projectile should move right (positive x direction)
     expect(pos2.x).toBeGreaterThan(pos1.x);
   });
 
   it('applies gravity to projectile (y increases in screen coords)', () => {
-    const tank = createMockTank({ angle: 0, power: 50 }); // Horizontal shot
+    // UI angle -90 = horizontal shot to the right, physics angle = 0
+    const tank = createMockTank({ angle: -90, power: 50 });
     const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
 
     const pos0 = getProjectilePosition(state, 0);
@@ -152,7 +169,8 @@ describe('getProjectilePosition', () => {
 
 describe('updateProjectileTrace', () => {
   it('adds trace point when distance threshold is exceeded', () => {
-    const tank = createMockTank({ angle: 45, power: 100 });
+    // UI angle -45 = 45° right of up
+    const tank = createMockTank({ angle: -45, power: 100 });
     const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
 
     // After enough time, projectile travels enough distance
@@ -162,7 +180,8 @@ describe('updateProjectileTrace', () => {
   });
 
   it('preserves existing trace points', () => {
-    const tank = createMockTank({ angle: 45, power: 100 });
+    // UI angle -45 = 45° right of up
+    const tank = createMockTank({ angle: -45, power: 100 });
     let state = createProjectileState(tank, 0, CANVAS_HEIGHT);
 
     // Add multiple trace points
@@ -175,7 +194,8 @@ describe('updateProjectileTrace', () => {
   });
 
   it('does not add point if distance is too small', () => {
-    const tank = createMockTank({ angle: 45, power: 1 }); // Very slow
+    // UI angle -45, very slow power
+    const tank = createMockTank({ angle: -45, power: 1 });
     const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
 
     // Very short time, projectile barely moves
