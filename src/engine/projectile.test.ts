@@ -7,9 +7,11 @@ import {
   updateProjectileTrace,
   isProjectileOutOfBounds,
   worldToScreen,
+  screenToWorld,
+  checkTerrainCollision,
   uiAngleToPhysicsAngle,
 } from './projectile';
-import type { TankState } from '../types/game';
+import type { TankState, TerrainData } from '../types/game';
 
 const CANVAS_HEIGHT = 600;
 
@@ -252,5 +254,126 @@ describe('isProjectileOutOfBounds', () => {
     // Just barely off left edge - should still be in bounds
     const pos = { x: -30, y: 300 };
     expect(isProjectileOutOfBounds(pos, canvasWidth, canvasHeight, 100)).toBe(false);
+  });
+});
+
+describe('screenToWorld', () => {
+  it('converts screen y=0 to top of world (canvasHeight)', () => {
+    const pos = screenToWorld({ x: 100, y: 0 }, CANVAS_HEIGHT);
+    expect(pos.x).toBe(100);
+    expect(pos.y).toBe(600); // Top of world
+  });
+
+  it('converts screen y=canvasHeight to bottom of world (0)', () => {
+    const pos = screenToWorld({ x: 100, y: 600 }, CANVAS_HEIGHT);
+    expect(pos.x).toBe(100);
+    expect(pos.y).toBe(0); // Bottom of world
+  });
+
+  it('converts screen y=300 to middle of world', () => {
+    const pos = screenToWorld({ x: 100, y: 300 }, CANVAS_HEIGHT);
+    expect(pos.x).toBe(100);
+    expect(pos.y).toBe(300); // Middle of world
+  });
+
+  it('is inverse of worldToScreen', () => {
+    const original = { x: 150, y: 250 };
+    const screen = worldToScreen(original, CANVAS_HEIGHT);
+    const backToWorld = screenToWorld(screen, CANVAS_HEIGHT);
+    expect(backToWorld.x).toBe(original.x);
+    expect(backToWorld.y).toBe(original.y);
+  });
+});
+
+describe('checkTerrainCollision', () => {
+  const canvasHeight = 600;
+
+  // Create a simple terrain with flat height of 100 (in world coords)
+  const flatTerrain: TerrainData = {
+    points: new Array(800).fill(100),
+    width: 800,
+    height: 600,
+  };
+
+  // Create terrain with a hill in the middle
+  const hillyTerrain: TerrainData = {
+    points: Array.from({ length: 800 }, (_, x) => {
+      if (x >= 350 && x <= 450) {
+        return 200; // Hill in the middle
+      }
+      return 100; // Flat elsewhere
+    }),
+    width: 800,
+    height: 600,
+  };
+
+  it('returns no collision when projectile is above terrain', () => {
+    // Screen y=400 -> world y=200, terrain height=100
+    // Projectile at world y=200 is ABOVE terrain at 100
+    const pos = { x: 400, y: 400 };
+    const result = checkTerrainCollision(pos, flatTerrain, canvasHeight);
+    expect(result.hit).toBe(false);
+    expect(result.point).toBeNull();
+    expect(result.worldPoint).toBeNull();
+  });
+
+  it('returns collision when projectile is at terrain level', () => {
+    // Screen y=500 -> world y=100, terrain height=100
+    // Projectile exactly at terrain level
+    const pos = { x: 400, y: 500 };
+    const result = checkTerrainCollision(pos, flatTerrain, canvasHeight);
+    expect(result.hit).toBe(true);
+    expect(result.point).not.toBeNull();
+    expect(result.worldPoint).not.toBeNull();
+  });
+
+  it('returns collision when projectile is below terrain', () => {
+    // Screen y=550 -> world y=50, terrain height=100
+    // Projectile below terrain
+    const pos = { x: 400, y: 550 };
+    const result = checkTerrainCollision(pos, flatTerrain, canvasHeight);
+    expect(result.hit).toBe(true);
+  });
+
+  it('returns collision point at terrain surface', () => {
+    // Projectile below terrain, collision point should be at terrain surface
+    const pos = { x: 400, y: 550 };
+    const result = checkTerrainCollision(pos, flatTerrain, canvasHeight);
+    expect(result.hit).toBe(true);
+    // World point should be at terrain height (100)
+    expect(result.worldPoint?.x).toBe(400);
+    expect(result.worldPoint?.y).toBe(100);
+    // Screen point should be canvasHeight - terrainHeight = 500
+    expect(result.point?.x).toBe(400);
+    expect(result.point?.y).toBe(500);
+  });
+
+  it('detects collision with hill', () => {
+    // At x=400 (middle of hill), terrain is at 200
+    // Screen y=450 -> world y=150, which is BELOW hill at 200
+    const pos = { x: 400, y: 450 };
+    const result = checkTerrainCollision(pos, hillyTerrain, canvasHeight);
+    expect(result.hit).toBe(true);
+    expect(result.worldPoint?.y).toBe(200); // Hill height
+  });
+
+  it('returns no collision when above hill', () => {
+    // At x=400 (middle of hill), terrain is at 200
+    // Screen y=350 -> world y=250, which is ABOVE hill at 200
+    const pos = { x: 400, y: 350 };
+    const result = checkTerrainCollision(pos, hillyTerrain, canvasHeight);
+    expect(result.hit).toBe(false);
+  });
+
+  it('returns no collision when projectile is outside terrain bounds (left)', () => {
+    const pos = { x: -10, y: 500 };
+    const result = checkTerrainCollision(pos, flatTerrain, canvasHeight);
+    expect(result.hit).toBe(false);
+  });
+
+  it('returns no collision when projectile is outside terrain bounds (right)', () => {
+    const pos = { x: 850, y: 500 };
+    const result = checkTerrainCollision(pos, flatTerrain, canvasHeight);
+    expect(result.hit).toBe(false);
   });
 });

@@ -42,7 +42,10 @@ export {
   updateProjectileTrace,
   isProjectileOutOfBounds,
   worldToScreen,
+  screenToWorld,
+  checkTerrainCollision,
   type ProjectileState,
+  type TerrainCollisionResult,
 } from './projectile';
 
 export {

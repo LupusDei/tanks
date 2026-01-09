@@ -1,5 +1,6 @@
-import type { Position, TankState } from '../types/game';
+import type { Position, TankState, TerrainData } from '../types/game';
 import { calculatePosition, degreesToRadians, type LaunchConfig } from './physics';
+import { getInterpolatedHeightAt } from './terrain';
 
 /**
  * Tank turret dimensions for calculating barrel tip position.
@@ -219,4 +220,76 @@ export function isProjectileOutOfBounds(
   }
 
   return false;
+}
+
+/**
+ * Result of a terrain collision check.
+ */
+export interface TerrainCollisionResult {
+  /** Whether a collision occurred */
+  hit: boolean;
+  /** Collision point in screen coordinates (only set if hit is true) */
+  point: Position | null;
+  /** Collision point in world coordinates (only set if hit is true) */
+  worldPoint: Position | null;
+}
+
+/**
+ * Convert screen coordinates to world coordinates.
+ * In screen coords: y=0 at top, increases downward.
+ * In world coords: y=0 at bottom, increases upward.
+ */
+export function screenToWorld(screenPos: Position, canvasHeight: number): Position {
+  return {
+    x: screenPos.x,
+    y: canvasHeight - screenPos.y,
+  };
+}
+
+/**
+ * Check if projectile has collided with terrain.
+ * Returns collision information including the exact collision point.
+ *
+ * @param position - Projectile position in screen coordinates
+ * @param terrain - Terrain data with height array
+ * @param canvasHeight - Canvas height for coordinate conversion
+ * @returns Collision result with hit status and collision point
+ */
+export function checkTerrainCollision(
+  position: Position,
+  terrain: TerrainData,
+  canvasHeight: number
+): TerrainCollisionResult {
+  // Convert projectile position to world coordinates
+  const worldPos = screenToWorld(position, canvasHeight);
+
+  // Check if projectile is outside terrain bounds horizontally
+  if (worldPos.x < 0 || worldPos.x >= terrain.width) {
+    return { hit: false, point: null, worldPoint: null };
+  }
+
+  // Get terrain height at projectile's x position
+  const terrainHeight = getInterpolatedHeightAt(terrain, worldPos.x);
+  if (terrainHeight === undefined) {
+    return { hit: false, point: null, worldPoint: null };
+  }
+
+  // Check if projectile is at or below terrain surface
+  // In world coords, lower y = closer to ground
+  if (worldPos.y <= terrainHeight) {
+    // Collision! Return the collision point at terrain surface
+    const collisionWorldPoint: Position = {
+      x: worldPos.x,
+      y: terrainHeight,
+    };
+    const collisionScreenPoint = worldToScreen(collisionWorldPoint, canvasHeight);
+
+    return {
+      hit: true,
+      point: collisionScreenPoint,
+      worldPoint: collisionWorldPoint,
+    };
+  }
+
+  return { hit: false, point: null, worldPoint: null };
 }
