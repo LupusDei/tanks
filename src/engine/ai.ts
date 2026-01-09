@@ -1,6 +1,6 @@
 import type { TankState, TerrainData, Position, AIDifficulty } from '../types/game';
 import { AI_DIFFICULTY_ORDER } from '../types/game';
-import { GRAVITY, degreesToRadians } from './physics';
+import { GRAVITY, degreesToRadians, powerToVelocity } from './physics';
 import { getInterpolatedHeightAt } from './terrain';
 
 export type { AIDifficulty } from '../types/game';
@@ -178,8 +178,9 @@ function simulateShotLanding(
   const maxTime = 20;
 
   const angleRad = degreesToRadians(angle);
-  const vx = power * Math.cos(angleRad);
-  const vy = power * Math.sin(angleRad);
+  const velocity = powerToVelocity(power);
+  const vx = velocity * Math.cos(angleRad);
+  const vy = velocity * Math.sin(angleRad);
 
   let prevY = startPosition.y;
 
