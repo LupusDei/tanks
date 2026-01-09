@@ -14,7 +14,7 @@ class Particle {
   target: Vector2D = { x: 0, y: 0 }
 
   closeEnoughTarget = 100
-  maxSpeed = 4.0
+  maxSpeed = 4.8
   maxForce = 0.5
   particleSize = 3
   isKilled = false

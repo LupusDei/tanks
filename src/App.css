@@ -73,7 +73,7 @@ p {
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4);
   transition: all 0.2s ease;
-  margin-top: 120px;
+  margin-top: 160px;
 }
 
 .loading-screen__start-button:hover {
