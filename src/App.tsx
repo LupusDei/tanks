@@ -1,7 +1,14 @@
 import './App.css'
-import { Canvas } from './components'
+import { Canvas, LoadingScreen } from './components'
+import { useGame } from './context/useGame'
 
 function App() {
+  const { state, actions } = useGame()
+
+  const handleLoadingComplete = () => {
+    actions.setPhase('playing')
+  }
+
   const handleRender = (ctx: CanvasRenderingContext2D) => {
     ctx.fillStyle = '#1a1a1a'
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
@@ -17,6 +24,9 @@ function App() {
 
   return (
     <div className="app">
+      {state.phase === 'loading' && (
+        <LoadingScreen duration={6000} onComplete={handleLoadingComplete} />
+      )}
       <h1>Scorched Earth Tanks</h1>
       <Canvas width={800} height={600} onRender={handleRender} />
     </div>
