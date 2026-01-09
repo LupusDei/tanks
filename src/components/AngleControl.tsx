@@ -12,8 +12,8 @@ interface AngleControlProps {
 
 const ANGLE_STEP = 1
 const ANGLE_STEP_FAST = 5
-const MIN_ANGLE = 0
-const MAX_ANGLE = 90
+const MIN_ANGLE = -120
+const MAX_ANGLE = 120
 
 export function AngleControl({
   angle,

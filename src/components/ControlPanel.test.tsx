@@ -88,20 +88,20 @@ describe('ControlPanel', () => {
 
   it('clamps angle to max value', () => {
     const onAngleChange = vi.fn()
-    render(<ControlPanel {...defaultProps} angle={88} onAngleChange={onAngleChange} />)
+    render(<ControlPanel {...defaultProps} angle={118} onAngleChange={onAngleChange} />)
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
 
-    expect(onAngleChange).toHaveBeenCalledWith(90)
+    expect(onAngleChange).toHaveBeenCalledWith(120)
   })
 
   it('clamps angle to min value', () => {
     const onAngleChange = vi.fn()
-    render(<ControlPanel {...defaultProps} angle={2} onAngleChange={onAngleChange} />)
+    render(<ControlPanel {...defaultProps} angle={-118} onAngleChange={onAngleChange} />)
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true }))
 
-    expect(onAngleChange).toHaveBeenCalledWith(0)
+    expect(onAngleChange).toHaveBeenCalledWith(-120)
   })
 
   it('clamps power to max value', () => {

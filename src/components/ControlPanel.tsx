@@ -14,8 +14,8 @@ const ANGLE_STEP = 1
 const ANGLE_STEP_FAST = 5
 const POWER_STEP = 1
 const POWER_STEP_FAST = 10
-const MIN_ANGLE = 0
-const MAX_ANGLE = 90
+const MIN_ANGLE = -120
+const MAX_ANGLE = 120
 const MIN_POWER = 0
 const MAX_POWER = 100
 
@@ -81,7 +81,9 @@ export function ControlPanel({
     enabled,
   })
 
-  const anglePercentage = ((angle - MIN_ANGLE) / (MAX_ANGLE - MIN_ANGLE)) * 100
+  // Angle bar shows distance from center (0), filling from center outward
+  const anglePercentage = (Math.abs(angle) / MAX_ANGLE) * 100
+  const angleDirection = angle >= 0 ? 'left' : 'right'
   const powerPercentage = ((power - MIN_POWER) / (MAX_POWER - MIN_POWER)) * 100
 
   return (
@@ -90,12 +92,13 @@ export function ControlPanel({
         <div className="control-panel__label">Angle</div>
         <div className="control-panel__display">
           <div className="control-panel__value" data-testid="angle-value">
-            {angle}°
+            {Math.abs(angle)}° {angle !== 0 && (angle > 0 ? 'L' : 'R')}
           </div>
-          <div className="control-panel__bar">
+          <div className="control-panel__bar control-panel__bar--angle">
+            <div className="control-panel__bar-center" />
             <div
-              className="control-panel__bar-fill control-panel__bar-fill--angle"
-              style={{ width: `${anglePercentage}%` }}
+              className={`control-panel__bar-fill control-panel__bar-fill--angle control-panel__bar-fill--${angleDirection}`}
+              style={{ width: `${anglePercentage / 2}%` }}
             />
           </div>
         </div>
