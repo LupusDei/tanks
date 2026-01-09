@@ -9,7 +9,7 @@
 
 ### ⚠️ BEFORE YOU WRITE ANY CODE:
 
-1. ✅ **REFRESH TASK LIST** - `git pull && bd sync --import-only` to get latest state
+1. ✅ **REFRESH TASK LIST** - `git pull && bd sync --import-only --no-daemon` to get latest state
 2. ✅ **CREATE/CLAIM A BEAD** - Every change needs a beads issue
 3. ✅ **CREATE FEATURE BRANCH** - `git checkout -b <issue-id>`
 4. ✅ **PUSH EMPTY BRANCH** - `git push -u origin <issue-id>` for visibility
@@ -20,7 +20,7 @@
 ### ❌ NEVER DO THIS:
 
 - ❌ **Commit directly to master** (always use feature branches)
-- ❌ Skip refreshing task list before choosing work (`git pull && bd sync --import-only`)
+- ❌ Skip refreshing task list before choosing work (`git pull && bd sync --import-only --no-daemon`)
 - ❌ Skip creating a bead
 - ❌ Skip `bd sync` after claiming a task (prevents other agents taking same task)
 - ❌ Skip pushing the feature branch before starting work (gives visibility to others)
@@ -33,7 +33,7 @@
 
 ```bash
 # 1. Refresh and find available work
-git pull && bd sync --import-only     # ALWAYS refresh before choosing work!
+git pull && bd sync --import-only --no-daemon     # ALWAYS refresh before choosing work!
 bd ready                              # Find available work
 
 # 2. Claim work
@@ -113,7 +113,7 @@ bd sync
 - `bd blocked` - Show blocked issues
 
 ### Sync & Status
-- `git pull && bd sync --import-only` - Refresh task list (run BEFORE choosing work)
+- `git pull && bd sync --import-only --no-daemon` - Refresh task list (run BEFORE choosing work)
 - `bd sync` - Full sync with git (run after closing issues)
 - `bd stats` - Project statistics
 
@@ -132,7 +132,7 @@ npm test          # Test suite
 
 ## Core Rules
 
-- **Refresh before choosing work** - Always `git pull && bd sync --import-only` before `bd ready`
+- **Refresh before choosing work** - Always `git pull && bd sync --import-only --no-daemon` before `bd ready`
 - **Every change needs a bead** - Create issue first
 - **Sync after claiming** - Run `bd sync` immediately after claiming to prevent conflicts
 - **Push branch early** - Push feature branch before starting work for visibility
