@@ -138,10 +138,11 @@ export function calculateTankPosition(
   }
 
   // Position tank on top of terrain
-  // The tank's position.y is at the bottom of the tank body
+  // The tank's position.y is in world coordinates (0 at bottom, increases upward)
+  // Tank center should be at: terrainHeight + wheelRadius + bodyHeight/2
   return {
     x,
-    y: terrain.height - terrainHeight + dimensions.bodyHeight / 2 + dimensions.wheelRadius,
+    y: terrainHeight + dimensions.wheelRadius + dimensions.bodyHeight / 2,
   };
 }
 
