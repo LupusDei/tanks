@@ -47,15 +47,18 @@ describe('worldToScreen', () => {
 });
 
 describe('getBarrelTipPosition', () => {
+  // DOME_OFFSET = 5 (bodyHeight/4 = 20/4)
+  // TURRET_LENGTH = 25
+
   it('calculates barrel tip at UI angle 0 (pointing up) in world coords', () => {
     const tank = createMockTank({ angle: 0 });
     const tip = getBarrelTipPosition(tank);
 
     // UI angle 0 = straight up, physics angle = 90
     // barrel tip.x = 100 + 25 * cos(90°) = 100
-    // barrel tip.y = 200 + 25 * sin(90°) = 225
+    // barrel tip.y = 200 + 5 (dome) + 25 * sin(90°) = 230
     expect(tip.x).toBeCloseTo(100, 1);
-    expect(tip.y).toBeCloseTo(225, 1);
+    expect(tip.y).toBeCloseTo(230, 1);
   });
 
   it('calculates barrel tip at UI angle -90 (pointing right) in world coords', () => {
@@ -64,9 +67,9 @@ describe('getBarrelTipPosition', () => {
 
     // UI angle -90 = pointing right, physics angle = 0
     // barrel tip.x = 100 + 25 * cos(0°) = 125
-    // barrel tip.y = 200 + 25 * sin(0°) = 200
+    // barrel tip.y = 200 + 5 (dome) + 25 * sin(0°) = 205
     expect(tip.x).toBeCloseTo(125, 1);
-    expect(tip.y).toBeCloseTo(200, 1);
+    expect(tip.y).toBeCloseTo(205, 1);
   });
 
   it('calculates barrel tip at UI angle -45 (45° right of up)', () => {
@@ -74,9 +77,10 @@ describe('getBarrelTipPosition', () => {
     const tip = getBarrelTipPosition(tank);
 
     // UI angle -45 = 45° right of up, physics angle = 45
+    // DOME_OFFSET = 5
     const offset = 25 * Math.cos(Math.PI / 4); // ~17.68
     expect(tip.x).toBeCloseTo(100 + offset, 1);
-    expect(tip.y).toBeCloseTo(200 + offset, 1);
+    expect(tip.y).toBeCloseTo(205 + offset, 1); // 200 + 5 (dome) + offset
   });
 });
 
@@ -96,10 +100,10 @@ describe('createLaunchConfig', () => {
     const config = createLaunchConfig(tank, CANVAS_HEIGHT);
 
     // UI angle 0 = straight up, so barrel tip is directly above tank
-    // Barrel tip in world coords: { x: 50, y: 125 } (50 + 0, 100 + 25)
-    // In screen coords: { x: 50, y: 600 - 125 = 475 }
+    // Barrel tip in world coords: { x: 50, y: 100 + 5 (dome) + 25 = 130 }
+    // In screen coords: { x: 50, y: 600 - 130 = 470 }
     expect(config.position.x).toBe(50);
-    expect(config.position.y).toBe(475);
+    expect(config.position.y).toBe(470);
   });
 });
 
@@ -124,10 +128,10 @@ describe('createProjectileState', () => {
     const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
 
     // UI angle 0 = straight up, barrel tip directly above tank
-    // Barrel tip world: { x: 100, y: 225 } (100 + 0, 200 + 25)
-    // Screen: { x: 100, y: 600 - 225 = 375 }
+    // Barrel tip world: { x: 100, y: 200 + 5 (dome) + 25 = 230 }
+    // Screen: { x: 100, y: 600 - 230 = 370 }
     expect(state.tracePoints[0]!.x).toBeCloseTo(100, 1);
-    expect(state.tracePoints[0]!.y).toBeCloseTo(375, 1);
+    expect(state.tracePoints[0]!.y).toBeCloseTo(370, 1);
   });
 });
 
