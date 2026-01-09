@@ -7,7 +7,16 @@ export type AIDifficulty =
   | 'private'
   | 'veteran'
   | 'centurion'
-  | 'emperor';
+  | 'primus';
+
+// Order of difficulties from easiest to hardest (for cycling)
+export const AI_DIFFICULTY_ORDER: AIDifficulty[] = [
+  'blind_fool',
+  'private',
+  'veteran',
+  'centurion',
+  'primus',
+];
 
 export interface Position {
   x: number;

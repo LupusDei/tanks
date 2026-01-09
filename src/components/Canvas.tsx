@@ -4,6 +4,7 @@ export interface CanvasProps {
   width?: number
   height?: number
   onRender?: (ctx: CanvasRenderingContext2D, deltaTime: number) => void
+  onClick?: (x: number, y: number) => void  // Canvas coordinates (0,0 at top-left)
   className?: string
   maintainAspectRatio?: boolean
 }
@@ -12,6 +13,7 @@ export function Canvas({
   width = 800,
   height = 600,
   onRender,
+  onClick,
   className = '',
   maintainAspectRatio = true,
 }: CanvasProps) {
@@ -97,13 +99,33 @@ export function Canvas({
     }
   }, [width, height, onRender, handleResize])
 
+  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!onClick) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    // Calculate scale factor between displayed size and actual canvas size
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+
+    // Convert click coordinates to canvas coordinates
+    const x = (e.clientX - rect.left) * scaleX
+    const y = (e.clientY - rect.top) * scaleY
+
+    onClick(x, y)
+  }, [onClick])
+
   return (
     <canvas
       ref={canvasRef}
       className={className}
+      onClick={handleClick}
       style={{
         display: 'block',
         margin: '0 auto',
+        cursor: onClick ? 'pointer' : 'default',
       }}
     />
   )

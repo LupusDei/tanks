@@ -50,7 +50,10 @@ export {
   calculateOptimalShot,
   applyDifficultyVariance,
   getAvailableDifficulties,
+  getChevronCount,
+  getNextDifficulty,
   AI_DIFFICULTY_CONFIGS,
+  AI_DIFFICULTY_ORDER,
   type AIDecision,
   type AIDifficultyConfig,
 } from './ai';
