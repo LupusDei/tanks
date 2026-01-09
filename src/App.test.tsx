@@ -55,7 +55,7 @@ describe('App', () => {
 
   it('does not show game content during loading phase', () => {
     renderWithProvider(<App />)
-    expect(screen.queryByText('Scorched Earth Tanks')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('turn-indicator')).not.toBeInTheDocument()
   })
 
   it('transitions to color selection when start button clicked', () => {
@@ -82,7 +82,8 @@ describe('App', () => {
     fireEvent.click(screen.getByTestId('color-button-red'))
 
     expect(screen.queryByTestId('color-selection-screen')).not.toBeInTheDocument()
-    expect(screen.getByText('Scorched Earth Tanks')).toBeInTheDocument()
+    expect(screen.getByTestId('turn-indicator')).toBeInTheDocument()
+    expect(screen.getByTestId('fire-button')).toBeInTheDocument()
   })
 
   it('renders the canvas component after selecting color', () => {

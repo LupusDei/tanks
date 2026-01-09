@@ -1,5 +1,13 @@
 import './App.css'
-import { AngleControl, Canvas, ColorSelectionScreen, LoadingScreen, PowerControl } from './components'
+import {
+  AngleControl,
+  Canvas,
+  ColorSelectionScreen,
+  FireButton,
+  LoadingScreen,
+  PowerControl,
+  TurnIndicator,
+} from './components'
 import { useGame } from './context/useGame'
 import { initializeGame, renderTank } from './engine'
 import { TankColor } from './types/game'
@@ -47,7 +55,14 @@ function App() {
     }
   }
 
+  const handleFire = () => {
+    // For now, just switch turns
+    // Projectile animation will be added in tanks-xfa
+    actions.nextTurn()
+  }
+
   const currentPlayerTank = state.tanks.find((t) => t.id === state.currentPlayerId)
+  const isPlayerTurn = state.currentPlayerId === 'player'
 
   const handleRender = (ctx: CanvasRenderingContext2D) => {
     const { terrain, tanks } = state
@@ -90,8 +105,11 @@ function App() {
 
   return (
     <div className="app">
-      <h1>Scorched Earth Tanks</h1>
       <Canvas width={CANVAS_WIDTH} height={CANVAS_HEIGHT} onRender={handleRender} />
+      <TurnIndicator
+        turnNumber={state.currentTurn}
+        isPlayerTurn={isPlayerTurn}
+      />
       {currentPlayerTank && (
         <>
           <AngleControl
@@ -102,6 +120,7 @@ function App() {
             power={currentPlayerTank.power}
             onPowerChange={handlePowerChange}
           />
+          <FireButton onFire={handleFire} />
         </>
       )}
     </div>
