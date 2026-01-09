@@ -42,15 +42,21 @@ function App() {
   const isAITurn = state.phase === 'playing' && state.currentPlayerId !== 'player' && !isProjectileActive
   const aiProcessingRef = useRef(false)
 
-  // Function to fire projectile (used by both player and AI)
-  const fireProjectile = useCallback((tankId: string) => {
-    const tank = state.tanks.find((t) => t.id === tankId)
-    if (!tank || isProjectileActive) return
+  // Keep refs to latest state for use in timeouts
+  const stateRef = useRef(state)
+  const isProjectileActiveRef = useRef(isProjectileActive)
+  stateRef.current = state
+  isProjectileActiveRef.current = isProjectileActive
+
+  // Function to fire projectile for a specific tank (uses refs for latest state)
+  const fireProjectileForTank = useCallback((tankId: string) => {
+    const tank = stateRef.current.tanks.find((t) => t.id === tankId)
+    if (!tank || isProjectileActiveRef.current) return
 
     // Start projectile animation
     projectileRef.current = createProjectileState(tank, performance.now(), CANVAS_HEIGHT)
     setIsProjectileActive(true)
-  }, [state.tanks, isProjectileActive])
+  }, [])
 
   // Reset AI processing flag when it's no longer AI's turn
   useEffect(() => {
@@ -83,15 +89,16 @@ function App() {
       state.aiDifficulty
     )
 
-    // Update AI tank's angle and power
+    // Update AI tank's angle and power (rounded to integers)
     actions.updateTank(aiTank.id, {
-      angle: aiDecision.angle,
-      power: aiDecision.power,
+      angle: Math.round(aiDecision.angle),
+      power: Math.round(aiDecision.power),
     })
 
     // Fire after thinking delay
+    const tankIdToFire = aiTank.id
     aiTimeoutRef.current = window.setTimeout(() => {
-      fireProjectile(aiTank.id)
+      fireProjectileForTank(tankIdToFire)
     }, aiDecision.thinkingTimeMs)
 
     // Cleanup timeout on unmount
@@ -101,7 +108,7 @@ function App() {
         aiTimeoutRef.current = null
       }
     }
-  }, [isAITurn, state.currentPlayerId, state.tanks, state.terrain, state.aiDifficulty, actions, fireProjectile])
+  }, [isAITurn, state.currentPlayerId, state.tanks, state.terrain, state.aiDifficulty, actions, fireProjectileForTank])
 
   const handleStartGame = () => {
     actions.setPhase('color_select')
@@ -144,7 +151,7 @@ function App() {
     const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
     if (!currentTank || isProjectileActive) return
 
-    fireProjectile(currentTank.id)
+    fireProjectileForTank(currentTank.id)
   }
 
   // Handle canvas click to cycle AI difficulty when clicking on opponent tank
