@@ -273,11 +273,11 @@ export function getAvailableDifficulties(): Array<{
 
 /**
  * Get the number of chevrons to display for a difficulty level.
- * Returns 0-4 chevrons based on rank.
+ * Returns 1-5 chevrons based on rank.
  */
 export function getChevronCount(difficulty: AIDifficulty): number {
   const index = AI_DIFFICULTY_ORDER.indexOf(difficulty);
-  return index >= 0 ? index : 0;
+  return index >= 0 ? index + 1 : 1;
 }
 
 /**

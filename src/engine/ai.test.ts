@@ -309,24 +309,24 @@ describe('calculateAIShot', () => {
 });
 
 describe('getChevronCount', () => {
-  it('should return 0 for blind_fool', () => {
-    expect(getChevronCount('blind_fool')).toBe(0);
+  it('should return 1 for blind_fool', () => {
+    expect(getChevronCount('blind_fool')).toBe(1);
   });
 
-  it('should return 1 for private', () => {
-    expect(getChevronCount('private')).toBe(1);
+  it('should return 2 for private', () => {
+    expect(getChevronCount('private')).toBe(2);
   });
 
-  it('should return 2 for veteran', () => {
-    expect(getChevronCount('veteran')).toBe(2);
+  it('should return 3 for veteran', () => {
+    expect(getChevronCount('veteran')).toBe(3);
   });
 
-  it('should return 3 for centurion', () => {
-    expect(getChevronCount('centurion')).toBe(3);
+  it('should return 4 for centurion', () => {
+    expect(getChevronCount('centurion')).toBe(4);
   });
 
-  it('should return 4 for primus', () => {
-    expect(getChevronCount('primus')).toBe(4);
+  it('should return 5 for primus', () => {
+    expect(getChevronCount('primus')).toBe(5);
   });
 });
 
