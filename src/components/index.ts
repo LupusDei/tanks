@@ -1,3 +1,4 @@
+export { AngleControl } from './AngleControl'
 export { Canvas } from './Canvas'
 export type { CanvasProps } from './Canvas'
 export { ColorSelectionScreen } from './ColorSelectionScreen'
