@@ -35,6 +35,14 @@ export function getTankColorHex(color: TankColor | string): string {
 }
 
 /**
+ * Render options for tank rendering.
+ */
+export interface RenderTankOptions {
+  dimensions?: TankDimensions;
+  isCurrentTurn?: boolean;
+}
+
+/**
  * Render a tank on the canvas.
  * The tank is drawn at the given position with the turret pointing at the specified angle.
  * Note: Canvas y-axis is inverted (0 at top), so we need to handle that.
@@ -43,8 +51,9 @@ export function renderTank(
   ctx: CanvasRenderingContext2D,
   tank: TankState,
   canvasHeight: number,
-  dimensions: TankDimensions = DEFAULT_DIMENSIONS
+  options: RenderTankOptions = {}
 ): void {
+  const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false } = options;
   const { position, angle, color, health } = tank;
   const { bodyWidth, bodyHeight, turretLength, turretWidth, wheelRadius } = dimensions;
 
@@ -57,6 +66,25 @@ export function renderTank(
 
   ctx.save();
   ctx.translate(canvasX, canvasY);
+
+  // Draw highlight glow for current turn
+  if (isCurrentTurn) {
+    ctx.save();
+    ctx.shadowColor = tankColor;
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = lightenColor(tankColor, 0.5);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(
+      -bodyWidth / 2 - 6,
+      -bodyHeight - 8,
+      bodyWidth + 12,
+      bodyHeight + wheelRadius + 14,
+      8
+    );
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // Draw shadow under tank
   ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';

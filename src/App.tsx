@@ -105,7 +105,8 @@ function App() {
 
     // Render tanks
     for (const tank of tanks) {
-      renderTank(ctx, tank, ctx.canvas.height)
+      const isCurrentTurn = tank.id === state.currentPlayerId && !projectileRef.current?.isActive
+      renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn })
     }
 
     // Render and update projectile
