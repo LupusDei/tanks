@@ -2363,4 +2363,73 @@ p {
   .control-panel--mobile .control-panel__label {
     font-size: 0.55rem;
   }
+
+  /* Turn Indicator Mobile */
+  .turn-indicator {
+    padding: 0.5rem 1rem;
+  }
+
+  .turn-indicator__turn-number {
+    font-size: 0.65rem;
+  }
+
+  .turn-indicator__player {
+    font-size: 1rem;
+  }
+
+  .wind-indicator__display {
+    min-width: 100px;
+  }
+
+  .wind-indicator__arrow--left,
+  .wind-indicator__arrow--right {
+    width: 44px;
+  }
+
+  .wind-indicator__speed {
+    font-size: 0.6rem;
+  }
+
+  /* Weapon Selection Panel Mobile */
+  .weapon-selection-panel {
+    bottom: 4rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .weapon-selection-panel__slots {
+    gap: 0.3rem;
+  }
+
+  .weapon-selection-panel__slot {
+    width: 2.75rem;
+    padding: 0.3rem 0.25rem 0.2rem;
+  }
+
+  .weapon-selection-panel__slot-number {
+    font-size: 0.4rem;
+    padding: 0.05rem 0.15rem;
+  }
+
+  .weapon-selection-panel__slot-ammo-badge {
+    font-size: 0.5rem;
+    min-width: 0.9rem;
+    height: 0.9rem;
+    top: -3px;
+    right: -3px;
+  }
+
+  .weapon-selection-panel__slot-icon {
+    width: 22px;
+    height: 22px;
+    margin: 0.1rem 0;
+  }
+
+  .weapon-selection-panel__slot-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .weapon-selection-panel__slot-name {
+    font-size: 0.35rem;
+  }
 }
