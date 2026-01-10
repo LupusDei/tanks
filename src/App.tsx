@@ -7,6 +7,7 @@ import {
   GameOverScreen,
   LoadingScreen,
   TurnIndicator,
+  WeaponShop,
 } from './components'
 import { useGame } from './context/useGame'
 import { useUser } from './context/UserContext'
@@ -20,6 +21,7 @@ import {
   isProjectileOutOfBounds,
   getInterpolatedHeightAt,
   calculateAIShot,
+  selectAIWeapon,
   getChevronCount,
   getStarCount,
   getNextDifficulty,
@@ -28,8 +30,10 @@ import {
   renderExplosion,
   isExplosionComplete,
   checkTankHit,
+  getWeaponConfig,
   type ProjectileState,
   type ExplosionState,
+  type WeaponType,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount } from './types/game'
 
@@ -43,9 +47,6 @@ interface GameConfig {
 const TANK_BODY_WIDTH = 40
 const TANK_BODY_HEIGHT = 20
 const TANK_WHEEL_RADIUS = 6
-
-// Damage dealt when explosion hits a tank
-const EXPLOSION_DAMAGE = 25
 
 function App() {
   const { state, actions } = useGame()
@@ -201,6 +202,9 @@ function App() {
     const canvasHeight = TERRAIN_SIZES[currentState.terrainSize].height
     const launchTime = performance.now()
 
+    // Get player tank to determine AI targets
+    const playerTankForAI = currentState.tanks.find((t) => t.id === 'player')
+
     // Create projectiles for all ready tanks simultaneously
     const newProjectiles: ProjectileState[] = []
     for (const tank of readyTanks) {
@@ -210,7 +214,18 @@ function App() {
         angle: tank.queuedShot!.angle,
         power: tank.queuedShot!.power,
       }
-      const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight)
+
+      // Determine weapon type for this tank
+      let weaponType: WeaponType = 'standard'
+      if (tank.id === 'player') {
+        // Player uses their selected weapon
+        weaponType = currentState.playerWeapon as WeaponType
+      } else if (playerTankForAI) {
+        // AI selects weapon based on difficulty and target
+        weaponType = selectAIWeapon(currentState.aiDifficulty, tank, playerTankForAI)
+      }
+
+      const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, weaponType)
       newProjectiles.push(projectile)
     }
 
@@ -253,7 +268,12 @@ function App() {
     actions.setTerrain(terrain)
     actions.initializeTanks(tanks)
 
-    // Transition to playing phase
+    // Transition to weapon shop phase
+    actions.setPhase('weaponShop')
+  }
+
+  const handleWeaponConfirm = (weapon: WeaponType) => {
+    actions.setPlayerWeapon(weapon)
     actions.setPhase('playing')
   }
 
@@ -389,15 +409,18 @@ function App() {
         // Projectile has landed - mark as inactive
         updatedProjectiles.push({ ...updatedProjectile, isActive: false })
 
-        // Create explosion at the landing position (in screen coordinates)
-        const newExplosion = createExplosion(position, currentTime)
+        // Get weapon config for explosion parameters
+        const weaponConfig = getWeaponConfig(updatedProjectile.weaponType as WeaponType)
+
+        // Create explosion at the landing position with weapon's blast radius
+        const newExplosion = createExplosion(position, currentTime, weaponConfig.blastRadius)
         explosionsRef.current = [...explosionsRef.current, newExplosion]
         setIsExplosionActive(true)
 
-        // Check for tank hits and apply damage
+        // Check for tank hits and apply weapon damage
         for (const tank of tanks) {
-          if (checkTankHit(position, tank, ctx.canvas.height)) {
-            actions.damageTank(tank.id, EXPLOSION_DAMAGE)
+          if (checkTankHit(position, tank, ctx.canvas.height, weaponConfig.blastRadius)) {
+            actions.damageTank(tank.id, weaponConfig.damage)
           }
         }
       } else {
@@ -461,6 +484,14 @@ function App() {
 
   if (state.phase === 'config') {
     return <GameConfigScreen onStartGame={handleConfigComplete} />
+  }
+
+  if (state.phase === 'weaponShop') {
+    return (
+      <div className="app weapon-shop-screen">
+        <WeaponShop onConfirm={handleWeaponConfirm} />
+      </div>
+    )
   }
 
   if (state.phase === 'gameover') {

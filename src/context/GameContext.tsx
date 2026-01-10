@@ -19,6 +19,7 @@ const initialState: GameState = {
   aiDifficulty: 'veteran',
   terrainSize: 'medium',
   enemyCount: 1,
+  playerWeapon: 'standard',
 };
 
 interface GameProviderProps {
@@ -132,6 +133,10 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, enemyCount: count }));
   }, []);
 
+  const setPlayerWeapon = useCallback((weapon: string) => {
+    setState((prev) => ({ ...prev, playerWeapon: weapon }));
+  }, []);
+
   const actions: GameActions = {
     setPhase,
     initializeTanks,
@@ -146,6 +151,7 @@ export function GameProvider({ children }: GameProviderProps) {
     setAIDifficulty,
     setTerrainSize,
     setEnemyCount,
+    setPlayerWeapon,
   };
 
   return (

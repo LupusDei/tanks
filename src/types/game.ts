@@ -1,4 +1,4 @@
-export type GamePhase = 'loading' | 'config' | 'playing' | 'gameover';
+export type GamePhase = 'loading' | 'config' | 'weaponShop' | 'playing' | 'gameover';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
 
@@ -82,6 +82,8 @@ export interface GameState {
   aiDifficulty: AIDifficulty;
   terrainSize: TerrainSize;
   enemyCount: EnemyCount;
+  /** Player's selected weapon for the current game */
+  playerWeapon: string;
 }
 
 export interface GameActions {
@@ -98,6 +100,7 @@ export interface GameActions {
   setAIDifficulty: (difficulty: AIDifficulty) => void;
   setTerrainSize: (size: TerrainSize) => void;
   setEnemyCount: (count: EnemyCount) => void;
+  setPlayerWeapon: (weapon: string) => void;
 }
 
 // User and Statistics Types

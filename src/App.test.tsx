@@ -140,7 +140,7 @@ describe('App', () => {
     expect(engageButton).not.toBeDisabled()
   })
 
-  it('transitions to game when Engage button is clicked with all selections', () => {
+  it('transitions to weapon shop when Engage button is clicked with all selections', () => {
     renderWithProvider(<App />)
 
     // Go through loading screen
@@ -155,12 +155,35 @@ describe('App', () => {
     // Click Engage
     fireEvent.click(screen.getByTestId('config-engage-button'))
 
+    // Should show weapon shop
     expect(screen.queryByTestId('game-config-screen')).not.toBeInTheDocument()
+    expect(screen.getByTestId('weapon-shop')).toBeInTheDocument()
+  })
+
+  it('transitions to game after weapon selection', () => {
+    renderWithProvider(<App />)
+
+    // Go through loading screen
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Make all selections
+    fireEvent.click(screen.getByTestId('config-terrain-medium'))
+    fireEvent.click(screen.getByTestId('config-enemy-1'))
+    fireEvent.click(screen.getByTestId('config-color-red'))
+
+    // Click Engage
+    fireEvent.click(screen.getByTestId('config-engage-button'))
+
+    // Confirm weapon selection (default is standard which is free)
+    fireEvent.click(screen.getByTestId('weapon-shop-confirm'))
+
+    expect(screen.queryByTestId('weapon-shop')).not.toBeInTheDocument()
     expect(screen.getByTestId('turn-indicator')).toBeInTheDocument()
     expect(screen.getByTestId('fire-button')).toBeInTheDocument()
   })
 
-  it('renders the canvas component after clicking Engage', () => {
+  it('renders the canvas component after completing weapon selection', () => {
     const { container } = renderWithProvider(<App />)
 
     // Go through loading screen
@@ -174,6 +197,9 @@ describe('App', () => {
 
     // Click Engage
     fireEvent.click(screen.getByTestId('config-engage-button'))
+
+    // Confirm weapon selection
+    fireEvent.click(screen.getByTestId('weapon-shop-confirm'))
 
     const canvas = container.querySelector('canvas')
     expect(canvas).toBeInTheDocument()
