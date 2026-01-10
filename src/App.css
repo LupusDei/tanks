@@ -1955,4 +1955,27 @@ p {
     padding: 0.875rem 2rem;
     font-size: 1.25rem;
   }
+
+  /* Player Name Entry Mobile */
+  .player-name-entry__container {
+    padding: 2rem 1.5rem;
+  }
+
+  .player-name-entry__title {
+    font-size: 1.5rem;
+  }
+
+  .player-name-entry__subtitle {
+    font-size: 0.8rem;
+  }
+
+  .player-name-entry__input {
+    font-size: 1rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .player-name-entry__button {
+    font-size: 1rem;
+    padding: 0.875rem 2rem;
+  }
 }
