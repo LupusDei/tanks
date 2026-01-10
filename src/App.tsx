@@ -4,6 +4,7 @@ import {
   Canvas,
   ColorSelectionScreen,
   ControlPanel,
+  GameOverScreen,
   LoadingScreen,
   TurnIndicator,
 } from './components'
@@ -147,6 +148,11 @@ function App() {
 
     // Transition to playing phase
     actions.setPhase('playing')
+  }
+
+  const handlePlayAgain = () => {
+    // Reset all game state and go back to loading screen
+    actions.resetGame()
   }
 
   const handleAngleChange = (newAngle: number) => {
@@ -300,6 +306,10 @@ function App() {
 
   if (state.phase === 'color_select') {
     return <ColorSelectionScreen onColorSelect={handleColorSelect} />
+  }
+
+  if (state.phase === 'gameover') {
+    return <GameOverScreen winner={state.winner} onPlayAgain={handlePlayAgain} />
   }
 
   return (
