@@ -10,6 +10,7 @@ import {
   isPointInExplosion,
   getDistanceToExplosion,
   checkTankHit,
+  checkProjectileTankCollision,
   type ExplosionState,
 } from './explosion';
 import type { TankState } from '../types/game';
@@ -473,6 +474,142 @@ describe('checkTankHit', () => {
     const explosionScreenPos = { x: 435, y: 500 };
 
     expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT, smallRadius)).toBe(false);
+  });
+});
+
+describe('checkProjectileTankCollision', () => {
+  const CANVAS_HEIGHT = 600;
+
+  // Helper to create a tank at a specific world position
+  function createTank(worldX: number, worldY: number, health: number = 100): TankState {
+    return {
+      id: 'test-tank',
+      position: { x: worldX, y: worldY },
+      health,
+      angle: 0,
+      power: 50,
+      color: 'red',
+      isActive: true,
+      queuedShot: null,
+      isReady: false,
+      killedByWeapon: null,
+      stunTurnsRemaining: 0,
+    };
+  }
+
+  it('returns true when projectile is at tank center', () => {
+    const tank = createTank(400, 100);
+    // Tank screen Y = 600 - 100 = 500
+    const projectilePos = { x: 400, y: 500 };
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('returns true when projectile touches tank edge', () => {
+    const tank = createTank(400, 100);
+    // Tank right edge at 420 (400 + 20), projectile radius 5
+    // Projectile at 425 should just touch the edge
+    const projectilePos = { x: 425, y: 500 };
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('returns false when projectile misses tank', () => {
+    const tank = createTank(400, 100);
+    // Projectile far to the right
+    const projectilePos = { x: 500, y: 500 };
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT)).toBe(false);
+  });
+
+  it('returns false when projectile is just outside tank hitbox', () => {
+    const tank = createTank(400, 100);
+    // Tank right edge at 420, with projectile radius 5
+    // Projectile at 426 is just outside (420 + 5 = 425 is the boundary)
+    const projectilePos = { x: 426, y: 500 };
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT)).toBe(false);
+  });
+
+  it('returns false for dead tanks', () => {
+    const deadTank = createTank(400, 100, 0);
+    const projectilePos = { x: 400, y: 500 };
+
+    expect(checkProjectileTankCollision(projectilePos, deadTank, CANVAS_HEIGHT)).toBe(false);
+  });
+
+  it('detects hit on tank top', () => {
+    const tank = createTank(400, 100);
+    // Tank screen Y = 500
+    // Tank top at screenY - bodyHeight/2 = 500 - 10 = 490
+    // Projectile at y=485 with radius 5 should hit (490 - 5 = 485)
+    const projectilePos = { x: 400, y: 485 };
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('detects hit on tank bottom with wheels', () => {
+    const tank = createTank(400, 100);
+    // Tank screen Y = 500
+    // Tank bottom at screenY + bodyHeight/2 + wheelRadius = 500 + 10 + 6 = 516
+    // Projectile at y=521 with radius 5 should hit (516 + 5 = 521)
+    const projectilePos = { x: 400, y: 521 };
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('handles diagonal hit detection correctly', () => {
+    const tank = createTank(400, 100);
+    // Tank corner at (420, 516) in screen coords
+    // Projectile diagonally from corner
+    const projectilePos = { x: 423, y: 519 }; // ~4.24 from corner, within radius 5
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('handles diagonal miss correctly', () => {
+    const tank = createTank(400, 100);
+    // Tank corner at (420, 516) in screen coords
+    // Projectile too far diagonally
+    const projectilePos = { x: 428, y: 524 }; // ~11.3 from corner, outside radius 5
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT)).toBe(false);
+  });
+
+  it('accepts custom projectile radius', () => {
+    const tank = createTank(400, 100);
+    // Tank right edge at 420
+    // Projectile at 430 is 10 pixels from edge
+
+    // With default radius (5), should miss
+    expect(checkProjectileTankCollision({ x: 430, y: 500 }, tank, CANVAS_HEIGHT)).toBe(false);
+
+    // With larger radius (12), should hit
+    expect(checkProjectileTankCollision({ x: 430, y: 500 }, tank, CANVAS_HEIGHT, 12)).toBe(true);
+  });
+
+  it('detects hit with larger projectile radius', () => {
+    const tank = createTank(400, 100);
+    const largeRadius = 8;
+    // Projectile at 428 is 8 pixels from tank edge - exactly at radius
+    const projectilePos = { x: 428, y: 500 };
+
+    expect(checkProjectileTankCollision(projectilePos, tank, CANVAS_HEIGHT, largeRadius)).toBe(true);
+  });
+
+  it('correctly converts world to screen coordinates for tank position', () => {
+    // Tank at different world positions
+    const tankHighUp = createTank(400, 300);
+    // Tank screen Y = 600 - 300 = 300
+    const projectileHigh = { x: 400, y: 300 };
+
+    expect(checkProjectileTankCollision(projectileHigh, tankHighUp, CANVAS_HEIGHT)).toBe(true);
+
+    const tankLow = createTank(400, 50);
+    // Tank screen Y = 600 - 50 = 550
+    const projectileLow = { x: 400, y: 550 };
+
+    expect(checkProjectileTankCollision(projectileLow, tankLow, CANVAS_HEIGHT)).toBe(true);
   });
 });
 

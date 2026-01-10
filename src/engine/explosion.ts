@@ -552,6 +552,53 @@ const TANK_BODY_HEIGHT = 20;
 const TANK_WHEEL_RADIUS = 6;
 
 /**
+ * Check if a projectile (point or small circle) collides with a tank's hitbox.
+ * Used for in-flight collision detection (direct hits before terrain impact).
+ * Projectile position is in screen coordinates, tank position is in world coordinates.
+ *
+ * @param projectileScreenPos - Projectile position in screen coordinates
+ * @param tank - Tank state with position in world coordinates
+ * @param canvasHeight - Canvas height for coordinate conversion
+ * @param projectileRadius - Projectile radius in pixels (defaults to 5)
+ * @returns true if the projectile overlaps with the tank hitbox
+ */
+export function checkProjectileTankCollision(
+  projectileScreenPos: Position,
+  tank: TankState,
+  canvasHeight: number,
+  projectileRadius: number = 5
+): boolean {
+  // Skip dead tanks
+  if (tank.health <= 0) {
+    return false;
+  }
+
+  // Convert tank position from world to screen coordinates
+  const tankScreenX = tank.position.x;
+  const tankScreenY = canvasHeight - tank.position.y;
+
+  // Tank hitbox rectangle bounds (in screen coordinates)
+  const halfWidth = TANK_BODY_WIDTH / 2;
+  const topOffset = TANK_BODY_HEIGHT / 2;
+  const bottomOffset = TANK_BODY_HEIGHT / 2 + TANK_WHEEL_RADIUS;
+
+  const rectLeft = tankScreenX - halfWidth;
+  const rectRight = tankScreenX + halfWidth;
+  const rectTop = tankScreenY - topOffset;
+  const rectBottom = tankScreenY + bottomOffset;
+
+  // Circle-rectangle collision detection
+  const closestX = Math.max(rectLeft, Math.min(projectileScreenPos.x, rectRight));
+  const closestY = Math.max(rectTop, Math.min(projectileScreenPos.y, rectBottom));
+
+  const dx = projectileScreenPos.x - closestX;
+  const dy = projectileScreenPos.y - closestY;
+  const distanceSquared = dx * dx + dy * dy;
+
+  return distanceSquared <= projectileRadius * projectileRadius;
+}
+
+/**
  * Check if an explosion hits a tank using circle-rectangle collision.
  * Explosion position is in screen coordinates, tank position is in world coordinates.
  *

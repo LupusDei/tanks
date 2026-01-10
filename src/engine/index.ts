@@ -56,6 +56,7 @@ export {
   getTrajectoryProgress,
   findNearestTarget,
   updateHomingTracking,
+  getProjectileVisual,
   type ProjectileState,
   type TerrainCollisionResult,
 } from './projectile';
@@ -95,6 +96,7 @@ export {
   isPointInExplosion,
   getDistanceToExplosion,
   checkTankHit,
+  checkProjectileTankCollision,
   type ExplosionState,
   type ExplosionParticle,
 } from './explosion';
