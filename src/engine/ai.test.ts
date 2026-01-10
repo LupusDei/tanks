@@ -9,6 +9,7 @@ import {
   getNextDifficulty,
   selectAIWeapon,
   getAIWeaponChoice,
+  selectTarget,
   AI_DIFFICULTY_CONFIGS,
   AI_AVAILABLE_WEAPONS,
 } from './ai';
@@ -528,5 +529,101 @@ describe('getAIWeaponChoice', () => {
 
     expect(choice.weaponType).toBe('standard');
     expect(choice.weaponName).toBe('Standard Shell');
+  });
+});
+
+describe('selectTarget', () => {
+  it('should return null when no potential targets exist', () => {
+    const shooter = createMockTank({ id: 'enemy-1' });
+    const aliveTanks = [shooter]; // Only the shooter is alive
+
+    const target = selectTarget(shooter, aliveTanks);
+
+    expect(target).toBeNull();
+  });
+
+  it('should never select itself as a target', () => {
+    const shooter = createMockTank({ id: 'enemy-1', position: { x: 100, y: 100 } });
+    const otherTank = createMockTank({ id: 'enemy-2', position: { x: 200, y: 100 } });
+    const aliveTanks = [shooter, otherTank];
+
+    // Run multiple times to ensure randomness doesn't break this
+    for (let i = 0; i < 50; i++) {
+      const target = selectTarget(shooter, aliveTanks);
+      expect(target).not.toBeNull();
+      expect(target!.id).not.toBe(shooter.id);
+    }
+  });
+
+  it('should select from available targets', () => {
+    const shooter = createMockTank({ id: 'enemy-1', position: { x: 100, y: 100 } });
+    const player = createMockTank({ id: 'player', position: { x: 200, y: 100 } });
+    const enemy2 = createMockTank({ id: 'enemy-2', position: { x: 300, y: 100 } });
+    const enemy3 = createMockTank({ id: 'enemy-3', position: { x: 400, y: 100 } });
+    const aliveTanks = [shooter, player, enemy2, enemy3];
+
+    const selectedTargets = new Set<string>();
+    // Run multiple times to see distribution
+    for (let i = 0; i < 100; i++) {
+      const target = selectTarget(shooter, aliveTanks);
+      expect(target).not.toBeNull();
+      selectedTargets.add(target!.id);
+    }
+
+    // Should select from player, enemy-2, and enemy-3 (not self)
+    expect(selectedTargets.has('enemy-1')).toBe(false);
+    expect(selectedTargets.size).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should weight selection towards closer tanks', () => {
+    const shooter = createMockTank({ id: 'enemy-1', position: { x: 100, y: 100 } });
+    const closeTank = createMockTank({ id: 'close', position: { x: 150, y: 100 } }); // 50 pixels away
+    const farTank = createMockTank({ id: 'far', position: { x: 700, y: 100 } }); // 600 pixels away
+    const aliveTanks = [shooter, closeTank, farTank];
+
+    let closeCount = 0;
+    let farCount = 0;
+
+    // Run many times to see distribution
+    for (let i = 0; i < 200; i++) {
+      const target = selectTarget(shooter, aliveTanks);
+      if (target!.id === 'close') closeCount++;
+      if (target!.id === 'far') farCount++;
+    }
+
+    // Close tank should be selected more often
+    expect(closeCount).toBeGreaterThan(farCount);
+  });
+
+  it('should weight selection towards lower health tanks', () => {
+    const shooter = createMockTank({ id: 'enemy-1', position: { x: 100, y: 100 } });
+    // Same distance but different health
+    const weakTank = createMockTank({ id: 'weak', position: { x: 300, y: 100 }, health: 25 });
+    const strongTank = createMockTank({ id: 'strong', position: { x: 300, y: 100 }, health: 100 });
+    const aliveTanks = [shooter, weakTank, strongTank];
+
+    let weakCount = 0;
+    let strongCount = 0;
+
+    // Run many times to see distribution
+    for (let i = 0; i < 200; i++) {
+      const target = selectTarget(shooter, aliveTanks);
+      if (target!.id === 'weak') weakCount++;
+      if (target!.id === 'strong') strongCount++;
+    }
+
+    // Weak tank should be selected more often (easier to finish off)
+    expect(weakCount).toBeGreaterThan(strongCount);
+  });
+
+  it('should work with only two tanks (1v1)', () => {
+    const shooter = createMockTank({ id: 'enemy-1', position: { x: 100, y: 100 } });
+    const opponent = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+    const aliveTanks = [shooter, opponent];
+
+    const target = selectTarget(shooter, aliveTanks);
+
+    expect(target).not.toBeNull();
+    expect(target!.id).toBe('player');
   });
 });

@@ -3,12 +3,35 @@ interface GameOverScreenProps {
   onPlayAgain: () => void
 }
 
+function getWinnerDisplayName(winnerId: string): string {
+  if (winnerId === 'player') {
+    return 'You'
+  }
+  // Convert enemy-1, enemy-2, etc. to "Tank 1", "Tank 2", etc.
+  const match = winnerId.match(/enemy-(\d+)/)
+  if (match) {
+    return `Tank ${match[1]}`
+  }
+  return winnerId
+}
+
 export function GameOverScreen({ winner, onPlayAgain }: GameOverScreenProps) {
   const isPlayerWinner = winner === 'player'
-  const title = isPlayerWinner ? 'Victory!' : 'Defeat!'
-  const message = isPlayerWinner
-    ? 'You destroyed all enemies!'
-    : 'Your tank was destroyed!'
+
+  let title: string
+  let message: string
+
+  if (isPlayerWinner) {
+    title = 'Victory!'
+    message = 'You destroyed all enemies!'
+  } else if (winner) {
+    title = 'Defeat!'
+    const winnerName = getWinnerDisplayName(winner)
+    message = `${winnerName} won the battle!`
+  } else {
+    title = 'Game Over'
+    message = 'No winner determined'
+  }
 
   return (
     <div

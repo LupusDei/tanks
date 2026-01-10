@@ -14,10 +14,22 @@ describe('GameOverScreen', () => {
     expect(screen.getByText('You destroyed all enemies!')).toBeInTheDocument()
   })
 
-  it('displays Defeat! when opponent wins', () => {
-    render(<GameOverScreen winner="opponent" onPlayAgain={vi.fn()} />)
+  it('displays Defeat! when enemy-1 wins', () => {
+    render(<GameOverScreen winner="enemy-1" onPlayAgain={vi.fn()} />)
     expect(screen.getByTestId('game-over-title')).toHaveTextContent('Defeat!')
-    expect(screen.getByText('Your tank was destroyed!')).toBeInTheDocument()
+    expect(screen.getByText('Tank 1 won the battle!')).toBeInTheDocument()
+  })
+
+  it('displays Defeat! when enemy-2 wins', () => {
+    render(<GameOverScreen winner="enemy-2" onPlayAgain={vi.fn()} />)
+    expect(screen.getByTestId('game-over-title')).toHaveTextContent('Defeat!')
+    expect(screen.getByText('Tank 2 won the battle!')).toBeInTheDocument()
+  })
+
+  it('displays Defeat! when enemy-5 wins', () => {
+    render(<GameOverScreen winner="enemy-5" onPlayAgain={vi.fn()} />)
+    expect(screen.getByTestId('game-over-title')).toHaveTextContent('Defeat!')
+    expect(screen.getByText('Tank 5 won the battle!')).toBeInTheDocument()
   })
 
   it('applies victory class when player wins', () => {
@@ -25,8 +37,8 @@ describe('GameOverScreen', () => {
     expect(screen.getByTestId('game-over-screen')).toHaveClass('game-over-screen--victory')
   })
 
-  it('applies defeat class when opponent wins', () => {
-    render(<GameOverScreen winner="opponent" onPlayAgain={vi.fn()} />)
+  it('applies defeat class when enemy wins', () => {
+    render(<GameOverScreen winner="enemy-1" onPlayAgain={vi.fn()} />)
     expect(screen.getByTestId('game-over-screen')).toHaveClass('game-over-screen--defeat')
   })
 
@@ -47,7 +59,8 @@ describe('GameOverScreen', () => {
 
   it('handles null winner gracefully', () => {
     render(<GameOverScreen winner={null} onPlayAgain={vi.fn()} />)
-    // When winner is null, it's treated as not being the player
-    expect(screen.getByTestId('game-over-title')).toHaveTextContent('Defeat!')
+    // When winner is null, show a generic game over message
+    expect(screen.getByTestId('game-over-title')).toHaveTextContent('Game Over')
+    expect(screen.getByText('No winner determined')).toBeInTheDocument()
   })
 })
