@@ -2432,4 +2432,20 @@ p {
   .weapon-selection-panel__slot-name {
     font-size: 0.35rem;
   }
+
+  /* Game Over Screen Mobile */
+  .game-over-screen__title {
+    font-size: 2.5rem;
+    letter-spacing: 0.1em;
+  }
+
+  .game-over-screen__message {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+  }
+
+  .game-over-screen__button {
+    padding: 0.875rem 2rem;
+    font-size: 1.1rem;
+  }
 }
