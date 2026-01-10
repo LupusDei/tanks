@@ -924,8 +924,8 @@ p {
 .game-config-screen__enemy-options {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.5rem;
-  width: 365px;
+  gap: 1rem;
+  width: 450px;
   margin: 0 auto;
 }
 
