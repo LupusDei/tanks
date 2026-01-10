@@ -330,8 +330,8 @@ function App() {
   }
 
   const handlePlayAgain = () => {
-    // Reset all game state and go back to loading screen
-    actions.resetGame()
+    // Reset game state and go directly to config screen (skip loading/name entry)
+    actions.resetToConfig()
   }
 
   // In simultaneous mode, player always controls their own tank

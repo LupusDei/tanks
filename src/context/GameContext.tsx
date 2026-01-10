@@ -127,6 +127,14 @@ export function GameProvider({ children }: GameProviderProps) {
     setState(initialState);
   }, []);
 
+  // Reset game state but go directly to config screen (for Play Again)
+  const resetToConfig = useCallback(() => {
+    setState({
+      ...initialState,
+      phase: 'config',
+    });
+  }, []);
+
   const setPlayerColor = useCallback((color: TankColor) => {
     setState((prev) => ({ ...prev, playerColor: color }));
   }, []);
@@ -181,6 +189,7 @@ export function GameProvider({ children }: GameProviderProps) {
     damageTank,
     setWinner,
     resetGame,
+    resetToConfig,
     setPlayerColor,
     setAIDifficulty,
     setTerrainSize,
