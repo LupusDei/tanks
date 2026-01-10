@@ -28,6 +28,7 @@ export interface ProjectileState {
   startTime: number;
   tracePoints: Position[];
   canvasHeight: number;
+  canvasWidth: number;
   /** ID of the tank that fired this projectile */
   tankId: string;
   /** Color of the tank that fired this projectile (for trail rendering) */
@@ -82,14 +83,18 @@ export function getBarrelTipPosition(tank: TankState): Position {
  * Create a launch configuration from tank state.
  * Converts tank position from world to screen coordinates for physics engine.
  * Converts UI angle to physics angle for trajectory calculation.
+ * @param tank - Tank state with position, angle, and power
+ * @param canvasHeight - Canvas height for coordinate conversion
+ * @param canvasWidth - Canvas width (terrain width) for power scaling
  */
-export function createLaunchConfig(tank: TankState, canvasHeight: number): LaunchConfig {
+export function createLaunchConfig(tank: TankState, canvasHeight: number, canvasWidth: number): LaunchConfig {
   const barrelTipWorld = getBarrelTipPosition(tank);
   const barrelTipScreen = worldToScreen(barrelTipWorld, canvasHeight);
   return {
     position: barrelTipScreen,
     angle: uiAngleToPhysicsAngle(tank.angle), // Convert to physics angle
     power: tank.power,
+    terrainWidth: canvasWidth,
   };
 }
 
@@ -98,15 +103,17 @@ export function createLaunchConfig(tank: TankState, canvasHeight: number): Launc
  * @param tank - Tank that fired the projectile
  * @param startTime - Animation start time
  * @param canvasHeight - Canvas height for coordinate conversion
+ * @param canvasWidth - Canvas width (terrain width) for power scaling
  * @param weaponType - Type of weapon used (defaults to 'standard')
  */
 export function createProjectileState(
   tank: TankState,
   startTime: number,
   canvasHeight: number,
+  canvasWidth: number,
   weaponType: WeaponType = 'standard'
 ): ProjectileState {
-  const launchConfig = createLaunchConfig(tank, canvasHeight);
+  const launchConfig = createLaunchConfig(tank, canvasHeight, canvasWidth);
   const weaponConfig = getWeaponConfig(weaponType);
   return {
     isActive: true,
@@ -114,6 +121,7 @@ export function createProjectileState(
     startTime,
     tracePoints: [{ ...launchConfig.position }],
     canvasHeight,
+    canvasWidth,
     tankId: tank.id,
     tankColor: tank.color,
     weaponType,

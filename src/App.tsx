@@ -212,8 +212,10 @@ function App() {
 
     if (readyTanks.length === 0) return
 
-    // Get canvas height from current terrain size
-    const canvasHeight = TERRAIN_SIZES[currentState.terrainSize].height
+    // Get canvas dimensions from current terrain size
+    const terrainConfig = TERRAIN_SIZES[currentState.terrainSize]
+    const canvasHeight = terrainConfig.height
+    const canvasWidth = terrainConfig.width
     const launchTime = performance.now()
 
     // Get player tank to determine AI targets
@@ -239,7 +241,7 @@ function App() {
         weaponType = selectAIWeapon(currentState.aiDifficulty, tank, playerTankForAI)
       }
 
-      const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, weaponType)
+      const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, canvasWidth, weaponType)
       newProjectiles.push(projectile)
     }
 
