@@ -44,11 +44,11 @@ describe('MagnetizeButton', () => {
     expect(particles.length).toBe(5)
   })
 
-  it('renders default 14 particles when particleCount not specified', () => {
+  it('renders default 16 particles when particleCount not specified', () => {
     const { container } = render(<MagnetizeButton>Click</MagnetizeButton>)
 
     const particles = container.querySelectorAll('.magnetize-button__particle')
-    expect(particles.length).toBe(14)
+    expect(particles.length).toBe(16)
   })
 
   it('applies attracting class on mouse enter', () => {
