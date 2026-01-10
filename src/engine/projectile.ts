@@ -209,6 +209,8 @@ export function getProjectileVisual(weaponType: WeaponType): ProjectileVisual {
       return { color: '#cc6600', glowColor: '#ff9933', radius: 6 };
     case 'napalm':
       return { color: '#ff4400', glowColor: '#ffaa00', radius: 6 };
+    case 'emp':
+      return { color: '#0066ff', glowColor: '#00ccff', radius: 6, trailColor: '#0088ff' };
     case 'standard':
     default:
       return { color: '#ffff00', glowColor: '#ffffff', radius: 5 };
@@ -395,6 +397,63 @@ function renderNapalm(
 }
 
 /**
+ * Render EMP pulse - electric blue orb with lightning arcs.
+ */
+function renderEMPPulse(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual,
+  currentTime: number
+): void {
+  ctx.save();
+
+  // Electric blue glow
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = 15;
+
+  // Main orb - pulsing size
+  const pulse = 1 + Math.sin(currentTime * 0.03) * 0.15;
+  ctx.fillStyle = visual.color;
+  ctx.beginPath();
+  ctx.arc(x, y, visual.radius * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner white core
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(x, y, visual.radius * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Electric arcs around the orb
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#00ffff';
+  ctx.lineWidth = 1.5;
+  const arcCount = 4;
+  for (let i = 0; i < arcCount; i++) {
+    const angle = (i / arcCount) * Math.PI * 2 + currentTime * 0.02;
+    const startDist = visual.radius * pulse;
+    const endDist = visual.radius * pulse * 1.8;
+    const startX = x + Math.cos(angle) * startDist;
+    const startY = y + Math.sin(angle) * startDist;
+    const endX = x + Math.cos(angle + 0.3) * endDist;
+    const endY = y + Math.sin(angle + 0.3) * endDist;
+
+    // Zigzag lightning
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    const midX = (startX + endX) / 2 + Math.sin(currentTime * 0.1 + i) * 3;
+    const midY = (startY + endY) / 2 + Math.cos(currentTime * 0.1 + i) * 3;
+    ctx.lineTo(midX, midY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
  * Render the projectile and its dotted trace line on canvas.
  * All positions in projectile state are already in screen coordinates.
  * The trail color matches the tank that fired the projectile.
@@ -447,6 +506,9 @@ export function renderProjectile(
       break;
     case 'napalm':
       renderNapalm(ctx, canvasX, canvasY, visual, projectile.launchConfig.angle, currentTime);
+      break;
+    case 'emp':
+      renderEMPPulse(ctx, canvasX, canvasY, visual, currentTime);
       break;
     case 'standard':
     default:

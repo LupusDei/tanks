@@ -12,6 +12,7 @@ import {
   WEAPON_PRECISION,
   WEAPON_CLUSTER_BOMB,
   WEAPON_NAPALM,
+  WEAPON_EMP,
   WEAPONS,
   WEAPON_TYPES,
   // Utility functions
@@ -87,6 +88,7 @@ describe('Weapon configurations', () => {
       WEAPON_HEAVY_ARTILLERY,
       WEAPON_CLUSTER_BOMB,
       WEAPON_NAPALM,
+      WEAPON_EMP,
     ];
     for (const weapon of otherWeapons) {
       expect(weapon.damage).toBeLessThan(100);
@@ -116,6 +118,12 @@ describe('Weapon configurations', () => {
     expect(WEAPON_NAPALM.cost).toBeGreaterThan(0);
   });
 
+  it('WEAPON_EMP has low damage but stuns', () => {
+    expect(WEAPON_EMP.damage).toBeLessThan(100);
+    expect(WEAPON_EMP.cost).toBeGreaterThan(0);
+    expect(WEAPON_EMP.stunTurns).toBe(1);
+  });
+
   it('all weapons have required properties', () => {
     const allWeapons = [
       WEAPON_STANDARD,
@@ -123,6 +131,7 @@ describe('Weapon configurations', () => {
       WEAPON_PRECISION,
       WEAPON_CLUSTER_BOMB,
       WEAPON_NAPALM,
+      WEAPON_EMP,
     ];
 
     for (const weapon of allWeapons) {
@@ -142,12 +151,13 @@ describe('Weapon configurations', () => {
 
 describe('WEAPONS registry', () => {
   it('contains all weapon types', () => {
-    expect(Object.keys(WEAPONS)).toHaveLength(5);
+    expect(Object.keys(WEAPONS)).toHaveLength(6);
     expect(WEAPONS).toHaveProperty('standard');
     expect(WEAPONS).toHaveProperty('heavy_artillery');
     expect(WEAPONS).toHaveProperty('precision');
     expect(WEAPONS).toHaveProperty('cluster_bomb');
     expect(WEAPONS).toHaveProperty('napalm');
+    expect(WEAPONS).toHaveProperty('emp');
   });
 
   it('maps to correct weapon configs', () => {
@@ -156,17 +166,19 @@ describe('WEAPONS registry', () => {
     expect(WEAPONS['precision']).toBe(WEAPON_PRECISION);
     expect(WEAPONS['cluster_bomb']).toBe(WEAPON_CLUSTER_BOMB);
     expect(WEAPONS['napalm']).toBe(WEAPON_NAPALM);
+    expect(WEAPONS['emp']).toBe(WEAPON_EMP);
   });
 });
 
 describe('WEAPON_TYPES array', () => {
   it('contains all weapon types in order', () => {
-    expect(WEAPON_TYPES).toHaveLength(5);
+    expect(WEAPON_TYPES).toHaveLength(6);
     expect(WEAPON_TYPES[0]).toBe('standard');
     expect(WEAPON_TYPES).toContain('heavy_artillery');
     expect(WEAPON_TYPES).toContain('precision');
     expect(WEAPON_TYPES).toContain('cluster_bomb');
     expect(WEAPON_TYPES).toContain('napalm');
+    expect(WEAPON_TYPES).toContain('emp');
   });
 });
 
@@ -177,6 +189,7 @@ describe('getWeaponConfig', () => {
     expect(getWeaponConfig('precision')).toBe(WEAPON_PRECISION);
     expect(getWeaponConfig('cluster_bomb')).toBe(WEAPON_CLUSTER_BOMB);
     expect(getWeaponConfig('napalm')).toBe(WEAPON_NAPALM);
+    expect(getWeaponConfig('emp')).toBe(WEAPON_EMP);
   });
 });
 
@@ -184,12 +197,13 @@ describe('getPurchasableWeapons', () => {
   it('returns only weapons with cost > 0', () => {
     const purchasable = getPurchasableWeapons();
 
-    expect(purchasable).toHaveLength(4);
+    expect(purchasable).toHaveLength(5);
     expect(purchasable).not.toContain(WEAPON_STANDARD);
     expect(purchasable).toContain(WEAPON_HEAVY_ARTILLERY);
     expect(purchasable).toContain(WEAPON_PRECISION);
     expect(purchasable).toContain(WEAPON_CLUSTER_BOMB);
     expect(purchasable).toContain(WEAPON_NAPALM);
+    expect(purchasable).toContain(WEAPON_EMP);
 
     for (const weapon of purchasable) {
       expect(weapon.cost).toBeGreaterThan(0);
@@ -358,11 +372,15 @@ describe('getDestructionCategory', () => {
     expect(getDestructionCategory('napalm')).toBe('fire');
   });
 
+  it('returns electric for emp', () => {
+    expect(getDestructionCategory('emp')).toBe('electric');
+  });
+
   it('covers all weapon types', () => {
     // Ensure every weapon type has a valid destruction category
     for (const weaponType of WEAPON_TYPES) {
       const category = getDestructionCategory(weaponType);
-      expect(['explosive', 'ballistic', 'fire']).toContain(category);
+      expect(['explosive', 'ballistic', 'fire', 'electric']).toContain(category);
     }
   });
 });

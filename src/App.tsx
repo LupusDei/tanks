@@ -480,6 +480,11 @@ function App() {
 
           actions.damageTank(tank.id, damage, proj.weaponType)
 
+          // Apply stun effect for EMP weapons (only if tank is still alive)
+          if (weaponConfig.stunTurns && weaponConfig.stunTurns > 0 && !willKill) {
+            actions.stunTank(tank.id, weaponConfig.stunTurns)
+          }
+
           // Create destruction animation if tank was killed
           if (willKill) {
             // Create a temporary tank state with the killing weapon set

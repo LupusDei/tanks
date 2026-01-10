@@ -118,6 +118,29 @@ function ProjectileIcon({ weaponType }: { weaponType: WeaponType }) {
         </svg>
       )
 
+    case 'emp':
+      // Electric blue orb with lightning
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-emp" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feFlood floodColor="#00ccff" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <circle cx={cx} cy={cy} r={6} fill="#0066ff" filter="url(#glow-emp)" />
+          <circle cx={cx} cy={cy} r={3} fill="#ffffff" />
+          {/* Lightning arcs */}
+          <path d={`M${cx - 5},${cy} L${cx - 2},${cy - 1} L${cx - 4},${cy - 3}`} stroke="#00ffff" strokeWidth="1.5" fill="none" />
+          <path d={`M${cx + 5},${cy} L${cx + 2},${cy + 1} L${cx + 4},${cy + 3}`} stroke="#00ffff" strokeWidth="1.5" fill="none" />
+        </svg>
+      )
+
     default:
       return null
   }

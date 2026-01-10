@@ -115,6 +115,17 @@ function getExplosionConfig(weaponType: WeaponType): ExplosionConfig {
         fireColorInner: 'rgba(255, 150, 50, 1)',
         fireColorOuter: 'rgba(200, 50, 0, 0)',
       };
+    case 'emp':
+      return {
+        colors: ['#00ccff', '#0099ff', '#66ddff', '#0066ff', '#00ffff', '#ffffff'],
+        durationMultiplier: 1.2,
+        particleMultiplier: 1.2,
+        speedMultiplier: 1.5,
+        flashColorInner: 'rgba(255, 255, 255, 1)',
+        flashColorOuter: 'rgba(0, 200, 255, 0)',
+        fireColorInner: 'rgba(100, 220, 255, 1)',
+        fireColorOuter: 'rgba(0, 100, 200, 0)',
+      };
     case 'standard':
     default:
       return {

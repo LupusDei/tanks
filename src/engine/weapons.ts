@@ -22,19 +22,21 @@ export type WeaponType =
   | 'heavy_artillery'
   | 'precision'
   | 'cluster_bomb'
-  | 'napalm';
+  | 'napalm'
+  | 'emp';
 
 /**
  * Destruction animation category.
  * Determines which type of tank destruction animation plays.
  */
-export type DestructionCategory = 'explosive' | 'ballistic' | 'fire';
+export type DestructionCategory = 'explosive' | 'ballistic' | 'fire' | 'electric';
 
 /**
  * Map weapon types to their destruction animation category.
  * - explosive: Tank explodes outward with debris (missiles, nukes, cluster bombs)
  * - ballistic: Tank falls apart mechanically (standard shot, precision)
  * - fire: Tank burns and chars (napalm, fire weapons)
+ * - electric: Tank is fried with electric sparks (EMP)
  */
 export function getDestructionCategory(weaponType: WeaponType): DestructionCategory {
   switch (weaponType) {
@@ -43,6 +45,8 @@ export function getDestructionCategory(weaponType: WeaponType): DestructionCateg
     case 'heavy_artillery':
     case 'cluster_bomb':
       return 'explosive';
+    case 'emp':
+      return 'electric';
     case 'standard':
     case 'precision':
     default:
@@ -68,6 +72,8 @@ export interface WeaponConfig {
   blastRadius: number;
   /** Multiplier for projectile speed (1.0 = normal) */
   projectileSpeedMultiplier: number;
+  /** Number of turns to stun hit targets (0 = no stun, EMP weapons) */
+  stunTurns?: number;
 }
 
 // ============================================================================
@@ -188,6 +194,22 @@ export const WEAPON_NAPALM: WeaponConfig = {
   projectileSpeedMultiplier: 0.85,
 };
 
+/**
+ * EMP Pulse - disables enemy tanks.
+ * Low damage but stuns hit tanks for 1 turn.
+ * Great for setting up follow-up attacks.
+ */
+export const WEAPON_EMP: WeaponConfig = {
+  id: 'emp',
+  name: 'EMP Pulse',
+  description: 'Stuns target for 1 turn. Low damage but disables enemies.',
+  cost: 200,
+  damage: 15,
+  blastRadius: 25,
+  projectileSpeedMultiplier: 1.1,
+  stunTurns: 1,
+};
+
 // ============================================================================
 // WEAPON REGISTRY
 // ============================================================================
@@ -202,6 +224,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   precision: WEAPON_PRECISION,
   cluster_bomb: WEAPON_CLUSTER_BOMB,
   napalm: WEAPON_NAPALM,
+  emp: WEAPON_EMP,
 };
 
 /**
@@ -214,6 +237,7 @@ export const WEAPON_TYPES: WeaponType[] = [
   'precision',
   'cluster_bomb',
   'napalm',
+  'emp',
 ];
 
 /**
