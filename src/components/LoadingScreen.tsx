@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react"
 import { ParticleTextEffect } from "./ui/ParticleTextEffect"
+import { MagnetizeButton } from "./MagnetizeButton"
 
 interface LoadingScreenProps {
   onStart?: () => void
@@ -31,13 +32,13 @@ export function LoadingScreen({ onStart }: LoadingScreenProps) {
         className="loading-screen__particles"
       />
       <div className="loading-screen__overlay">
-        <button
-          className="loading-screen__start-button"
+        <MagnetizeButton
           onClick={handleStartClick}
           data-testid="start-button"
+          particleCount={14}
         >
           Start Game
-        </button>
+        </MagnetizeButton>
       </div>
     </div>
   )
