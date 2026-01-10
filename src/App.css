@@ -762,19 +762,28 @@ p {
   height: 6px;
   border-radius: 50%;
   background: #00ff88;
-  opacity: 0.4;
-  transition: opacity 0.3s ease;
   pointer-events: none;
   left: 50%;
   top: 50%;
   margin-left: -3px;
   margin-top: -3px;
+  box-shadow: 0 0 4px rgba(0, 255, 136, 0.6);
+  animation: particle-pulse 2s ease-in-out infinite;
+}
+
+@keyframes particle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(0, 255, 136, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.8);
+  }
 }
 
 .magnetize-button__particle--attracting {
-  opacity: 1;
   background: #fff;
-  box-shadow: 0 0 8px #00ff88;
+  box-shadow: 0 0 12px #00ff88;
+  animation: none;
 }
 
 .magnetize-button__content {

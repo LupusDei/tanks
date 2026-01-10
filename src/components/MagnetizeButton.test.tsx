@@ -1,8 +1,21 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MagnetizeButton } from './MagnetizeButton'
 
 describe('MagnetizeButton', () => {
+  beforeEach(() => {
+    // Mock requestAnimationFrame for floating animation
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      return setTimeout(() => cb(performance.now()), 16) as unknown as number
+    })
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => {
+      clearTimeout(id)
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
   it('renders the button with children', () => {
     render(<MagnetizeButton>Click Me</MagnetizeButton>)
     expect(screen.getByText('Click Me')).toBeInTheDocument()
@@ -101,5 +114,21 @@ describe('MagnetizeButton', () => {
 
     fireEvent.touchEnd(button)
     expect(button).not.toHaveClass('magnetize-button--attracting')
+  })
+
+  it('starts floating animation on mount', () => {
+    render(<MagnetizeButton>Float</MagnetizeButton>)
+
+    // requestAnimationFrame should be called for floating animation
+    expect(window.requestAnimationFrame).toHaveBeenCalled()
+  })
+
+  it('cleans up animation on unmount', () => {
+    const { unmount } = render(<MagnetizeButton>Float</MagnetizeButton>)
+
+    unmount()
+
+    // cancelAnimationFrame should be called on unmount
+    expect(window.cancelAnimationFrame).toHaveBeenCalled()
   })
 })
