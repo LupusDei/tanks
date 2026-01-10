@@ -34,6 +34,7 @@ describe('createExplosion', () => {
     expect(explosion.position).toEqual(position);
     expect(explosion.startTime).toBe(1000);
     expect(explosion.isActive).toBe(true);
+    expect(explosion.radius).toBe(EXPLOSION_RADIUS);
   });
 
   it('creates particles for the explosion', () => {
@@ -42,6 +43,34 @@ describe('createExplosion', () => {
 
     expect(explosion.particles.length).toBeGreaterThan(0);
     expect(explosion.particles.length).toBe(20);
+  });
+
+  it('accepts custom radius parameter', () => {
+    const position = { x: 100, y: 200 };
+    const customRadius = 35;
+    const explosion = createExplosion(position, 1000, customRadius);
+
+    expect(explosion.radius).toBe(customRadius);
+  });
+
+  it('scales particle count with larger radius', () => {
+    const position = { x: 100, y: 200 };
+    const largeRadius = 40; // 2x default
+    const explosion = createExplosion(position, 1000, largeRadius);
+
+    // Larger radius should have more particles (up to max of 40)
+    expect(explosion.particles.length).toBeGreaterThan(20);
+    expect(explosion.particles.length).toBeLessThanOrEqual(40);
+  });
+
+  it('has fewer particles for smaller radius', () => {
+    const position = { x: 100, y: 200 };
+    const smallRadius = 10; // 0.5x default
+    const explosion = createExplosion(position, 1000, smallRadius);
+
+    // Smaller radius should have fewer particles (min of 15)
+    expect(explosion.particles.length).toBeLessThan(20);
+    expect(explosion.particles.length).toBeGreaterThanOrEqual(15);
   });
 
   it('copies the position to prevent mutation', () => {
@@ -119,6 +148,7 @@ describe('updateExplosion', () => {
       startTime: 0,
       particles: [],
       isActive: false,
+      radius: EXPLOSION_RADIUS,
     };
 
     const updated = updateExplosion(explosion, 1000, 16);
@@ -191,6 +221,7 @@ describe('renderExplosion', () => {
       startTime: 0,
       particles: [],
       isActive: false,
+      radius: EXPLOSION_RADIUS,
     };
 
     renderExplosion(ctx, explosion, 500);
@@ -269,6 +300,20 @@ describe('isPointInExplosion', () => {
 
     // Point at 45 degrees, ~28.28 pixels away (outside radius)
     expect(isPointInExplosion(explosion, { x: 120, y: 120 })).toBe(false);
+  });
+
+  it('uses dynamic radius for hit detection', () => {
+    // Large radius explosion
+    const largeExplosion = createExplosion({ x: 100, y: 100 }, 0, 35);
+
+    // Point 30 pixels away - outside default radius (20) but inside custom radius (35)
+    expect(isPointInExplosion(largeExplosion, { x: 130, y: 100 })).toBe(true);
+
+    // Small radius explosion
+    const smallExplosion = createExplosion({ x: 100, y: 100 }, 0, 10);
+
+    // Point 15 pixels away - inside default radius (20) but outside custom radius (10)
+    expect(isPointInExplosion(smallExplosion, { x: 115, y: 100 })).toBe(false);
   });
 });
 
@@ -392,5 +437,35 @@ describe('checkTankHit', () => {
     const explosionScreenPos = { x: 445, y: 541 }; // ~35.36 from corner
 
     expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(false);
+  });
+
+  it('accepts custom explosion radius parameter', () => {
+    const tank = createTank(400, 100);
+    // Tank right edge at 420 (400 + 20)
+    // Explosion at 460 is 40 pixels from tank edge
+
+    // With default radius (20), should miss
+    expect(checkTankHit({ x: 460, y: 500 }, tank, CANVAS_HEIGHT)).toBe(false);
+
+    // With custom radius (45), should hit
+    expect(checkTankHit({ x: 460, y: 500 }, tank, CANVAS_HEIGHT, 45)).toBe(true);
+  });
+
+  it('detects hit with larger radius', () => {
+    const tank = createTank(400, 100);
+    const largeRadius = 35;
+    // Explosion at 455 is 35 pixels from tank edge - exactly at radius
+    const explosionScreenPos = { x: 455, y: 500 };
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT, largeRadius)).toBe(true);
+  });
+
+  it('misses with smaller radius', () => {
+    const tank = createTank(400, 100);
+    const smallRadius = 10;
+    // Explosion at 435 is 15 pixels from tank edge - outside small radius
+    const explosionScreenPos = { x: 435, y: 500 };
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT, smallRadius)).toBe(false);
   });
 });
