@@ -9,6 +9,12 @@ const TANK_COLORS: { color: TankColor; hex: string; label: string }[] = [
   { color: 'blue', hex: '#4488ff', label: 'Blue' },
   { color: 'green', hex: '#44ff44', label: 'Green' },
   { color: 'yellow', hex: '#ffff44', label: 'Yellow' },
+  { color: 'orange', hex: '#ff8844', label: 'Orange' },
+  { color: 'purple', hex: '#aa44ff', label: 'Purple' },
+  { color: 'cyan', hex: '#44ffff', label: 'Cyan' },
+  { color: 'pink', hex: '#ff66aa', label: 'Pink' },
+  { color: 'white', hex: '#dddddd', label: 'White' },
+  { color: 'brown', hex: '#8b5a2b', label: 'Brown' },
 ]
 
 export function ColorSelectionScreen({ onColorSelect }: ColorSelectionScreenProps) {

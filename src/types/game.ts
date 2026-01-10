@@ -5,7 +5,7 @@ export type { WeaponType, DestructionCategory };
 
 export type GamePhase = 'loading' | 'playerName' | 'config' | 'weaponShop' | 'playing' | 'gameover';
 
-export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
+export type TankColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple' | 'cyan' | 'pink' | 'white' | 'brown';
 
 export type TerrainSize = 'small' | 'medium' | 'large' | 'huge';
 

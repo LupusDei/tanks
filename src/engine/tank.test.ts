@@ -32,20 +32,29 @@ describe('tank', () => {
   });
 
   describe('getOpponentColor', () => {
-    it('returns blue for red', () => {
-      expect(getOpponentColor('red')).toBe('blue');
+    it('returns cyan for red', () => {
+      expect(getOpponentColor('red')).toBe('cyan');
     });
 
-    it('returns red for blue', () => {
-      expect(getOpponentColor('blue')).toBe('red');
+    it('returns orange for blue', () => {
+      expect(getOpponentColor('blue')).toBe('orange');
     });
 
-    it('returns yellow for green', () => {
-      expect(getOpponentColor('green')).toBe('yellow');
+    it('returns purple for green', () => {
+      expect(getOpponentColor('green')).toBe('purple');
     });
 
-    it('returns green for yellow', () => {
-      expect(getOpponentColor('yellow')).toBe('green');
+    it('returns brown for yellow', () => {
+      expect(getOpponentColor('yellow')).toBe('brown');
+    });
+
+    it('returns contrasting colors for all 10 colors', () => {
+      expect(getOpponentColor('orange')).toBe('blue');
+      expect(getOpponentColor('purple')).toBe('green');
+      expect(getOpponentColor('cyan')).toBe('red');
+      expect(getOpponentColor('pink')).toBe('green');
+      expect(getOpponentColor('white')).toBe('brown');
+      expect(getOpponentColor('brown')).toBe('white');
     });
   });
 

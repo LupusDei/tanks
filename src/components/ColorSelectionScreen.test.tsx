@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ColorSelectionScreen } from './ColorSelectionScreen'
 
+const ALL_COLORS = ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'cyan', 'pink', 'white', 'brown'] as const
+
 describe('ColorSelectionScreen', () => {
   it('renders the color selection screen', () => {
     render(<ColorSelectionScreen onColorSelect={vi.fn()} />)
@@ -13,13 +15,12 @@ describe('ColorSelectionScreen', () => {
     expect(screen.getByText('Choose Your Tank')).toBeInTheDocument()
   })
 
-  it('renders all four color buttons', () => {
+  it('renders all ten color buttons', () => {
     render(<ColorSelectionScreen onColorSelect={vi.fn()} />)
 
-    expect(screen.getByTestId('color-button-red')).toBeInTheDocument()
-    expect(screen.getByTestId('color-button-blue')).toBeInTheDocument()
-    expect(screen.getByTestId('color-button-green')).toBeInTheDocument()
-    expect(screen.getByTestId('color-button-yellow')).toBeInTheDocument()
+    for (const color of ALL_COLORS) {
+      expect(screen.getByTestId(`color-button-${color}`)).toBeInTheDocument()
+    }
   })
 
   it('renders color labels', () => {
@@ -29,54 +30,30 @@ describe('ColorSelectionScreen', () => {
     expect(screen.getByText('Blue')).toBeInTheDocument()
     expect(screen.getByText('Green')).toBeInTheDocument()
     expect(screen.getByText('Yellow')).toBeInTheDocument()
+    expect(screen.getByText('Orange')).toBeInTheDocument()
+    expect(screen.getByText('Purple')).toBeInTheDocument()
+    expect(screen.getByText('Cyan')).toBeInTheDocument()
+    expect(screen.getByText('Pink')).toBeInTheDocument()
+    expect(screen.getByText('White')).toBeInTheDocument()
+    expect(screen.getByText('Brown')).toBeInTheDocument()
   })
 
-  it('calls onColorSelect with red when red button is clicked', () => {
+  it.each(ALL_COLORS)('calls onColorSelect with %s when %s button is clicked', (color) => {
     const handleColorSelect = vi.fn()
     render(<ColorSelectionScreen onColorSelect={handleColorSelect} />)
 
-    fireEvent.click(screen.getByTestId('color-button-red'))
+    fireEvent.click(screen.getByTestId(`color-button-${color}`))
 
     expect(handleColorSelect).toHaveBeenCalledTimes(1)
-    expect(handleColorSelect).toHaveBeenCalledWith('red')
-  })
-
-  it('calls onColorSelect with blue when blue button is clicked', () => {
-    const handleColorSelect = vi.fn()
-    render(<ColorSelectionScreen onColorSelect={handleColorSelect} />)
-
-    fireEvent.click(screen.getByTestId('color-button-blue'))
-
-    expect(handleColorSelect).toHaveBeenCalledTimes(1)
-    expect(handleColorSelect).toHaveBeenCalledWith('blue')
-  })
-
-  it('calls onColorSelect with green when green button is clicked', () => {
-    const handleColorSelect = vi.fn()
-    render(<ColorSelectionScreen onColorSelect={handleColorSelect} />)
-
-    fireEvent.click(screen.getByTestId('color-button-green'))
-
-    expect(handleColorSelect).toHaveBeenCalledTimes(1)
-    expect(handleColorSelect).toHaveBeenCalledWith('green')
-  })
-
-  it('calls onColorSelect with yellow when yellow button is clicked', () => {
-    const handleColorSelect = vi.fn()
-    render(<ColorSelectionScreen onColorSelect={handleColorSelect} />)
-
-    fireEvent.click(screen.getByTestId('color-button-yellow'))
-
-    expect(handleColorSelect).toHaveBeenCalledTimes(1)
-    expect(handleColorSelect).toHaveBeenCalledWith('yellow')
+    expect(handleColorSelect).toHaveBeenCalledWith(color)
   })
 
   it('has accessible labels for each button', () => {
     render(<ColorSelectionScreen onColorSelect={vi.fn()} />)
 
-    expect(screen.getByLabelText('Select Red tank')).toBeInTheDocument()
-    expect(screen.getByLabelText('Select Blue tank')).toBeInTheDocument()
-    expect(screen.getByLabelText('Select Green tank')).toBeInTheDocument()
-    expect(screen.getByLabelText('Select Yellow tank')).toBeInTheDocument()
+    for (const color of ALL_COLORS) {
+      const label = color.charAt(0).toUpperCase() + color.slice(1)
+      expect(screen.getByLabelText(`Select ${label} tank`)).toBeInTheDocument()
+    }
   })
 })

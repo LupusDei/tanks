@@ -22,6 +22,12 @@ const TANK_COLOR_MAP: Record<TankColor, string> = {
   blue: '#4488ff',
   green: '#44ff44',
   yellow: '#ffff44',
+  orange: '#ff8844',
+  purple: '#aa44ff',
+  cyan: '#44ffff',
+  pink: '#ff66aa',
+  white: '#dddddd',
+  brown: '#8b5a2b',
 };
 
 /**
@@ -453,10 +459,16 @@ export function createInitialTanks(
  */
 export function getOpponentColor(playerColor: TankColor): TankColor {
   const contrastMap: Record<TankColor, TankColor> = {
-    red: 'blue',
-    blue: 'red',
-    green: 'yellow',
-    yellow: 'green',
+    red: 'cyan',
+    blue: 'orange',
+    green: 'purple',
+    yellow: 'brown',
+    orange: 'blue',
+    purple: 'green',
+    cyan: 'red',
+    pink: 'green',
+    white: 'brown',
+    brown: 'white',
   };
   return contrastMap[playerColor];
 }
