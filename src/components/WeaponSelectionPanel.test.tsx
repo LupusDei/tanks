@@ -159,7 +159,7 @@ describe('WeaponSelectionPanel', () => {
     expect(screen.getByTestId('weapon-slot-cluster_bomb')).toHaveTextContent('4')
   })
 
-  it('displays weapon abbreviations', () => {
+  it('displays weapon names', () => {
     render(
       <WeaponSelectionPanel
         {...defaultProps}
@@ -167,8 +167,8 @@ describe('WeaponSelectionPanel', () => {
       />
     )
 
-    expect(screen.getByTestId('weapon-slot-standard')).toHaveTextContent('STD')
-    expect(screen.getByTestId('weapon-slot-napalm')).toHaveTextContent('NAP')
+    expect(screen.getByTestId('weapon-slot-standard')).toHaveTextContent('Standard Shell')
+    expect(screen.getByTestId('weapon-slot-napalm')).toHaveTextContent('Napalm')
   })
 
   it('ignores number keys for non-existent slots', () => {
