@@ -379,3 +379,81 @@ describe('checkTerrainCollision', () => {
     expect(result.hit).toBe(false);
   });
 });
+
+describe('weapon-based projectile behavior', () => {
+  it('defaults to standard weapon type when not specified', () => {
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+
+    expect(state.weaponType).toBe('standard');
+    expect(state.speedMultiplier).toBe(1.0);
+  });
+
+  it('accepts weapon type parameter', () => {
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'heavy_artillery');
+
+    expect(state.weaponType).toBe('heavy_artillery');
+    expect(state.speedMultiplier).toBe(0.8);
+  });
+
+  it('stores correct speed multiplier for precision weapon', () => {
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'precision');
+
+    expect(state.weaponType).toBe('precision');
+    expect(state.speedMultiplier).toBe(1.3);
+  });
+
+  it('precision weapon travels faster than standard', () => {
+    const tank = createMockTank({ angle: -45, power: 50 });
+    const standardState = createProjectileState(tank, 0, CANVAS_HEIGHT, 'standard');
+    const precisionState = createProjectileState(tank, 0, CANVAS_HEIGHT, 'precision');
+
+    // After same elapsed time, precision should have traveled further
+    const time = 500;
+    const standardPos = getProjectilePosition(standardState, time);
+    const precisionPos = getProjectilePosition(precisionState, time);
+
+    // Precision has 1.3x speed, so should be further along trajectory
+    // Check horizontal distance traveled (both start at same x position)
+    const startX = standardState.launchConfig.position.x;
+    const standardDist = Math.abs(standardPos.x - startX);
+    const precisionDist = Math.abs(precisionPos.x - startX);
+
+    expect(precisionDist).toBeGreaterThan(standardDist);
+  });
+
+  it('heavy artillery travels slower than standard', () => {
+    const tank = createMockTank({ angle: -45, power: 50 });
+    const standardState = createProjectileState(tank, 0, CANVAS_HEIGHT, 'standard');
+    const heavyState = createProjectileState(tank, 0, CANVAS_HEIGHT, 'heavy_artillery');
+
+    // After same elapsed time, heavy should have traveled less
+    const time = 500;
+    const standardPos = getProjectilePosition(standardState, time);
+    const heavyPos = getProjectilePosition(heavyState, time);
+
+    // Heavy has 0.8x speed, so should be closer to start
+    const startX = standardState.launchConfig.position.x;
+    const standardDist = Math.abs(standardPos.x - startX);
+    const heavyDist = Math.abs(heavyPos.x - startX);
+
+    expect(heavyDist).toBeLessThan(standardDist);
+  });
+
+  it('all weapon types create valid projectile states', () => {
+    const tank = createMockTank();
+    const weaponTypes = ['standard', 'heavy_artillery', 'precision', 'cluster_bomb', 'napalm'] as const;
+
+    for (const weaponType of weaponTypes) {
+      const state = createProjectileState(tank, 0, CANVAS_HEIGHT, weaponType);
+
+      expect(state.isActive).toBe(true);
+      expect(state.weaponType).toBe(weaponType);
+      expect(state.speedMultiplier).toBeGreaterThan(0);
+      expect(state.tankId).toBe(tank.id);
+      expect(state.tankColor).toBe(tank.color);
+    }
+  });
+});
