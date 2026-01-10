@@ -925,7 +925,6 @@ p {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
-  width: 450px;
   margin: 0 auto;
 }
 
