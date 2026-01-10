@@ -88,6 +88,7 @@ export interface GameActions {
   setPhase: (phase: GamePhase) => void;
   initializeTanks: (tanks: TankState[]) => void;
   nextTurn: () => void;
+  incrementTurn: () => void;
   updateTank: (tankId: string, updates: Partial<TankState>) => void;
   setTerrain: (terrain: TerrainData) => void;
   damageTank: (tankId: string, damage: number) => void;
