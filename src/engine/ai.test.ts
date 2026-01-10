@@ -21,6 +21,8 @@ function createMockTank(overrides: Partial<TankState> = {}): TankState {
     power: 50,
     color: 'red',
     isActive: true,
+    queuedShot: null,
+    isReady: false,
     ...overrides,
   };
 }

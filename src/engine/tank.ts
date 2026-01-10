@@ -359,6 +359,8 @@ export function createInitialTanks(
     power: 50,
     color: playerColor,
     isActive: true,
+    queuedShot: null,
+    isReady: false,
   });
 
   // Get colors for enemies
@@ -391,6 +393,8 @@ export function createInitialTanks(
       power: 50,
       color: enemyColors[i]!,
       isActive: false,
+      queuedShot: null,
+      isReady: false,
     });
   }
 

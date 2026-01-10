@@ -27,6 +27,10 @@ export interface ProjectileState {
   startTime: number;
   tracePoints: Position[];
   canvasHeight: number;
+  /** ID of the tank that fired this projectile */
+  tankId: string;
+  /** Color of the tank that fired this projectile (for trail rendering) */
+  tankColor: string;
 }
 
 /**
@@ -99,6 +103,8 @@ export function createProjectileState(
     startTime,
     tracePoints: [{ ...launchConfig.position }],
     canvasHeight,
+    tankId: tank.id,
+    tankColor: tank.color,
   };
 }
 

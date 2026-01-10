@@ -214,6 +214,8 @@ describe('tank', () => {
         power: 50,
         color: 'red',
         isActive: true,
+        queuedShot: null,
+        isReady: false,
       };
     });
 
