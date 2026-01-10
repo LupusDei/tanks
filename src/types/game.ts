@@ -118,6 +118,7 @@ export interface GameRecord {
   aiDifficulty: AIDifficulty;
   turnsPlayed: number;
   playerColor: TankColor;
+  moneyEarned: number; // Money earned from this game
 }
 
 export interface UserStats {
@@ -126,6 +127,7 @@ export interface UserStats {
   gamesLost: number;
   totalKills: number;
   winRate: number; // 0-100 percentage
+  balance: number; // Current money balance
 }
 
 export interface UserData {
