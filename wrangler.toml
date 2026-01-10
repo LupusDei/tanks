@@ -1,0 +1,14 @@
+# Cloudflare Pages configuration
+# https://developers.cloudflare.com/pages/configuration/wrangler-configuration/
+
+name = "tanks"
+compatibility_date = "2024-01-01"
+
+# Pages-specific configuration
+pages_build_output_dir = "dist"
+
+# SPA routing - redirect all requests to index.html
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
