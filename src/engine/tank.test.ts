@@ -227,6 +227,7 @@ describe('tank', () => {
         queuedShot: null,
         isReady: false,
         killedByWeapon: null,
+        stunTurnsRemaining: 0,
       };
     });
 

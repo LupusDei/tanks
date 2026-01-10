@@ -54,6 +54,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     // Initially there are no tanks
@@ -85,6 +86,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     const tank2 = {
@@ -98,6 +100,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     act(() => {
@@ -128,6 +131,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     const tank2 = {
@@ -141,6 +145,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     act(() => {
@@ -172,6 +177,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     const tank2 = {
@@ -185,6 +191,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     act(() => {
@@ -217,6 +224,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     const tank2 = {
@@ -230,6 +238,7 @@ describe('GameContext', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
 
     act(() => {

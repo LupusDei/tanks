@@ -71,6 +71,8 @@ export interface TankState {
   isReady: boolean;
   /** Weapon type that killed this tank (set when health reaches 0) */
   killedByWeapon: WeaponType | null;
+  /** Number of turns remaining that this tank is stunned (0 = not stunned) */
+  stunTurnsRemaining: number;
 }
 
 export interface TerrainData {
@@ -104,6 +106,8 @@ export interface GameActions {
   updateTank: (tankId: string, updates: Partial<TankState>) => void;
   setTerrain: (terrain: TerrainData) => void;
   damageTank: (tankId: string, damage: number, weaponType?: WeaponType) => void;
+  stunTank: (tankId: string, turns: number) => void;
+  decrementStuns: () => void;
   setWinner: (tankId: string) => void;
   resetGame: () => void;
   resetToConfig: () => void;

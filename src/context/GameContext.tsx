@@ -115,6 +115,27 @@ export function GameProvider({ children }: GameProviderProps) {
     });
   }, []);
 
+  const stunTank = useCallback((tankId: string, turns: number) => {
+    setState((prev) => ({
+      ...prev,
+      tanks: prev.tanks.map((tank) =>
+        tank.id === tankId
+          ? { ...tank, stunTurnsRemaining: Math.max(tank.stunTurnsRemaining, turns) }
+          : tank
+      ),
+    }));
+  }, []);
+
+  const decrementStuns = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      tanks: prev.tanks.map((tank) => ({
+        ...tank,
+        stunTurnsRemaining: Math.max(0, tank.stunTurnsRemaining - 1),
+      })),
+    }));
+  }, []);
+
   const setWinner = useCallback((tankId: string) => {
     setState((prev) => ({
       ...prev,
@@ -187,6 +208,8 @@ export function GameProvider({ children }: GameProviderProps) {
     updateTank,
     setTerrain,
     damageTank,
+    stunTank,
+    decrementStuns,
     setWinner,
     resetGame,
     resetToConfig,

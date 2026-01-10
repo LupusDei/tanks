@@ -62,7 +62,8 @@ export function renderTank(
   options: RenderTankOptions = {}
 ): void {
   const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false, chevronCount = 0, starCount = 0 } = options;
-  const { position, angle, color, health } = tank;
+  const { position, angle, color, health, stunTurnsRemaining } = tank;
+  const isStunned = stunTurnsRemaining > 0;
   const { bodyWidth, bodyHeight, turretLength, turretWidth, wheelRadius } = dimensions;
 
   // Convert to canvas coordinates (flip y-axis)
@@ -346,6 +347,11 @@ export function renderTank(
     ctx.fillRect(-healthBarWidth / 2, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
   }
 
+  // Draw stun effect if tank is stunned
+  if (isStunned) {
+    renderStunEffect(ctx, bodyWidth, bodyHeight, wheelRadius, domeRadius, turretY);
+  }
+
   ctx.restore();
 }
 
@@ -413,6 +419,7 @@ export function createInitialTanks(
     queuedShot: null,
     isReady: false,
     killedByWeapon: null,
+    stunTurnsRemaining: 0,
   });
 
   // Get colors for enemies
@@ -448,6 +455,7 @@ export function createInitialTanks(
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     });
   }
 
@@ -721,6 +729,90 @@ function renderGroundDust(
   ctx.moveTo(bodyWidth / 2 + 4, bodyHeight / 2 + wheelRadius);
   ctx.lineTo(bodyWidth / 2 + 8, bodyHeight / 2 + wheelRadius + 3);
   ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Render electric stun effect around a tank.
+ * Creates animated-looking electric arcs and a blue glow.
+ */
+function renderStunEffect(
+  ctx: CanvasRenderingContext2D,
+  bodyWidth: number,
+  bodyHeight: number,
+  wheelRadius: number,
+  domeRadius: number,
+  turretY: number
+): void {
+  ctx.save();
+
+  // Use time-based variation for animation effect
+  const time = Date.now() * 0.01;
+
+  // Blue electric glow around tank
+  const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, bodyWidth);
+  glowGradient.addColorStop(0, 'rgba(0, 150, 255, 0.3)');
+  glowGradient.addColorStop(0.5, 'rgba(0, 100, 255, 0.15)');
+  glowGradient.addColorStop(1, 'rgba(0, 50, 255, 0)');
+  ctx.fillStyle = glowGradient;
+  ctx.beginPath();
+  ctx.ellipse(0, bodyHeight / 4, bodyWidth * 0.8, bodyHeight + wheelRadius, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Electric arcs (lightning bolts)
+  ctx.strokeStyle = '#00aaff';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = '#00ffff';
+  ctx.shadowBlur = 8;
+
+  // Draw several electric arcs at varying positions
+  const arcCount = 4;
+  for (let i = 0; i < arcCount; i++) {
+    const arcAngle = (i / arcCount) * Math.PI * 2 + time * 0.3;
+    const startX = Math.cos(arcAngle) * (bodyWidth / 2 - 5);
+    const startY = Math.sin(arcAngle) * (bodyHeight / 2) + turretY / 2;
+    const endX = Math.cos(arcAngle + 0.5) * (bodyWidth / 2 + 10);
+    const endY = Math.sin(arcAngle + 0.5) * (bodyHeight / 2 + wheelRadius);
+
+    // Draw zigzag lightning
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    const segments = 3;
+    for (let j = 1; j <= segments; j++) {
+      const t = j / segments;
+      const midX = startX + (endX - startX) * t;
+      const midY = startY + (endY - startY) * t;
+      const offsetX = (Math.sin(time * 5 + i + j) * 4);
+      const offsetY = (Math.cos(time * 5 + i + j) * 3);
+      ctx.lineTo(midX + offsetX, midY + offsetY);
+    }
+    ctx.stroke();
+  }
+
+  // Spark particles
+  ctx.fillStyle = '#00ffff';
+  ctx.shadowBlur = 4;
+  const sparkCount = 6;
+  for (let i = 0; i < sparkCount; i++) {
+    const sparkAngle = (i / sparkCount) * Math.PI * 2 + time * 0.5;
+    const sparkDist = bodyWidth / 2 + Math.sin(time * 3 + i) * 8;
+    const sparkX = Math.cos(sparkAngle) * sparkDist;
+    const sparkY = Math.sin(sparkAngle) * (bodyHeight / 2 + wheelRadius / 2);
+    const sparkSize = 1.5 + Math.sin(time * 7 + i) * 0.5;
+
+    ctx.beginPath();
+    ctx.arc(sparkX, sparkY, sparkSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Stun indicator text/icon above tank
+  const indicatorY = turretY - domeRadius - 16;
+  ctx.font = 'bold 10px sans-serif';
+  ctx.fillStyle = '#00ffff';
+  ctx.textAlign = 'center';
+  ctx.shadowBlur = 6;
+  ctx.fillText('STUNNED', 0, indicatorY);
 
   ctx.restore();
 }

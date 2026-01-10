@@ -367,6 +367,7 @@ describe('checkTankHit', () => {
       queuedShot: null,
       isReady: false,
       killedByWeapon: null,
+      stunTurnsRemaining: 0,
     };
   }
 

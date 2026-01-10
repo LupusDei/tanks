@@ -29,6 +29,7 @@ function createMockTank(overrides: Partial<TankState> = {}): TankState {
     queuedShot: null,
     isReady: false,
     killedByWeapon: null,
+    stunTurnsRemaining: 0,
     ...overrides,
   };
 }

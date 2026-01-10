@@ -21,6 +21,7 @@ function createMockTank(overrides: Partial<TankState> = {}): TankState {
     queuedShot: null,
     isReady: false,
     killedByWeapon: 'heavy_artillery', // Explosive weapon by default
+    stunTurnsRemaining: 0,
     ...overrides,
   };
 }
