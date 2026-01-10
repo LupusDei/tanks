@@ -16,6 +16,11 @@ describe('EnemyCountSelector', () => {
     expect(screen.getByText('3 Enemies')).toBeInTheDocument()
     expect(screen.getByText('4 Enemies')).toBeInTheDocument()
     expect(screen.getByText('5 Enemies')).toBeInTheDocument()
+    expect(screen.getByText('6 Enemies')).toBeInTheDocument()
+    expect(screen.getByText('7 Enemies')).toBeInTheDocument()
+    expect(screen.getByText('8 Enemies')).toBeInTheDocument()
+    expect(screen.getByText('9 Enemies')).toBeInTheDocument()
+    expect(screen.getByText('10 Enemies')).toBeInTheDocument()
   })
 
   it('calls onCountSelect when a count is clicked', () => {
@@ -35,6 +40,9 @@ describe('EnemyCountSelector', () => {
 
     fireEvent.click(screen.getByTestId('enemy-count-5'))
     expect(onCountSelect).toHaveBeenCalledWith(5)
+
+    fireEvent.click(screen.getByTestId('enemy-count-10'))
+    expect(onCountSelect).toHaveBeenCalledWith(10)
   })
 
   it('has correct aria labels', () => {

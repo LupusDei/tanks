@@ -13,13 +13,14 @@ describe('TerrainSizeSelector', () => {
     expect(screen.getByText('Select Terrain Size')).toBeInTheDocument()
   })
 
-  it('renders all four size buttons', () => {
+  it('renders all five size buttons', () => {
     render(<TerrainSizeSelector onSizeSelect={vi.fn()} />)
 
     expect(screen.getByTestId('terrain-size-small')).toBeInTheDocument()
     expect(screen.getByTestId('terrain-size-medium')).toBeInTheDocument()
     expect(screen.getByTestId('terrain-size-large')).toBeInTheDocument()
     expect(screen.getByTestId('terrain-size-huge')).toBeInTheDocument()
+    expect(screen.getByTestId('terrain-size-epic')).toBeInTheDocument()
   })
 
   it('renders size labels', () => {
@@ -29,6 +30,7 @@ describe('TerrainSizeSelector', () => {
     expect(screen.getByText('Medium')).toBeInTheDocument()
     expect(screen.getByText('Large')).toBeInTheDocument()
     expect(screen.getByText('Huge')).toBeInTheDocument()
+    expect(screen.getByText('Epic')).toBeInTheDocument()
   })
 
   it('renders dimension labels', () => {
@@ -38,6 +40,7 @@ describe('TerrainSizeSelector', () => {
     expect(screen.getByText('1024 x 768')).toBeInTheDocument()
     expect(screen.getByText('1280 x 960')).toBeInTheDocument()
     expect(screen.getByText('1600 x 1200')).toBeInTheDocument()
+    expect(screen.getByText('2100 x 2800')).toBeInTheDocument()
   })
 
   it('calls onSizeSelect with small when small button is clicked', () => {
@@ -80,6 +83,16 @@ describe('TerrainSizeSelector', () => {
     expect(handleSizeSelect).toHaveBeenCalledWith('huge')
   })
 
+  it('calls onSizeSelect with epic when epic button is clicked', () => {
+    const handleSizeSelect = vi.fn()
+    render(<TerrainSizeSelector onSizeSelect={handleSizeSelect} />)
+
+    fireEvent.click(screen.getByTestId('terrain-size-epic'))
+
+    expect(handleSizeSelect).toHaveBeenCalledTimes(1)
+    expect(handleSizeSelect).toHaveBeenCalledWith('epic')
+  })
+
   it('has accessible labels for each button', () => {
     render(<TerrainSizeSelector onSizeSelect={vi.fn()} />)
 
@@ -87,5 +100,6 @@ describe('TerrainSizeSelector', () => {
     expect(screen.getByLabelText('Select Medium terrain')).toBeInTheDocument()
     expect(screen.getByLabelText('Select Large terrain')).toBeInTheDocument()
     expect(screen.getByLabelText('Select Huge terrain')).toBeInTheDocument()
+    expect(screen.getByLabelText('Select Epic terrain')).toBeInTheDocument()
   })
 })
