@@ -6,6 +6,7 @@ import {
   updateUsername,
   recordGameEnd,
   clearUserData,
+  spendMoney,
   type GameEndParams,
 } from '../services/userDatabase';
 
@@ -14,10 +15,12 @@ interface UserContextValue {
   isNewUser: boolean;
   stats: UserStats | null;
   username: string | null;
+  balance: number;
   createNewUser: (username: string) => void;
   changeUsername: (newUsername: string) => void;
   recordGame: (params: GameEndParams) => void;
   resetUserData: () => void;
+  spend: (amount: number) => boolean;
 }
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -57,15 +60,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setUserData(null);
   }, []);
 
+  const spend = useCallback((amount: number): boolean => {
+    const newBalance = spendMoney(amount);
+    if (newBalance !== null) {
+      // Reload user data to get updated balance
+      const updated = loadUserData();
+      if (updated) {
+        setUserData(updated);
+      }
+      return true;
+    }
+    return false;
+  }, []);
+
   const value: UserContextValue = {
     userData,
     isNewUser: !userData,
     stats: userData?.stats ?? null,
     username: userData?.profile.username ?? null,
+    balance: userData?.stats.balance ?? 0,
     createNewUser,
     changeUsername,
     recordGame,
     resetUserData,
+    spend,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
