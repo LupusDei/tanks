@@ -662,7 +662,7 @@ function createClusterSubProjectiles(
   const currentAngle = Math.atan2(-vy, vx) * (180 / Math.PI); // Convert to degrees, negate vy for screen coords
 
   // Create sub-projectiles with spread angles
-  const spreadAngle = 15; // degrees spread from center
+  const spreadAngle = 10; // degrees spread from center (tighter cluster)
 
   for (let i = 0; i < CLUSTER_SUB_COUNT; i++) {
     // Spread evenly from -spreadAngle to +spreadAngle
