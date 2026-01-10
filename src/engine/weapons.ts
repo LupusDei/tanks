@@ -25,7 +25,8 @@ export type WeaponType =
   | 'napalm'
   | 'emp'
   | 'bouncing_betty'
-  | 'bunker_buster';
+  | 'bunker_buster'
+  | 'homing_missile';
 
 /**
  * Destruction animation category.
@@ -48,6 +49,7 @@ export function getDestructionCategory(weaponType: WeaponType): DestructionCateg
     case 'cluster_bomb':
     case 'bouncing_betty':
     case 'bunker_buster':
+    case 'homing_missile':
       return 'explosive';
     case 'emp':
       return 'electric';
@@ -82,6 +84,8 @@ export interface WeaponConfig {
   maxBounces?: number;
   /** Radius of terrain destruction crater (Bunker Buster) */
   craterRadius?: number;
+  /** Tracking strength for homing weapons (0.0 to 1.0, higher = stronger tracking) */
+  trackingStrength?: number;
 }
 
 // ============================================================================
@@ -250,6 +254,22 @@ export const WEAPON_BUNKER_BUSTER: WeaponConfig = {
   craterRadius: 40,
 };
 
+/**
+ * Homing Missile - tracks nearest enemy tank.
+ * Mild homing capability makes it easier to hit moving targets.
+ * Moderate damage with exhaust trail visual.
+ */
+export const WEAPON_HOMING_MISSILE: WeaponConfig = {
+  id: 'homing_missile',
+  name: 'Homing Missile',
+  description: 'Mild tracking toward nearest enemy. Easier to hit targets.',
+  cost: 225,
+  damage: 50,
+  blastRadius: 20,
+  projectileSpeedMultiplier: 0.85,
+  trackingStrength: 0.3,
+};
+
 // ============================================================================
 // WEAPON REGISTRY
 // ============================================================================
@@ -267,6 +287,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   emp: WEAPON_EMP,
   bouncing_betty: WEAPON_BOUNCING_BETTY,
   bunker_buster: WEAPON_BUNKER_BUSTER,
+  homing_missile: WEAPON_HOMING_MISSILE,
 };
 
 /**
@@ -282,6 +303,7 @@ export const WEAPON_TYPES: WeaponType[] = [
   'emp',
   'bouncing_betty',
   'bunker_buster',
+  'homing_missile',
 ];
 
 /**

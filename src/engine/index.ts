@@ -53,6 +53,8 @@ export {
   updateClusterBombSplit,
   renderClusterSubProjectiles,
   getTrajectoryProgress,
+  findNearestTarget,
+  updateHomingTracking,
   type ProjectileState,
   type TerrainCollisionResult,
 } from './projectile';
@@ -106,6 +108,7 @@ export {
   WEAPON_EMP,
   WEAPON_BOUNCING_BETTY,
   WEAPON_BUNKER_BUSTER,
+  WEAPON_HOMING_MISSILE,
   WEAPONS,
   WEAPON_TYPES,
   // Utility functions

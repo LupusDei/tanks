@@ -148,6 +148,17 @@ function getExplosionConfig(weaponType: WeaponType): ExplosionConfig {
         fireColorInner: 'rgba(255, 100, 50, 1)',
         fireColorOuter: 'rgba(100, 40, 20, 0)',
       };
+    case 'homing_missile':
+      return {
+        colors: ['#ff3300', '#ff5500', '#ff7700', '#ffaa00', '#cc2200', '#aa0000'],
+        durationMultiplier: 1.1,
+        particleMultiplier: 1.2,
+        speedMultiplier: 1.1,
+        flashColorInner: 'rgba(255, 200, 150, 1)',
+        flashColorOuter: 'rgba(255, 80, 30, 0)',
+        fireColorInner: 'rgba(255, 150, 80, 1)',
+        fireColorOuter: 'rgba(180, 50, 0, 0)',
+      };
     case 'standard':
     default:
       return {

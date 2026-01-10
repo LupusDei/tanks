@@ -49,6 +49,12 @@ export interface ProjectileState {
   bounceCount?: number;
   /** Maximum bounces before exploding (for bouncing weapons) */
   maxBounces?: number;
+  /** Tracking strength for homing weapons (0.0 to 1.0) */
+  trackingStrength?: number;
+  /** Target tank position for homing (updated each frame) */
+  targetPosition?: Position;
+  /** Current velocity angle for homing missiles (adjusted by tracking) */
+  currentAngle?: number;
 }
 
 /**
@@ -137,6 +143,10 @@ export function createProjectileState(
   const bounceCount = weaponConfig.maxBounces ? 0 : undefined;
   const maxBounces = weaponConfig.maxBounces;
 
+  // For homing weapons, initialize tracking
+  const trackingStrength = weaponConfig.trackingStrength;
+  const currentAngle = trackingStrength ? launchConfig.angle : undefined;
+
   return {
     isActive: true,
     launchConfig,
@@ -151,6 +161,8 @@ export function createProjectileState(
     estimatedLandingTime,
     bounceCount,
     maxBounces,
+    trackingStrength,
+    currentAngle,
   };
 }
 
@@ -225,6 +237,8 @@ export function getProjectileVisual(weaponType: WeaponType): ProjectileVisual {
       return { color: '#888888', glowColor: '#ffcc00', radius: 5, trailColor: '#666666' };
     case 'bunker_buster':
       return { color: '#333333', glowColor: '#ff6600', radius: 6, trailColor: '#555555' };
+    case 'homing_missile':
+      return { color: '#cc0000', glowColor: '#ff4400', radius: 6, trailColor: '#ff6600' };
     case 'standard':
     default:
       return { color: '#ffff00', glowColor: '#ffffff', radius: 5 };
@@ -598,6 +612,97 @@ function renderBunkerBuster(
 }
 
 /**
+ * Render Homing Missile - sleek missile with exhaust trail.
+ */
+function renderHomingMissile(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual,
+  angle: number,
+  currentTime: number
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(degreesToRadians(angle - 90));
+
+  // Red/orange glow
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = 12;
+
+  // Main missile body - sleek red
+  ctx.fillStyle = visual.color;
+  ctx.beginPath();
+  ctx.moveTo(0, -visual.radius * 2); // Nose
+  ctx.quadraticCurveTo(visual.radius * 0.8, -visual.radius * 0.5, visual.radius * 0.6, visual.radius);
+  ctx.lineTo(-visual.radius * 0.6, visual.radius);
+  ctx.quadraticCurveTo(-visual.radius * 0.8, -visual.radius * 0.5, 0, -visual.radius * 2);
+  ctx.fill();
+
+  // Nose cone highlight
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ff3333';
+  ctx.beginPath();
+  ctx.moveTo(0, -visual.radius * 2);
+  ctx.lineTo(visual.radius * 0.2, -visual.radius * 0.8);
+  ctx.lineTo(-visual.radius * 0.2, -visual.radius * 0.8);
+  ctx.closePath();
+  ctx.fill();
+
+  // Fins at back
+  ctx.fillStyle = '#990000';
+  ctx.beginPath();
+  ctx.moveTo(visual.radius * 0.4, visual.radius * 0.5);
+  ctx.lineTo(visual.radius * 1.0, visual.radius * 1.2);
+  ctx.lineTo(visual.radius * 0.4, visual.radius);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-visual.radius * 0.4, visual.radius * 0.5);
+  ctx.lineTo(-visual.radius * 1.0, visual.radius * 1.2);
+  ctx.lineTo(-visual.radius * 0.4, visual.radius);
+  ctx.closePath();
+  ctx.fill();
+
+  // Exhaust flames (animated)
+  const flameColors = ['#ffff00', '#ff9900', '#ff3300'];
+  for (let i = 0; i < 4; i++) {
+    const offset = (currentTime * 0.15 + i * 40) % 20;
+    const flameSize = (4 - i * 0.8) * (1 + Math.sin(currentTime * 0.1 + i) * 0.3);
+    const colorIndex = Math.min(i, flameColors.length - 1);
+    ctx.fillStyle = flameColors[colorIndex]!;
+    ctx.beginPath();
+    ctx.arc(
+      Math.sin(currentTime * 0.2 + i) * 1.5,
+      visual.radius + 3 + offset,
+      flameSize,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  // Smoke trail particles
+  ctx.fillStyle = '#666666';
+  ctx.globalAlpha = 0.5;
+  for (let i = 0; i < 3; i++) {
+    const trailOffset = (currentTime * 0.08 + i * 60) % 30;
+    const trailSize = 2 + i * 0.5;
+    ctx.beginPath();
+    ctx.arc(
+      Math.sin(currentTime * 0.05 + i * 2) * 2,
+      visual.radius + 15 + trailOffset,
+      trailSize,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/**
  * Render the projectile and its dotted trace line on canvas.
  * All positions in projectile state are already in screen coordinates.
  * The trail color matches the tank that fired the projectile.
@@ -659,6 +764,9 @@ export function renderProjectile(
       break;
     case 'bunker_buster':
       renderBunkerBuster(ctx, canvasX, canvasY, visual, projectile.launchConfig.angle, currentTime);
+      break;
+    case 'homing_missile':
+      renderHomingMissile(ctx, canvasX, canvasY, visual, projectile.currentAngle ?? projectile.launchConfig.angle, currentTime);
       break;
     case 'standard':
     default:
@@ -1086,4 +1194,109 @@ export function renderClusterSubProjectiles(
     // Draw sub-projectile
     renderClusterSubProjectile(ctx, position.x, position.y, currentTime);
   }
+}
+
+/**
+ * Find the nearest enemy tank to the projectile position.
+ * Returns the tank's screen position, or null if no valid targets.
+ *
+ * @param projectilePos - Current projectile position in screen coords
+ * @param tanks - Array of all tanks
+ * @param firingTankId - ID of the tank that fired (to exclude from targets)
+ * @param canvasHeight - Canvas height for coordinate conversion
+ */
+export function findNearestTarget(
+  projectilePos: Position,
+  tanks: TankState[],
+  firingTankId: string,
+  canvasHeight: number
+): Position | null {
+  let nearestTarget: Position | null = null;
+  let nearestDistance = Infinity;
+
+  for (const tank of tanks) {
+    // Skip the firing tank and destroyed tanks
+    if (tank.id === firingTankId || tank.health <= 0) {
+      continue;
+    }
+
+    // Convert tank position to screen coordinates
+    const tankScreenPos = worldToScreen(tank.position, canvasHeight);
+
+    // Calculate distance
+    const dx = tankScreenPos.x - projectilePos.x;
+    const dy = tankScreenPos.y - projectilePos.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestTarget = tankScreenPos;
+    }
+  }
+
+  return nearestTarget;
+}
+
+/**
+ * Update homing missile trajectory to track toward target.
+ * Gradually adjusts the launch angle to steer toward the nearest enemy.
+ *
+ * @param projectile - Current projectile state
+ * @param targetPos - Target position in screen coordinates
+ * @param currentTime - Current animation time
+ * @returns Updated projectile state with adjusted angle
+ */
+export function updateHomingTracking(
+  projectile: ProjectileState,
+  targetPos: Position | null,
+  currentTime: number
+): ProjectileState {
+  // Only process homing missiles with tracking enabled
+  if (!projectile.trackingStrength || projectile.weaponType !== 'homing_missile') {
+    return projectile;
+  }
+
+  // No target to track
+  if (!targetPos) {
+    return projectile;
+  }
+
+  // Get current projectile position
+  const currentPos = getProjectilePosition(projectile, currentTime);
+
+  // Calculate direction to target
+  const dx = targetPos.x - currentPos.x;
+  const dy = targetPos.y - currentPos.y;
+  const targetAngle = Math.atan2(-dy, dx) * (180 / Math.PI); // Convert to degrees, negate dy for screen coords
+
+  // Get current angle
+  const currentAngle = projectile.currentAngle ?? projectile.launchConfig.angle;
+
+  // Calculate angle difference (normalized to -180 to 180)
+  let angleDiff = targetAngle - currentAngle;
+  while (angleDiff > 180) angleDiff -= 360;
+  while (angleDiff < -180) angleDiff += 360;
+
+  // Apply tracking - adjust angle toward target based on tracking strength
+  // Max adjustment is proportional to tracking strength (0.3 = mild tracking)
+  const maxAdjustment = projectile.trackingStrength * 3; // Max 0.9 degrees per update at 0.3 strength
+  const adjustment = Math.max(-maxAdjustment, Math.min(maxAdjustment, angleDiff * projectile.trackingStrength));
+
+  const newAngle = currentAngle + adjustment;
+
+  // Create a new launch config with adjusted angle from current position
+  // This effectively "relaunches" the projectile with the new angle
+  const newLaunchConfig: LaunchConfig = {
+    ...projectile.launchConfig,
+    position: currentPos,
+    angle: newAngle,
+  };
+
+  return {
+    ...projectile,
+    launchConfig: newLaunchConfig,
+    startTime: currentTime,
+    currentAngle: newAngle,
+    targetPosition: targetPos,
+  };
 }

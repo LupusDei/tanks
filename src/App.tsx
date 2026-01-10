@@ -43,6 +43,8 @@ import {
   checkTerrainCollision,
   handleProjectileBounce,
   createCrater,
+  findNearestTarget,
+  updateHomingTracking,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -529,7 +531,14 @@ function App() {
       // Handle main projectile if still active
       if (currentProjectile.isActive) {
         // Update trace points
-        const updatedProjectile = updateProjectileTrace(currentProjectile, currentTime)
+        let updatedProjectile = updateProjectileTrace(currentProjectile, currentTime)
+
+        // Update homing missile tracking
+        if (updatedProjectile.weaponType === 'homing_missile' && updatedProjectile.trackingStrength) {
+          const position = getProjectilePosition(updatedProjectile, currentTime)
+          const target = findNearestTarget(position, stateRef.current.tanks, updatedProjectile.tankId, ctx.canvas.height)
+          updatedProjectile = updateHomingTracking(updatedProjectile, target, currentTime)
+        }
 
         // Get current position
         const position = getProjectilePosition(updatedProjectile, currentTime)

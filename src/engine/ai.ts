@@ -327,7 +327,7 @@ export const AI_AVAILABLE_WEAPONS: Record<AIDifficulty, WeaponType[]> = {
   blind_fool: ['standard'],
   private: ['standard'],
   veteran: ['standard', 'heavy_artillery', 'precision'],
-  centurion: ['standard', 'heavy_artillery', 'precision', 'cluster_bomb'],
+  centurion: ['standard', 'heavy_artillery', 'precision', 'cluster_bomb', 'homing_missile'],
   primus: WEAPON_TYPES, // All weapons
 };
 

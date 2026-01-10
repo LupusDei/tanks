@@ -192,6 +192,34 @@ function ProjectileIcon({ weaponType }: { weaponType: WeaponType }) {
         </svg>
       )
 
+    case 'homing_missile':
+      // Red missile with exhaust flames
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-hm" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feFlood floodColor="#ff4400" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          {/* Main missile body */}
+          <path d={`M${cx},${cy - 8} Q${cx + 4},${cy - 2} ${cx + 3},${cy + 3} L${cx - 3},${cy + 3} Q${cx - 4},${cy - 2} ${cx},${cy - 8}`} fill="#cc0000" filter="url(#glow-hm)" />
+          {/* Nose highlight */}
+          <polygon points={`${cx},${cy - 8} ${cx + 1.5},${cy - 3} ${cx - 1.5},${cy - 3}`} fill="#ff3333" />
+          {/* Fins */}
+          <polygon points={`${cx + 2},${cy + 1} ${cx + 5},${cy + 5} ${cx + 2},${cy + 3}`} fill="#990000" />
+          <polygon points={`${cx - 2},${cy + 1} ${cx - 5},${cy + 5} ${cx - 2},${cy + 3}`} fill="#990000" />
+          {/* Exhaust flames */}
+          <ellipse cx={cx} cy={cy + 6} rx={2} ry={3} fill="#ffff00" />
+          <ellipse cx={cx} cy={cy + 8} rx={1.5} ry={2} fill="#ff6600" />
+        </svg>
+      )
+
     default:
       return null
   }
