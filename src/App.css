@@ -54,7 +54,8 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  padding-bottom: 15%;
   pointer-events: none;
 }
 
@@ -624,6 +625,7 @@ p {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4);
+  pointer-events: auto;
   touch-action: none;
   overflow: visible;
 }
