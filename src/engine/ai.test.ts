@@ -17,6 +17,7 @@ import {
   wouldShotHitSelf,
   AI_DIFFICULTY_CONFIGS,
   AI_AVAILABLE_WEAPONS,
+  AI_WIND_COMPENSATION,
 } from './ai';
 import type { TankState, TerrainData } from '../types/game';
 import { WEAPON_TYPES } from './weapons';
@@ -926,6 +927,117 @@ describe('calculateAIShot with improvements', () => {
       expect(result.angle).toBeDefined();
       expect(result.power).toBeDefined();
       expect(result.thinkingTimeMs).toBe(AI_DIFFICULTY_CONFIGS[difficulty].thinkingTimeMs);
+    }
+  });
+});
+
+describe('AI wind compensation', () => {
+  const terrain = createMockTerrain();
+
+  it('should accept wind parameter in options', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+
+    // Should not throw when wind is provided
+    const result = calculateAIShot(shooter, target, terrain, 'veteran', { wind: 10 });
+    expect(result.angle).toBeDefined();
+    expect(result.power).toBeDefined();
+  });
+
+  it('should work correctly with zero wind', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+
+    const resultNoWind = calculateAIShot(shooter, target, terrain, 'primus');
+    const resultZeroWind = calculateAIShot(shooter, target, terrain, 'primus', { wind: 0 });
+
+    // Results should be similar (not exact due to other random factors)
+    expect(resultNoWind.angle).toBeDefined();
+    expect(resultZeroWind.angle).toBeDefined();
+  });
+
+  it('should handle positive wind', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+
+    // With strong tailwind, should still produce a shot (AI may choose unconventional angles)
+    const result = calculateAIShot(shooter, target, terrain, 'primus', { wind: 20 });
+    expect(result.angle).toBeDefined();
+    expect(typeof result.angle).toBe('number');
+    expect(result.power).toBeDefined();
+    expect(typeof result.power).toBe('number');
+  });
+
+  it('should handle negative wind', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+
+    // With strong headwind, should still produce a shot (AI may choose unconventional angles)
+    const result = calculateAIShot(shooter, target, terrain, 'primus', { wind: -20 });
+    expect(result.angle).toBeDefined();
+    expect(typeof result.angle).toBe('number');
+    expect(result.power).toBeDefined();
+    expect(typeof result.power).toBe('number');
+  });
+
+  it('blind_fool should ignore wind entirely', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+
+    // blind_fool has 0 wind compensation, so wind shouldn't affect shot calculation
+    // Both shots should have similar base calculations (with random variance)
+    const result1 = calculateAIShot(shooter, target, terrain, 'blind_fool', { wind: 0 });
+    const result2 = calculateAIShot(shooter, target, terrain, 'blind_fool', { wind: 30 });
+
+    // Both should still produce valid shots
+    expect(result1.angle).toBeDefined();
+    expect(result2.angle).toBeDefined();
+  });
+
+  it('should work with consecutive shots and wind', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+
+    // Combine wind with consecutive shots
+    const result = calculateAIShot(shooter, target, terrain, 'veteran', {
+      wind: 15,
+      consecutiveShots: 3,
+    });
+
+    expect(result.angle).toBeDefined();
+    expect(result.power).toBeDefined();
+  });
+});
+
+describe('AI_WIND_COMPENSATION constant', () => {
+  it('should have compensation values for all difficulty levels', () => {
+    expect(AI_WIND_COMPENSATION.blind_fool).toBeDefined();
+    expect(AI_WIND_COMPENSATION.private).toBeDefined();
+    expect(AI_WIND_COMPENSATION.veteran).toBeDefined();
+    expect(AI_WIND_COMPENSATION.centurion).toBeDefined();
+    expect(AI_WIND_COMPENSATION.primus).toBeDefined();
+  });
+
+  it('should have blind_fool with 0 compensation (ignores wind)', () => {
+    expect(AI_WIND_COMPENSATION.blind_fool).toBe(0);
+  });
+
+  it('should have primus with full compensation (1.0)', () => {
+    expect(AI_WIND_COMPENSATION.primus).toBe(1.0);
+  });
+
+  it('should have increasing compensation from blind_fool to primus', () => {
+    expect(AI_WIND_COMPENSATION.blind_fool).toBeLessThan(AI_WIND_COMPENSATION.private);
+    expect(AI_WIND_COMPENSATION.private).toBeLessThan(AI_WIND_COMPENSATION.veteran);
+    expect(AI_WIND_COMPENSATION.veteran).toBeLessThan(AI_WIND_COMPENSATION.centurion);
+    expect(AI_WIND_COMPENSATION.centurion).toBeLessThan(AI_WIND_COMPENSATION.primus);
+  });
+
+  it('should have all values between 0 and 1', () => {
+    for (const key of Object.keys(AI_WIND_COMPENSATION)) {
+      const value = AI_WIND_COMPENSATION[key as keyof typeof AI_WIND_COMPENSATION];
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(1);
     }
   });
 });

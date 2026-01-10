@@ -1,6 +1,6 @@
 import type { TankState, TerrainData, Position, AIDifficulty } from '../types/game';
 import { AI_DIFFICULTY_ORDER } from '../types/game';
-import { GRAVITY, degreesToRadians, powerToVelocity } from './physics';
+import { GRAVITY, degreesToRadians, powerToVelocity, WIND_SCALE } from './physics';
 import { getInterpolatedHeightAt } from './terrain';
 import { type WeaponType, WEAPON_TYPES, WEAPONS } from './weapons';
 
@@ -114,6 +114,23 @@ export const AI_DIFFICULTY_CONFIGS: Record<AIDifficulty, AIDifficultyConfig> = {
   },
 };
 
+/**
+ * Wind compensation factor for each AI difficulty level.
+ * Higher values mean the AI better accounts for wind in its calculations.
+ * - primus: Perfect wind compensation (100%)
+ * - centurion: Very good wind compensation (90%)
+ * - veteran: Good wind compensation (70%)
+ * - private: Poor wind compensation (40%)
+ * - blind_fool: Ignores wind entirely (0%)
+ */
+export const AI_WIND_COMPENSATION: Record<AIDifficulty, number> = {
+  primus: 1.0,
+  centurion: 0.9,
+  veteran: 0.7,
+  private: 0.4,
+  blind_fool: 0,
+};
+
 export interface AIDecision {
   angle: number;  // UI angle: 0 = up, positive = left, negative = right, range -120 to +120
   power: number;
@@ -146,16 +163,22 @@ function clampUIAngle(angle: number): number {
  * Uses projectile motion equations solved for the required parameters.
  *
  * For a projectile to hit target at (dx, dy) from launch point:
- * - dx = v * cos(θ) * t
+ * - dx = v * cos(θ) * t + 0.5 * a_wind * t² (with wind)
  * - dy = v * sin(θ) * t - 0.5 * g * t²
  *
  * Solving these equations for angle given a power, or finding
  * the optimal power for a given angle trajectory.
+ *
+ * @param shooter - The AI tank that is shooting
+ * @param target - The target tank to hit
+ * @param terrain - Terrain data for collision detection
+ * @param wind - Wind speed in m/s (positive = right, negative = left). Default 0.
  */
 export function calculateOptimalShot(
   shooter: TankState,
   target: TankState,
-  terrain: TerrainData | null
+  terrain: TerrainData | null,
+  wind: number = 0
 ): AIDecision {
   const dx = target.position.x - shooter.position.x;
 
@@ -178,7 +201,8 @@ export function calculateOptimalShot(
         shooter.position,
         actualAngle,
         testPower,
-        terrain
+        terrain,
+        wind
       );
 
       if (landingX !== null) {
@@ -203,7 +227,8 @@ export function calculateOptimalShot(
         shooter.position,
         actualAngle,
         testPower,
-        terrain
+        terrain,
+        wind
       );
 
       if (landingX !== null) {
@@ -229,12 +254,19 @@ export function calculateOptimalShot(
 /**
  * Simulate where a shot would land given initial parameters.
  * Returns the x coordinate of landing, or null if shot goes off screen.
+ *
+ * @param startPosition - Starting position of the shot
+ * @param angle - Launch angle in degrees (physics convention: 0 = right, 90 = up)
+ * @param power - Power value (10-100)
+ * @param terrain - Terrain data for collision detection
+ * @param wind - Wind speed in m/s (positive = right, negative = left). Default 0.
  */
 function simulateShotLanding(
   startPosition: Position,
   angle: number,
   power: number,
-  terrain: TerrainData | null
+  terrain: TerrainData | null,
+  wind: number = 0
 ): number | null {
   const timeStep = 0.05;
   const maxTime = 20;
@@ -247,10 +279,14 @@ function simulateShotLanding(
   const vx = velocity * Math.cos(angleRad);
   const vy = velocity * Math.sin(angleRad);
 
+  // Wind adds horizontal acceleration
+  const windAccel = wind * WIND_SCALE;
+
   let prevY = startPosition.y;
 
   for (let t = timeStep; t <= maxTime; t += timeStep) {
-    const x = startPosition.x + vx * t;
+    // Wind affects horizontal position: x += 0.5 * windAccel * t²
+    const x = startPosition.x + vx * t + 0.5 * windAccel * t * t;
     const y = startPosition.y + vy * t - 0.5 * GRAVITY * t * t;
 
     // Check if projectile is descending and below terrain
@@ -394,6 +430,7 @@ function findSafeShot(
  * This version incorporates:
  * - Shot bracketing/zeroing (reduced variance with consecutive shots)
  * - Self-preservation (avoids self-harm except for lowest difficulties)
+ * - Wind compensation (higher difficulty = better wind awareness)
  */
 export function calculateAIShot(
   aiTank: TankState,
@@ -403,12 +440,18 @@ export function calculateAIShot(
   options: {
     consecutiveShots?: number;
     blastRadius?: number;
+    wind?: number;
   } = {}
 ): AIDecision & { thinkingTimeMs: number; targetId: string } {
-  const { consecutiveShots = 0, blastRadius = DEFAULT_BLAST_RADIUS } = options;
+  const { consecutiveShots = 0, blastRadius = DEFAULT_BLAST_RADIUS, wind = 0 } = options;
 
-  // Calculate the optimal shot
-  const optimalShot = calculateOptimalShot(aiTank, targetTank, terrain);
+  // Apply difficulty-based wind compensation
+  // Higher difficulty AIs better account for wind in their calculations
+  const windCompensation = AI_WIND_COMPENSATION[difficulty];
+  const effectiveWind = wind * windCompensation;
+
+  // Calculate the optimal shot (with wind compensation)
+  const optimalShot = calculateOptimalShot(aiTank, targetTank, terrain, effectiveWind);
 
   // Apply difficulty variance with bracketing
   let finalShot = applyDifficultyVariance(optimalShot, difficulty, consecutiveShots);

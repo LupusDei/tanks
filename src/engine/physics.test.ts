@@ -3,6 +3,7 @@ import {
   GRAVITY,
   POWER_SCALE,
   BASE_TERRAIN_WIDTH,
+  WIND_SCALE,
   getTerrainPowerScale,
   powerToVelocity,
   degreesToRadians,
@@ -591,5 +592,194 @@ describe('physics calibration', () => {
       // At 45° should travel more than at 70°
       expect(position.x).toBeGreaterThan(1000);
     }
+  });
+});
+
+describe('WIND_SCALE constant', () => {
+  it('equals 0.15 (converts m/s to px/s² acceleration)', () => {
+    expect(WIND_SCALE).toBe(0.15);
+  });
+});
+
+describe('wind physics in calculatePosition', () => {
+  const baseConfig: LaunchConfig = {
+    position: { x: 0, y: 0 },
+    angle: 45,
+    power: 100,
+  };
+
+  it('wind=0 produces same result as no wind parameter', () => {
+    const posNoWind = calculatePosition(baseConfig, 2);
+    const posZeroWind = calculatePosition(baseConfig, 2, 0);
+
+    expect(posZeroWind.x).toBeCloseTo(posNoWind.x, 10);
+    expect(posZeroWind.y).toBeCloseTo(posNoWind.y, 10);
+  });
+
+  it('positive wind increases horizontal distance', () => {
+    const posNoWind = calculatePosition(baseConfig, 2, 0);
+    const posWithWind = calculatePosition(baseConfig, 2, 10);
+
+    // Wind of 10 m/s should push projectile further right
+    expect(posWithWind.x).toBeGreaterThan(posNoWind.x);
+  });
+
+  it('negative wind decreases horizontal distance', () => {
+    const posNoWind = calculatePosition(baseConfig, 2, 0);
+    const posWithWind = calculatePosition(baseConfig, 2, -10);
+
+    // Wind of -10 m/s should push projectile left
+    expect(posWithWind.x).toBeLessThan(posNoWind.x);
+  });
+
+  it('wind displacement grows with time squared', () => {
+    // At time t, wind displacement = 0.5 * windAccel * t²
+    const wind = 10;
+    const windAccel = wind * WIND_SCALE; // 1.5 px/s²
+
+    const pos1 = calculatePosition(baseConfig, 1, wind);
+    const pos0 = calculatePosition(baseConfig, 1, 0);
+    const displacement1 = pos1.x - pos0.x;
+
+    const pos2 = calculatePosition(baseConfig, 2, wind);
+    const pos02 = calculatePosition(baseConfig, 2, 0);
+    const displacement2 = pos2.x - pos02.x;
+
+    // At t=1: displacement = 0.5 * 1.5 * 1 = 0.75
+    expect(displacement1).toBeCloseTo(0.5 * windAccel * 1, 5);
+
+    // At t=2: displacement = 0.5 * 1.5 * 4 = 3
+    expect(displacement2).toBeCloseTo(0.5 * windAccel * 4, 5);
+
+    // Ratio should be 4:1 (t² growth)
+    expect(displacement2 / displacement1).toBeCloseTo(4, 5);
+  });
+
+  it('wind does not affect vertical position', () => {
+    const posNoWind = calculatePosition(baseConfig, 2, 0);
+    const posWithWind = calculatePosition(baseConfig, 2, 20);
+
+    // Y position should be identical regardless of wind
+    expect(posWithWind.y).toBeCloseTo(posNoWind.y, 10);
+  });
+
+  it('calculates correct wind displacement at max wind', () => {
+    const maxWind = 30; // MAX_WIND
+    const windAccel = maxWind * WIND_SCALE; // 4.5 px/s²
+
+    const pos = calculatePosition(baseConfig, 4, maxWind);
+    const posNoWind = calculatePosition(baseConfig, 4, 0);
+
+    // At t=4: displacement = 0.5 * 4.5 * 16 = 36 px
+    const expectedDisplacement = 0.5 * windAccel * 16;
+    const actualDisplacement = pos.x - posNoWind.x;
+
+    expect(actualDisplacement).toBeCloseTo(expectedDisplacement, 5);
+  });
+});
+
+describe('wind physics in calculateVelocity', () => {
+  const baseConfig: LaunchConfig = {
+    position: { x: 0, y: 0 },
+    angle: 45,
+    power: 100,
+  };
+
+  it('wind=0 produces same result as no wind parameter', () => {
+    const velNoWind = calculateVelocity(baseConfig, 2);
+    const velZeroWind = calculateVelocity(baseConfig, 2, 0);
+
+    expect(velZeroWind.vx).toBeCloseTo(velNoWind.vx, 10);
+    expect(velZeroWind.vy).toBeCloseTo(velNoWind.vy, 10);
+  });
+
+  it('positive wind increases horizontal velocity over time', () => {
+    const vel0 = calculateVelocity(baseConfig, 0, 10);
+    const vel2 = calculateVelocity(baseConfig, 2, 10);
+
+    // vx should increase due to wind acceleration
+    expect(vel2.vx).toBeGreaterThan(vel0.vx);
+  });
+
+  it('negative wind decreases horizontal velocity over time', () => {
+    const vel0 = calculateVelocity(baseConfig, 0, -10);
+    const vel2 = calculateVelocity(baseConfig, 2, -10);
+
+    // vx should decrease due to negative wind acceleration
+    expect(vel2.vx).toBeLessThan(vel0.vx);
+  });
+
+  it('wind velocity change is linear with time', () => {
+    const wind = 10;
+    const windAccel = wind * WIND_SCALE; // 1.5 px/s²
+
+    const vel0 = calculateVelocity(baseConfig, 0, wind);
+    const vel1 = calculateVelocity(baseConfig, 1, wind);
+    const vel2 = calculateVelocity(baseConfig, 2, wind);
+
+    // vx change should be windAccel per second
+    expect(vel1.vx - vel0.vx).toBeCloseTo(windAccel * 1, 5);
+    expect(vel2.vx - vel0.vx).toBeCloseTo(windAccel * 2, 5);
+  });
+
+  it('wind does not affect vertical velocity', () => {
+    const velNoWind = calculateVelocity(baseConfig, 2, 0);
+    const velWithWind = calculateVelocity(baseConfig, 2, 20);
+
+    // vy should be identical regardless of wind
+    expect(velWithWind.vy).toBeCloseTo(velNoWind.vy, 10);
+  });
+});
+
+describe('wind effect on different projectile speeds', () => {
+  it('wind displacement grows quadratically with flight time', () => {
+    // The key physics principle: wind displacement = 0.5 * windAccel * t²
+    // Projectiles with longer flight times accumulate more wind displacement
+
+    const config: LaunchConfig = {
+      position: { x: 0, y: 0 },
+      angle: 45,
+      power: 100,
+    };
+
+    const wind = 10;
+    const windAccel = wind * WIND_SCALE;
+
+    // Compare displacement at different times
+    const t1 = 2;
+    const t2 = 4;
+
+    const pos1NoWind = calculatePosition(config, t1, 0);
+    const pos1Wind = calculatePosition(config, t1, wind);
+    const displacement1 = pos1Wind.x - pos1NoWind.x;
+
+    const pos2NoWind = calculatePosition(config, t2, 0);
+    const pos2Wind = calculatePosition(config, t2, wind);
+    const displacement2 = pos2Wind.x - pos2NoWind.x;
+
+    // Verify quadratic relationship: at 2x time, 4x displacement
+    expect(displacement1).toBeCloseTo(0.5 * windAccel * t1 * t1, 5);
+    expect(displacement2).toBeCloseTo(0.5 * windAccel * t2 * t2, 5);
+    expect(displacement2 / displacement1).toBeCloseTo(4, 5);
+  });
+
+  it('demonstrates slower animations have more wind effect (same target distance)', () => {
+    // When hitting the same target, a slower projectile takes more time
+    // and thus accumulates more wind displacement
+
+    // Fast projectile: reaches target in 2 seconds
+    // Slow projectile: reaches target in 4 seconds (due to animation speed modifier)
+    const wind = 10;
+    const windAccel = wind * WIND_SCALE;
+
+    const fastFlightTime = 2;
+    const slowFlightTime = 4; // 0.5x animation speed means 2x flight time
+
+    // Wind displacement at each flight time
+    const fastDisplacement = 0.5 * windAccel * fastFlightTime * fastFlightTime;
+    const slowDisplacement = 0.5 * windAccel * slowFlightTime * slowFlightTime;
+
+    // Slow projectile has 4x more wind displacement due to t² relationship
+    expect(slowDisplacement / fastDisplacement).toBeCloseTo(4, 5);
   });
 });

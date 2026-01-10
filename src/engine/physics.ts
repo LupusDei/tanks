@@ -19,6 +19,13 @@ export const BASE_TERRAIN_WIDTH = 800;
 export const POWER_SCALE = 1.12;
 
 /**
+ * Wind scale factor to convert wind speed (m/s) to horizontal acceleration (px/s²).
+ * At 10 m/s wind, adds 1.5 px/s² horizontal acceleration.
+ * This creates noticeable but not game-breaking wind effects.
+ */
+export const WIND_SCALE = 0.15;
+
+/**
  * Calculate the power scale factor for a given terrain width.
  * Scales velocity so that full power covers the same relative distance
  * regardless of terrain size.
@@ -70,13 +77,20 @@ export function degreesToRadians(degrees: number): number {
 /**
  * Calculate projectile position at a given time.
  *
- * Uses standard projectile motion equations:
- * - x(t) = x₀ + v₀ * cos(θ) * t
+ * Uses standard projectile motion equations with wind:
+ * - x(t) = x₀ + v₀ * cos(θ) * t + 0.5 * a_wind * t²
  * - y(t) = y₀ + v₀ * sin(θ) * t - 0.5 * g * t²
  *
+ * Wind adds horizontal acceleration, affecting slower projectiles more
+ * because they have longer flight times (t² term).
+ *
  * Note: In screen coordinates, y increases downward, so gravity adds to y.
+ *
+ * @param config - Launch configuration
+ * @param time - Time in seconds since launch
+ * @param wind - Wind speed in m/s (positive = right, negative = left). Default 0.
  */
-export function calculatePosition(config: LaunchConfig, time: number): Position {
+export function calculatePosition(config: LaunchConfig, time: number, wind: number = 0): Position {
   const { position, angle, power, terrainWidth } = config;
   const angleRad = degreesToRadians(angle);
   const velocity = powerToVelocity(power, terrainWidth);
@@ -84,8 +98,12 @@ export function calculatePosition(config: LaunchConfig, time: number): Position 
   const vx = velocity * Math.cos(angleRad);
   const vy = velocity * Math.sin(angleRad);
 
+  // Wind adds horizontal acceleration (positive wind = push right)
+  const windAccel = wind * WIND_SCALE;
+
   // In screen coordinates, positive y is down, so gravity adds to y
-  const x = position.x + vx * time;
+  // Wind acceleration adds to horizontal position: 0.5 * a * t²
+  const x = position.x + vx * time + 0.5 * windAccel * time * time;
   const y = position.y - vy * time + 0.5 * GRAVITY * time * time;
 
   return { x, y };
@@ -93,16 +111,23 @@ export function calculatePosition(config: LaunchConfig, time: number): Position 
 
 /**
  * Calculate the velocity components at a given time.
+ *
+ * @param config - Launch configuration
+ * @param time - Time in seconds since launch
+ * @param wind - Wind speed in m/s (positive = right, negative = left). Default 0.
  */
 export function calculateVelocity(
   config: LaunchConfig,
-  time: number
+  time: number,
+  wind: number = 0
 ): { vx: number; vy: number } {
   const { angle, power, terrainWidth } = config;
   const angleRad = degreesToRadians(angle);
   const velocity = powerToVelocity(power, terrainWidth);
 
-  const vx = velocity * Math.cos(angleRad);
+  // Wind adds to horizontal velocity over time: vx = vx₀ + a_wind * t
+  const windAccel = wind * WIND_SCALE;
+  const vx = velocity * Math.cos(angleRad) + windAccel * time;
   // In screen coordinates, gravity pulls down (increases y), so vy decreases
   const vy = velocity * Math.sin(angleRad) - GRAVITY * time;
 
