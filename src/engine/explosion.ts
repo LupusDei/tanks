@@ -1,4 +1,5 @@
 import type { Position, TankState } from '../types/game';
+import type { WeaponType } from './weapons';
 
 /**
  * Explosion radius in pixels.
@@ -35,6 +36,98 @@ export interface ExplosionState {
   isActive: boolean;
   /** Explosion radius in pixels (for rendering and hit detection) */
   radius: number;
+  /** Weapon type that created this explosion */
+  weaponType: WeaponType;
+  /** Sub-explosions for cluster bomb */
+  subExplosions?: ExplosionState[];
+  /** Duration multiplier for this explosion type */
+  durationMultiplier: number;
+}
+
+/**
+ * Visual configuration for weapon-specific explosions.
+ */
+interface ExplosionConfig {
+  /** Particle color palette */
+  colors: string[];
+  /** Duration multiplier (1.0 = standard) */
+  durationMultiplier: number;
+  /** Particle count multiplier */
+  particleMultiplier: number;
+  /** Particle speed multiplier */
+  speedMultiplier: number;
+  /** Flash color (center) */
+  flashColorInner: string;
+  /** Flash color (outer) */
+  flashColorOuter: string;
+  /** Fireball color (center) */
+  fireColorInner: string;
+  /** Fireball color (outer) */
+  fireColorOuter: string;
+}
+
+/**
+ * Get explosion configuration for a weapon type.
+ */
+function getExplosionConfig(weaponType: WeaponType): ExplosionConfig {
+  switch (weaponType) {
+    case 'heavy_artillery':
+      return {
+        colors: ['#ff3300', '#cc2200', '#aa4400', '#884400', '#663300', '#442200'],
+        durationMultiplier: 1.4,
+        particleMultiplier: 1.8,
+        speedMultiplier: 0.7,
+        flashColorInner: 'rgba(255, 200, 150, 1)',
+        flashColorOuter: 'rgba(255, 100, 50, 0)',
+        fireColorInner: 'rgba(255, 150, 80, 1)',
+        fireColorOuter: 'rgba(150, 50, 0, 0)',
+      };
+    case 'precision':
+      return {
+        colors: ['#ffffff', '#aaddff', '#66ccff', '#44aaff'],
+        durationMultiplier: 0.6,
+        particleMultiplier: 0.6,
+        speedMultiplier: 1.8,
+        flashColorInner: 'rgba(255, 255, 255, 1)',
+        flashColorOuter: 'rgba(150, 200, 255, 0)',
+        fireColorInner: 'rgba(200, 230, 255, 1)',
+        fireColorOuter: 'rgba(100, 150, 255, 0)',
+      };
+    case 'cluster_bomb':
+      return {
+        colors: ['#ff6600', '#ff4400', '#ffaa00', '#ff8800'],
+        durationMultiplier: 0.8,
+        particleMultiplier: 0.7,
+        speedMultiplier: 1.2,
+        flashColorInner: 'rgba(255, 255, 200, 1)',
+        flashColorOuter: 'rgba(255, 150, 50, 0)',
+        fireColorInner: 'rgba(255, 200, 100, 1)',
+        fireColorOuter: 'rgba(200, 80, 0, 0)',
+      };
+    case 'napalm':
+      return {
+        colors: ['#ff4400', '#ff6600', '#ff2200', '#ff8800', '#ffaa00'],
+        durationMultiplier: 2.0,
+        particleMultiplier: 1.3,
+        speedMultiplier: 0.5,
+        flashColorInner: 'rgba(255, 200, 100, 1)',
+        flashColorOuter: 'rgba(255, 100, 0, 0)',
+        fireColorInner: 'rgba(255, 150, 50, 1)',
+        fireColorOuter: 'rgba(200, 50, 0, 0)',
+      };
+    case 'standard':
+    default:
+      return {
+        colors: ['#ff4400', '#ff6600', '#ffaa00', '#ffcc00', '#ff2200', '#ffff44'],
+        durationMultiplier: 1.0,
+        particleMultiplier: 1.0,
+        speedMultiplier: 1.0,
+        flashColorInner: 'rgba(255, 255, 255, 1)',
+        flashColorOuter: 'rgba(255, 200, 50, 0)',
+        fireColorInner: 'rgba(255, 220, 100, 1)',
+        fireColorOuter: 'rgba(200, 50, 0, 0)',
+      };
+  }
 }
 
 /**
@@ -42,44 +135,97 @@ export interface ExplosionState {
  * @param position - Center position of the explosion
  * @param startTime - Start time for animation (defaults to now)
  * @param radius - Explosion radius in pixels (defaults to EXPLOSION_RADIUS)
+ * @param weaponType - Weapon type for visual styling (defaults to 'standard')
  */
 export function createExplosion(
   position: Position,
   startTime: number = performance.now(),
-  radius: number = EXPLOSION_RADIUS
+  radius: number = EXPLOSION_RADIUS,
+  weaponType: WeaponType = 'standard'
 ): ExplosionState {
-  return {
+  const config = getExplosionConfig(weaponType);
+  const explosion: ExplosionState = {
     position: { ...position },
     startTime,
-    particles: generateParticles(position, radius),
+    particles: generateParticles(position, radius, config),
     isActive: true,
     radius,
+    weaponType,
+    durationMultiplier: config.durationMultiplier,
   };
+
+  // Create sub-explosions for cluster bomb
+  if (weaponType === 'cluster_bomb') {
+    explosion.subExplosions = createClusterSubExplosions(position, startTime, radius);
+  }
+
+  return explosion;
+}
+
+/**
+ * Create sub-explosions for cluster bomb.
+ * Creates 4 smaller explosions around the main impact point with staggered timing.
+ */
+function createClusterSubExplosions(
+  center: Position,
+  startTime: number,
+  mainRadius: number
+): ExplosionState[] {
+  const subExplosions: ExplosionState[] = [];
+  const subCount = 4;
+  const spreadRadius = mainRadius * 1.5;
+
+  for (let i = 0; i < subCount; i++) {
+    const angle = (i / subCount) * Math.PI * 2 + Math.random() * 0.5;
+    const distance = spreadRadius * (0.6 + Math.random() * 0.4);
+    const delay = 80 + Math.random() * 120; // 80-200ms delay
+
+    const subPosition: Position = {
+      x: center.x + Math.cos(angle) * distance,
+      y: center.y + Math.sin(angle) * distance,
+    };
+
+    const config = getExplosionConfig('cluster_bomb');
+    subExplosions.push({
+      position: subPosition,
+      startTime: startTime + delay,
+      particles: generateParticles(subPosition, mainRadius * 0.5, config),
+      isActive: true,
+      radius: mainRadius * 0.5,
+      weaponType: 'cluster_bomb',
+      durationMultiplier: config.durationMultiplier,
+    });
+  }
+
+  return subExplosions;
 }
 
 /**
  * Generate random particles for the explosion effect.
- * Particle count and speed scale with explosion radius.
+ * Particle count and speed scale with explosion radius and weapon config.
  */
-function generateParticles(center: Position, explosionRadius: number): ExplosionParticle[] {
+function generateParticles(
+  center: Position,
+  explosionRadius: number,
+  config: ExplosionConfig
+): ExplosionParticle[] {
   const particles: ExplosionParticle[] = [];
-  // Scale particle count with radius (min 15, max 40)
   const radiusScale = explosionRadius / EXPLOSION_RADIUS;
-  const particleCount = Math.floor(Math.min(40, Math.max(15, 20 * radiusScale)));
+  const baseCount = Math.floor(Math.min(40, Math.max(15, 20 * radiusScale)));
+  const particleCount = Math.floor(baseCount * config.particleMultiplier);
 
   for (let i = 0; i < particleCount; i++) {
-    // Random angle and speed (scale speed with radius)
     const angle = Math.random() * Math.PI * 2;
-    const baseSpeed = 30 + Math.random() * 60; // 30-90 pixels per second
-    const speed = baseSpeed * Math.sqrt(radiusScale); // Larger explosions have faster particles
+    const baseSpeed = 30 + Math.random() * 60;
+    const speed = baseSpeed * Math.sqrt(radiusScale) * config.speedMultiplier;
 
     particles.push({
       x: center.x,
       y: center.y,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 20 * radiusScale, // Slight upward bias
-      radius: (2 + Math.random() * 4) * Math.sqrt(radiusScale), // Scale particle size
-      color: getParticleColor(),
+      vy: Math.sin(angle) * speed - 20 * radiusScale,
+      radius: (2 + Math.random() * 4) * Math.sqrt(radiusScale),
+      color: config.colors[Math.floor(Math.random() * config.colors.length)]!,
       life: 1,
     });
   }
@@ -88,26 +234,12 @@ function generateParticles(center: Position, explosionRadius: number): Explosion
 }
 
 /**
- * Get a random warm color for explosion particles.
- */
-function getParticleColor(): string {
-  const colors = [
-    '#ff4400', // Orange-red
-    '#ff6600', // Orange
-    '#ffaa00', // Yellow-orange
-    '#ffcc00', // Golden yellow
-    '#ff2200', // Red
-    '#ffff44', // Bright yellow
-  ];
-  return colors[Math.floor(Math.random() * colors.length)]!;
-}
-
-/**
  * Get the current progress of the explosion (0 to 1).
  */
 export function getExplosionProgress(explosion: ExplosionState, currentTime: number): number {
   const elapsed = currentTime - explosion.startTime;
-  return Math.min(1, elapsed / EXPLOSION_DURATION_MS);
+  const duration = EXPLOSION_DURATION_MS * explosion.durationMultiplier;
+  return Math.min(1, elapsed / duration);
 }
 
 /**
@@ -129,25 +261,41 @@ export function updateExplosion(
   if (!explosion.isActive) return explosion;
 
   const progress = getExplosionProgress(explosion, currentTime);
-
-  if (progress >= 1) {
-    return { ...explosion, isActive: false };
-  }
-
   const deltaSeconds = deltaTimeMs / 1000;
+
+  // Adjust particle decay based on weapon type
+  const decayRate = explosion.weaponType === 'napalm' ? 0.4 : 0.8;
+  const gravityMultiplier = explosion.weaponType === 'napalm' ? 20 : 50;
 
   // Update particles
   const updatedParticles = explosion.particles.map((particle) => ({
     ...particle,
     x: particle.x + particle.vx * deltaSeconds,
     y: particle.y + particle.vy * deltaSeconds,
-    vy: particle.vy + 50 * deltaSeconds, // Gravity effect
-    life: Math.max(0, particle.life - deltaSeconds * 0.8),
+    vy: particle.vy + gravityMultiplier * deltaSeconds,
+    life: Math.max(0, particle.life - deltaSeconds * decayRate),
   }));
+
+  // Update sub-explosions for cluster bomb
+  let updatedSubExplosions = explosion.subExplosions;
+  if (updatedSubExplosions) {
+    updatedSubExplosions = updatedSubExplosions.map((sub) =>
+      updateExplosion(sub, currentTime, deltaTimeMs)
+    );
+  }
+
+  // Check if main explosion and all sub-explosions are complete
+  const mainComplete = progress >= 1;
+  const subsComplete = !updatedSubExplosions || updatedSubExplosions.every((sub) => !sub.isActive);
+
+  if (mainComplete && subsComplete) {
+    return { ...explosion, isActive: false, particles: updatedParticles, subExplosions: updatedSubExplosions };
+  }
 
   return {
     ...explosion,
     particles: updatedParticles,
+    subExplosions: updatedSubExplosions,
   };
 }
 
@@ -163,24 +311,37 @@ export function renderExplosion(
   if (!explosion.isActive) return;
 
   const progress = getExplosionProgress(explosion, currentTime);
-  const { position, radius } = explosion;
+  const { position, radius, weaponType } = explosion;
+  const config = getExplosionConfig(weaponType);
 
   ctx.save();
 
-  // Phase 1: Initial flash (0-15%)
-  if (progress < 0.15) {
-    const flashProgress = progress / 0.15;
-    const flashRadius = radius * (0.5 + flashProgress * 1.5);
+  // Render sub-explosions first (for cluster bomb)
+  if (explosion.subExplosions) {
+    for (const sub of explosion.subExplosions) {
+      renderExplosion(ctx, sub, currentTime);
+    }
+  }
+
+  // Phase 1: Initial flash (0-15%, shorter for precision)
+  const flashEnd = weaponType === 'precision' ? 0.1 : 0.15;
+  const flashScale = weaponType === 'heavy_artillery' ? 2.0 : 1.0;
+  if (progress < flashEnd) {
+    const flashProgress = progress / flashEnd;
+    const flashRadius = radius * (0.5 + flashProgress * 1.5) * flashScale;
     const flashAlpha = 1 - flashProgress * 0.5;
 
-    // Bright white/yellow flash
     const flashGradient = ctx.createRadialGradient(
       position.x, position.y, 0,
       position.x, position.y, flashRadius
     );
-    flashGradient.addColorStop(0, `rgba(255, 255, 255, ${flashAlpha})`);
-    flashGradient.addColorStop(0.3, `rgba(255, 255, 100, ${flashAlpha * 0.8})`);
-    flashGradient.addColorStop(1, `rgba(255, 200, 50, 0)`);
+
+    // Use weapon-specific flash colors
+    const innerColor = config.flashColorInner.replace('1)', `${flashAlpha})`);
+    const outerColor = config.flashColorOuter;
+    flashGradient.addColorStop(0, innerColor);
+    flashGradient.addColorStop(0.4, innerColor.replace(`${flashAlpha})`, `${flashAlpha * 0.6})`));
+    flashGradient.addColorStop(1, outerColor);
 
     ctx.fillStyle = flashGradient;
     ctx.beginPath();
@@ -188,25 +349,29 @@ export function renderExplosion(
     ctx.fill();
   }
 
-  // Phase 2: Fireball (5-60%)
-  if (progress >= 0.05 && progress < 0.6) {
-    const fireProgress = (progress - 0.05) / 0.55;
+  // Phase 2: Fireball (5-60%, extended for napalm)
+  const fireEnd = weaponType === 'napalm' ? 0.8 : (weaponType === 'precision' ? 0.4 : 0.6);
+  if (progress >= 0.05 && progress < fireEnd) {
+    const fireProgress = (progress - 0.05) / (fireEnd - 0.05);
     const fireRadius = radius * (0.3 + fireProgress * 0.9);
     const fireAlpha = 1 - fireProgress * 0.7;
 
-    // Outer glow (scale blur with radius)
-    ctx.shadowColor = '#ff4400';
+    // Glow color based on weapon type
+    const glowColor = config.colors[0] ?? '#ff4400';
+    ctx.shadowColor = glowColor;
     ctx.shadowBlur = 20 * (1 - fireProgress) * (radius / EXPLOSION_RADIUS);
 
-    // Fireball gradient (orange/red)
     const fireGradient = ctx.createRadialGradient(
       position.x, position.y, 0,
       position.x, position.y, fireRadius
     );
-    fireGradient.addColorStop(0, `rgba(255, 220, 100, ${fireAlpha})`);
-    fireGradient.addColorStop(0.3, `rgba(255, 150, 50, ${fireAlpha * 0.9})`);
-    fireGradient.addColorStop(0.6, `rgba(255, 80, 20, ${fireAlpha * 0.7})`);
-    fireGradient.addColorStop(1, `rgba(200, 50, 0, 0)`);
+
+    const innerFire = config.fireColorInner.replace('1)', `${fireAlpha})`);
+    const outerFire = config.fireColorOuter;
+    fireGradient.addColorStop(0, innerFire);
+    fireGradient.addColorStop(0.3, innerFire.replace(`${fireAlpha})`, `${fireAlpha * 0.9})`));
+    fireGradient.addColorStop(0.6, innerFire.replace(`${fireAlpha})`, `${fireAlpha * 0.5})`));
+    fireGradient.addColorStop(1, outerFire);
 
     ctx.fillStyle = fireGradient;
     ctx.beginPath();
@@ -224,9 +389,8 @@ export function renderExplosion(
     ctx.globalAlpha = particleAlpha;
     ctx.fillStyle = particle.color;
 
-    // Add glow to particles
     ctx.shadowColor = particle.color;
-    ctx.shadowBlur = 4;
+    ctx.shadowBlur = weaponType === 'precision' ? 6 : 4;
 
     ctx.beginPath();
     ctx.arc(particle.x, particle.y, particle.radius * particle.life, 0, Math.PI * 2);
@@ -236,11 +400,13 @@ export function renderExplosion(
   ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
-  // Phase 4: Smoke ring (40-100%)
-  if (progress >= 0.4) {
+  // Phase 4: Smoke ring (40-100%) - less smoke for precision, more for heavy
+  // Skip smoke entirely for napalm (replaced by lingering flames)
+  if (weaponType !== 'napalm' && progress >= 0.4) {
     const smokeProgress = (progress - 0.4) / 0.6;
-    const smokeRadius = radius * (0.8 + smokeProgress * 0.8);
-    const smokeAlpha = 0.4 * (1 - smokeProgress);
+    const smokeScale = weaponType === 'heavy_artillery' ? 1.3 : (weaponType === 'precision' ? 0.5 : 1.0);
+    const smokeRadius = radius * (0.8 + smokeProgress * 0.8) * smokeScale;
+    const smokeAlpha = (weaponType === 'precision' ? 0.2 : 0.4) * (1 - smokeProgress);
 
     const smokeGradient = ctx.createRadialGradient(
       position.x, position.y, smokeRadius * 0.5,
@@ -256,7 +422,62 @@ export function renderExplosion(
     ctx.fill();
   }
 
+  // Napalm special effect: lingering ground flames
+  if (weaponType === 'napalm' && progress >= 0.2) {
+    renderNapalmFlames(ctx, position, radius, progress, currentTime);
+  }
+
   ctx.restore();
+}
+
+/**
+ * Render lingering flame effect for napalm explosions.
+ */
+function renderNapalmFlames(
+  ctx: CanvasRenderingContext2D,
+  position: Position,
+  radius: number,
+  progress: number,
+  currentTime: number
+): void {
+  const flameAlpha = Math.max(0, 1 - progress * 0.8);
+  const flameCount = 5;
+
+  for (let i = 0; i < flameCount; i++) {
+    // Deterministic positions based on index, with slight time-based flicker
+    const baseAngle = (i / flameCount) * Math.PI * 2;
+    const flicker = Math.sin(currentTime * 0.01 + i * 2) * 0.1;
+    const dist = radius * (0.3 + (i % 3) * 0.2);
+
+    const flameX = position.x + Math.cos(baseAngle) * dist;
+    const flameY = position.y + Math.sin(baseAngle) * dist * 0.5; // Flatten vertically
+
+    // Flame height varies with time
+    const flameHeight = (8 + Math.sin(currentTime * 0.015 + i) * 4) * flameAlpha;
+    const flameWidth = 4 + Math.sin(currentTime * 0.02 + i * 1.5) * 2;
+
+    ctx.globalAlpha = flameAlpha * (0.6 + flicker);
+
+    // Draw flame shape
+    const gradient = ctx.createLinearGradient(
+      flameX, flameY,
+      flameX, flameY - flameHeight
+    );
+    gradient.addColorStop(0, '#ff6600');
+    gradient.addColorStop(0.3, '#ff4400');
+    gradient.addColorStop(0.7, '#ff2200');
+    gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.moveTo(flameX - flameWidth, flameY);
+    ctx.quadraticCurveTo(flameX - flameWidth * 0.5, flameY - flameHeight * 0.7, flameX, flameY - flameHeight);
+    ctx.quadraticCurveTo(flameX + flameWidth * 0.5, flameY - flameHeight * 0.7, flameX + flameWidth, flameY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
 }
 
 /**
