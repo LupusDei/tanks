@@ -416,10 +416,14 @@ function App() {
       ctx.fill()
     }
 
-    // Render tanks (skip those with active destruction animations)
+    // Render tanks (skip dead tanks and those with active destruction animations)
     const hasActiveProjectiles = projectilesRef.current.some((p) => p.isActive)
     const destroyedTankIds = new Set(destructionsRef.current.filter(d => d.isActive).map(d => d.tankId))
     for (const tank of tanks) {
+      // Skip rendering dead tanks
+      if (tank.health <= 0) {
+        continue
+      }
       // Skip rendering tanks that have destruction animations playing
       if (destroyedTankIds.has(tank.id)) {
         continue
