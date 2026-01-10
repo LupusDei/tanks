@@ -110,13 +110,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
 
+    console.log('[consumeWeapon] Attempting to consume:', weaponType);
+    const beforeData = loadUserData();
+    console.log('[consumeWeapon] Before - inventory:', beforeData?.weaponInventory);
+
     const result = removeWeapon(weaponType, 1);
+    console.log('[consumeWeapon] removeWeapon result:', result);
+
     if (result === null) {
+      console.log('[consumeWeapon] FAILED - removeWeapon returned null');
       return false; // Insufficient quantity or no user
     }
 
     // Reload user data to get updated inventory
     const updated = loadUserData();
+    console.log('[consumeWeapon] After - inventory:', updated?.weaponInventory);
     if (updated) {
       setUserData(updated);
     }

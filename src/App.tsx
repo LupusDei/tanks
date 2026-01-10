@@ -252,9 +252,11 @@ function App() {
       // Decrement ammo when player fires a non-standard weapon
       if (tank.id === 'player' && weaponType !== 'standard') {
         const currentAmmo = currentState.weaponAmmo[weaponType] ?? 0
+        console.log('[App] Firing weapon:', weaponType, 'currentAmmo:', currentAmmo)
         actions.decrementAmmo(weaponType)
         // Also consume from persistent inventory
-        consumeWeapon(weaponType)
+        const consumed = consumeWeapon(weaponType)
+        console.log('[App] consumeWeapon returned:', consumed)
 
         // Auto-switch to standard when weapon is depleted
         if (currentAmmo <= 1) {
