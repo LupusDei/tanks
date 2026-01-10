@@ -10,7 +10,10 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "deploy": "./deploy/deploy.sh",
+    "deploy:cloudflare": "DEPLOY_PROVIDER=cloudflare ./deploy/deploy.sh production",
+    "deploy:preview": "DEPLOY_PROVIDER=cloudflare ./deploy/deploy.sh preview"
   },
   "dependencies": {
     "framer-motion": "^12.25.0",
