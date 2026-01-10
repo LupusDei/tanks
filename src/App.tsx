@@ -60,7 +60,7 @@ const TANK_WHEEL_RADIUS = 6
 
 function App() {
   const { state, actions } = useGame()
-  const { userData, createNewUser, recordGame, weaponInventory } = useUser()
+  const { userData, createNewUser, recordGame, weaponInventory, consumeWeapon } = useUser()
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
   // Array of active explosions for simultaneous impacts
@@ -253,6 +253,8 @@ function App() {
       if (tank.id === 'player' && weaponType !== 'standard') {
         const currentAmmo = currentState.weaponAmmo[weaponType] ?? 0
         actions.decrementAmmo(weaponType)
+        // Also consume from persistent inventory
+        consumeWeapon(weaponType)
 
         // Auto-switch to standard when weapon is depleted
         if (currentAmmo <= 1) {
