@@ -10,8 +10,15 @@ import type {
 } from '../types/game';
 import { STARTING_MONEY, calculateGameEarnings, type WeaponType } from '../engine/weapons';
 
-const STORAGE_KEY = 'tanks_user_data';
+// Storage keys
+const PLAYERS_DB_KEY = 'tanks_players_db';
+const CURRENT_PLAYER_KEY = 'tanks_current_player';
+const LEGACY_STORAGE_KEY = 'tanks_user_data';
+
 const MAX_RECENT_GAMES = 50;
+
+// Type for the multi-player database
+type PlayersDatabase = Record<string, UserData>;
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -52,44 +59,181 @@ function calculateWinRate(won: number, played: number): number {
   return Math.round((won / played) * 100);
 }
 
-export function loadUserData(): UserData | null {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    const data = JSON.parse(stored) as UserData;
+// ============================================================================
+// DATABASE ACCESS FUNCTIONS
+// ============================================================================
 
-    // Restore Infinity for standard weapon (JSON serializes Infinity as null)
-    if (data.weaponInventory?.standard === null) {
-      data.weaponInventory.standard = Infinity;
+/**
+ * Load the entire players database.
+ */
+function loadPlayersDb(): PlayersDatabase {
+  try {
+    const stored = localStorage.getItem(PLAYERS_DB_KEY);
+    if (!stored) return {};
+    const db = JSON.parse(stored) as PlayersDatabase;
+
+    // Restore Infinity for standard weapon in all players
+    for (const playerData of Object.values(db)) {
+      if (playerData.weaponInventory?.standard === null) {
+        playerData.weaponInventory.standard = Infinity;
+      }
     }
 
-    return data;
+    return db;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Save the entire players database.
+ */
+function savePlayersDb(db: PlayersDatabase): void {
+  try {
+    localStorage.setItem(PLAYERS_DB_KEY, JSON.stringify(db));
+  } catch {
+    console.error('Failed to save players database to localStorage');
+  }
+}
+
+/**
+ * Get the current player's name.
+ */
+export function getCurrentPlayerName(): string | null {
+  try {
+    return localStorage.getItem(CURRENT_PLAYER_KEY);
   } catch {
     return null;
   }
 }
 
-export function saveUserData(userData: UserData): void {
+/**
+ * Set the current player's name.
+ */
+export function setCurrentPlayer(name: string): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+    localStorage.setItem(CURRENT_PLAYER_KEY, name);
   } catch {
-    console.error('Failed to save user data to localStorage');
+    console.error('Failed to set current player');
   }
 }
 
+// ============================================================================
+// MIGRATION
+// ============================================================================
+
+/**
+ * Migrate legacy single-user data to the new multi-player format.
+ * Called automatically on first load.
+ */
+function migrateLegacyData(): void {
+  try {
+    const legacyData = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!legacyData) return;
+
+    const oldUserData = JSON.parse(legacyData) as UserData;
+    const playerName = oldUserData.profile.username;
+
+    // Restore Infinity for standard weapon
+    if (oldUserData.weaponInventory?.standard === null) {
+      oldUserData.weaponInventory.standard = Infinity;
+    }
+
+    // Load existing db (might be empty)
+    const db = loadPlayersDb();
+
+    // Only migrate if this player doesn't already exist
+    if (!db[playerName]) {
+      db[playerName] = oldUserData;
+      savePlayersDb(db);
+    }
+
+    // Set as current player if no current player is set
+    if (!getCurrentPlayerName()) {
+      setCurrentPlayer(playerName);
+    }
+
+    // Remove legacy data
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // Ignore migration errors
+  }
+}
+
+// Run migration on module load
+migrateLegacyData();
+
+// ============================================================================
+// USER DATA FUNCTIONS
+// ============================================================================
+
+/**
+ * Load user data for the current player.
+ * Returns null if no current player is set or player doesn't exist.
+ */
+export function loadUserData(): UserData | null {
+  const playerName = getCurrentPlayerName();
+  if (!playerName) return null;
+  return loadUserDataByName(playerName);
+}
+
+/**
+ * Load user data for a specific player by name.
+ */
+export function loadUserDataByName(playerName: string): UserData | null {
+  const db = loadPlayersDb();
+  return db[playerName] ?? null;
+}
+
+/**
+ * Save user data (updates the current player's data).
+ */
+export function saveUserData(userData: UserData): void {
+  const playerName = userData.profile.username;
+  const db = loadPlayersDb();
+  db[playerName] = userData;
+  savePlayersDb(db);
+}
+
+/**
+ * Create a new user or load existing user by name.
+ * Sets this user as the current player.
+ */
 export function createUser(username: string): UserData {
-  const userData = createDefaultUserData(username);
-  saveUserData(userData);
+  const db = loadPlayersDb();
+
+  // Check if player already exists
+  let userData = db[username];
+  if (!userData) {
+    // Create new player
+    userData = createDefaultUserData(username);
+    db[username] = userData;
+    savePlayersDb(db);
+  }
+
+  // Set as current player
+  setCurrentPlayer(username);
+
   return userData;
 }
 
+/**
+ * @deprecated Use createUser with a new name instead.
+ * Changing username is not supported in name-based identity system.
+ */
 export function updateUsername(newUsername: string): UserData | null {
-  const userData = loadUserData();
-  if (!userData) return null;
+  // In the name-based system, changing username effectively creates a new user
+  // This function is kept for backward compatibility but is deprecated
+  const currentData = loadUserData();
+  if (!currentData) return null;
 
-  userData.profile.username = newUsername;
-  saveUserData(userData);
-  return userData;
+  // If the name is the same, just return current data
+  if (currentData.profile.username === newUsername) {
+    return currentData;
+  }
+
+  // Create a new user with the new name (or load existing)
+  return createUser(newUsername);
 }
 
 export interface GameEndParams {
@@ -155,16 +299,56 @@ export function recordGameEnd(params: GameEndParams): UserData | null {
   return userData;
 }
 
+/**
+ * Clear data for the current player.
+ * Does not remove other players' data.
+ */
 export function clearUserData(): void {
+  const playerName = getCurrentPlayerName();
+  if (!playerName) return;
+
+  const db = loadPlayersDb();
+  delete db[playerName];
+  savePlayersDb(db);
+
+  // Clear current player
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(CURRENT_PLAYER_KEY);
   } catch {
-    console.error('Failed to clear user data from localStorage');
+    // Ignore
+  }
+}
+
+/**
+ * Clear all player data (complete reset).
+ */
+export function clearAllPlayerData(): void {
+  try {
+    localStorage.removeItem(PLAYERS_DB_KEY);
+    localStorage.removeItem(CURRENT_PLAYER_KEY);
+  } catch {
+    console.error('Failed to clear all player data');
   }
 }
 
 export function hasExistingUser(): boolean {
   return loadUserData() !== null;
+}
+
+/**
+ * Check if a specific player exists by name.
+ */
+export function playerExists(playerName: string): boolean {
+  const db = loadPlayersDb();
+  return playerName in db;
+}
+
+/**
+ * Get list of all player names.
+ */
+export function getAllPlayerNames(): string[] {
+  const db = loadPlayersDb();
+  return Object.keys(db);
 }
 
 /**

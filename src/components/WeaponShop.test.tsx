@@ -26,7 +26,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
 // Helper to render with UserProvider
 function renderWithUser(ui: React.ReactElement, initialBalance = STARTING_MONEY) {
-  // Set up user data in localStorage
+  // Set up user data in localStorage using new multi-player format
   const userData = {
     profile: { id: 'test-id', username: 'TestUser', createdAt: Date.now() },
     stats: {
@@ -40,7 +40,10 @@ function renderWithUser(ui: React.ReactElement, initialBalance = STARTING_MONEY)
     recentGames: [],
     weaponInventory: { standard: null }, // null becomes Infinity after JSON parse
   };
-  localStorageMock.setItem('tanks_user_data', JSON.stringify(userData));
+  // Store in multi-player database format
+  const playersDb = { 'TestUser': userData };
+  localStorageMock.setItem('tanks_players_db', JSON.stringify(playersDb));
+  localStorageMock.setItem('tanks_current_player', 'TestUser');
 
   return render(<UserProvider>{ui}</UserProvider>);
 }
