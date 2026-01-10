@@ -6,8 +6,9 @@ import type {
   TerrainSize,
   AIDifficulty,
   TankColor,
+  WeaponInventory,
 } from '../types/game';
-import { STARTING_MONEY, calculateGameEarnings } from '../engine/weapons';
+import { STARTING_MONEY, calculateGameEarnings, type WeaponType } from '../engine/weapons';
 
 const STORAGE_KEY = 'tanks_user_data';
 const MAX_RECENT_GAMES = 50;
@@ -27,6 +28,12 @@ function createDefaultStats(): UserStats {
   };
 }
 
+function createDefaultWeaponInventory(): WeaponInventory {
+  return {
+    standard: Infinity,
+  };
+}
+
 function createDefaultUserData(username: string): UserData {
   return {
     profile: {
@@ -36,6 +43,7 @@ function createDefaultUserData(username: string): UserData {
     },
     stats: createDefaultStats(),
     recentGames: [],
+    weaponInventory: createDefaultWeaponInventory(),
   };
 }
 
@@ -48,7 +56,14 @@ export function loadUserData(): UserData | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
-    return JSON.parse(stored) as UserData;
+    const data = JSON.parse(stored) as UserData;
+
+    // Restore Infinity for standard weapon (JSON serializes Infinity as null)
+    if (data.weaponInventory?.standard === null) {
+      data.weaponInventory.standard = Infinity;
+    }
+
+    return data;
   } catch {
     return null;
   }
@@ -206,4 +221,90 @@ export function addMoney(amount: number): number | null {
   userData.stats.balance += amount;
   saveUserData(userData);
   return userData.stats.balance;
+}
+
+// ============================================================================
+// WEAPON INVENTORY FUNCTIONS
+// ============================================================================
+
+/**
+ * Migrate weapon inventory for existing users.
+ * Ensures standard weapon is always available.
+ */
+function migrateWeaponInventory(userData: UserData): void {
+  if (!userData.weaponInventory) {
+    userData.weaponInventory = { standard: Infinity };
+  } else if (userData.weaponInventory.standard !== Infinity) {
+    userData.weaponInventory.standard = Infinity;
+  }
+}
+
+/**
+ * Get the count of a specific weapon in the user's inventory.
+ * Returns 0 if weapon not owned, Infinity for standard weapon.
+ */
+export function getWeaponCount(weaponType: WeaponType): number {
+  const userData = loadUserData();
+  if (!userData) return 0;
+
+  migrateWeaponInventory(userData);
+  return userData.weaponInventory[weaponType] ?? 0;
+}
+
+/**
+ * Add weapons to the user's inventory.
+ * Returns the new count, or null if no user.
+ */
+export function addWeapon(weaponType: WeaponType, quantity: number): number | null {
+  if (quantity <= 0) return null;
+  if (weaponType === 'standard') return Infinity; // Standard always infinite
+
+  const userData = loadUserData();
+  if (!userData) return null;
+
+  migrateWeaponInventory(userData);
+
+  const currentCount = userData.weaponInventory[weaponType] ?? 0;
+  const newCount = currentCount + quantity;
+  userData.weaponInventory[weaponType] = newCount;
+
+  saveUserData(userData);
+  return newCount;
+}
+
+/**
+ * Remove weapons from the user's inventory.
+ * Returns the new count, or null if no user or insufficient quantity.
+ * Standard weapon cannot be removed (returns Infinity).
+ */
+export function removeWeapon(weaponType: WeaponType, quantity: number): number | null {
+  if (quantity <= 0) return null;
+  if (weaponType === 'standard') return Infinity; // Standard cannot be consumed
+
+  const userData = loadUserData();
+  if (!userData) return null;
+
+  migrateWeaponInventory(userData);
+
+  const currentCount = userData.weaponInventory[weaponType] ?? 0;
+  if (currentCount < quantity) return null; // Insufficient quantity
+
+  const newCount = currentCount - quantity;
+  userData.weaponInventory[weaponType] = newCount;
+
+  saveUserData(userData);
+  return newCount;
+}
+
+/**
+ * Get the full weapon inventory.
+ * Returns null if no user.
+ */
+export function getWeaponInventory(): WeaponInventory | null {
+  const userData = loadUserData();
+  if (!userData) return null;
+
+  migrateWeaponInventory(userData);
+  saveUserData(userData); // Persist migration if it occurred
+  return userData.weaponInventory;
 }

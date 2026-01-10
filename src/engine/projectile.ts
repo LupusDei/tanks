@@ -28,6 +28,7 @@ export interface ProjectileState {
   startTime: number;
   tracePoints: Position[];
   canvasHeight: number;
+  canvasWidth: number;
   /** ID of the tank that fired this projectile */
   tankId: string;
   /** Color of the tank that fired this projectile (for trail rendering) */
@@ -82,14 +83,18 @@ export function getBarrelTipPosition(tank: TankState): Position {
  * Create a launch configuration from tank state.
  * Converts tank position from world to screen coordinates for physics engine.
  * Converts UI angle to physics angle for trajectory calculation.
+ * @param tank - Tank state with position, angle, and power
+ * @param canvasHeight - Canvas height for coordinate conversion
+ * @param canvasWidth - Canvas width (terrain width) for power scaling
  */
-export function createLaunchConfig(tank: TankState, canvasHeight: number): LaunchConfig {
+export function createLaunchConfig(tank: TankState, canvasHeight: number, canvasWidth: number): LaunchConfig {
   const barrelTipWorld = getBarrelTipPosition(tank);
   const barrelTipScreen = worldToScreen(barrelTipWorld, canvasHeight);
   return {
     position: barrelTipScreen,
     angle: uiAngleToPhysicsAngle(tank.angle), // Convert to physics angle
     power: tank.power,
+    terrainWidth: canvasWidth,
   };
 }
 
@@ -98,15 +103,17 @@ export function createLaunchConfig(tank: TankState, canvasHeight: number): Launc
  * @param tank - Tank that fired the projectile
  * @param startTime - Animation start time
  * @param canvasHeight - Canvas height for coordinate conversion
+ * @param canvasWidth - Canvas width (terrain width) for power scaling
  * @param weaponType - Type of weapon used (defaults to 'standard')
  */
 export function createProjectileState(
   tank: TankState,
   startTime: number,
   canvasHeight: number,
+  canvasWidth: number,
   weaponType: WeaponType = 'standard'
 ): ProjectileState {
-  const launchConfig = createLaunchConfig(tank, canvasHeight);
+  const launchConfig = createLaunchConfig(tank, canvasHeight, canvasWidth);
   const weaponConfig = getWeaponConfig(weaponType);
   return {
     isActive: true,
@@ -114,6 +121,7 @@ export function createProjectileState(
     startTime,
     tracePoints: [{ ...launchConfig.position }],
     canvasHeight,
+    canvasWidth,
     tankId: tank.id,
     tankColor: tank.color,
     weaponType,
@@ -133,6 +141,218 @@ export function getProjectilePosition(projectile: ProjectileState, currentTime: 
 }
 
 /**
+ * Projectile visual configuration for each weapon type.
+ */
+export interface ProjectileVisual {
+  /** Primary fill color */
+  color: string;
+  /** Glow/shadow color */
+  glowColor: string;
+  /** Base radius of the projectile */
+  radius: number;
+  /** Trail color (defaults to tankColor if not specified) */
+  trailColor?: string;
+}
+
+/**
+ * Get visual configuration for a weapon type.
+ */
+export function getProjectileVisual(weaponType: WeaponType): ProjectileVisual {
+  switch (weaponType) {
+    case 'heavy_artillery':
+      return { color: '#2a2a2a', glowColor: '#ff3300', radius: 8 };
+    case 'precision':
+      return { color: '#00ddff', glowColor: '#66ffff', radius: 4, trailColor: '#00aacc' };
+    case 'cluster_bomb':
+      return { color: '#cc6600', glowColor: '#ff9933', radius: 6 };
+    case 'napalm':
+      return { color: '#ff4400', glowColor: '#ffaa00', radius: 6 };
+    case 'standard':
+    default:
+      return { color: '#ffff00', glowColor: '#ffffff', radius: 5 };
+  }
+}
+
+/**
+ * Render standard shell - yellow circle with white glow.
+ */
+function renderStandardShell(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual
+): void {
+  ctx.fillStyle = visual.color;
+  ctx.beginPath();
+  ctx.arc(x, y, visual.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner white glow
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = visual.glowColor;
+  ctx.beginPath();
+  ctx.arc(x, y, visual.radius * 0.6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * Render heavy artillery - larger dark oval shell with red glow.
+ */
+function renderHeavyArtillery(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual,
+  angle: number
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(degreesToRadians(angle - 90)); // Align with trajectory
+
+  // Red outer glow
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = 15;
+
+  // Elongated shell shape
+  ctx.fillStyle = visual.color;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, visual.radius * 0.7, visual.radius * 1.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Highlight
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#444444';
+  ctx.beginPath();
+  ctx.ellipse(-2, -3, visual.radius * 0.3, visual.radius * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Render precision shot - small cyan streamlined projectile.
+ */
+function renderPrecisionShot(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual,
+  angle: number
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(degreesToRadians(angle - 90));
+
+  // Bright glow
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = 12;
+
+  // Pointed projectile shape
+  ctx.fillStyle = visual.color;
+  ctx.beginPath();
+  ctx.moveTo(0, -visual.radius * 1.5); // Tip
+  ctx.lineTo(visual.radius * 0.6, visual.radius);
+  ctx.lineTo(-visual.radius * 0.6, visual.radius);
+  ctx.closePath();
+  ctx.fill();
+
+  // Core highlight
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(0, 0, visual.radius * 0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Render cluster bomb - brown/orange sphere with submunition dots.
+ */
+function renderClusterBomb(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual,
+  currentTime: number
+): void {
+  // Slight wobble animation
+  const wobble = Math.sin(currentTime * 0.02) * 1.5;
+  const drawX = x + wobble;
+
+  ctx.save();
+
+  // Orange glow
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = 8;
+
+  // Main sphere
+  ctx.fillStyle = visual.color;
+  ctx.beginPath();
+  ctx.arc(drawX, y, visual.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Submunition dots inside
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#553300';
+  const dotPositions = [
+    { dx: 0, dy: 0 },
+    { dx: -2, dy: -2 },
+    { dx: 2, dy: -2 },
+    { dx: -2, dy: 2 },
+    { dx: 2, dy: 2 },
+  ];
+  for (const dot of dotPositions) {
+    ctx.beginPath();
+    ctx.arc(drawX + dot.dx, y + dot.dy, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Render napalm canister - orange/red with flame trail.
+ */
+function renderNapalm(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual,
+  angle: number,
+  currentTime: number
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(degreesToRadians(angle - 90));
+
+  // Orange glow
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = 12;
+
+  // Canister body
+  ctx.fillStyle = visual.color;
+  ctx.beginPath();
+  ctx.roundRect(-visual.radius * 0.6, -visual.radius, visual.radius * 1.2, visual.radius * 2, 2);
+  ctx.fill();
+
+  // Flame particles trailing behind
+  ctx.shadowBlur = 0;
+  const flameColors = ['#ffcc00', '#ff6600', '#ff3300'];
+  for (let i = 0; i < 3; i++) {
+    const offset = (currentTime * 0.1 + i * 50) % 15;
+    const size = 3 - i * 0.5;
+    ctx.fillStyle = flameColors[i]!;
+    ctx.beginPath();
+    ctx.arc(0, visual.radius + 3 + offset, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/**
  * Render the projectile and its dotted trace line on canvas.
  * All positions in projectile state are already in screen coordinates.
  * The trail color matches the tank that fired the projectile.
@@ -143,15 +363,16 @@ export function renderProjectile(
   currentTime: number
 ): void {
   const position = getProjectilePosition(projectile, currentTime);
+  const visual = getProjectileVisual(projectile.weaponType);
 
   // Positions are already in screen coordinates
   const canvasX = position.x;
   const canvasY = position.y;
 
-  // Draw dotted trace line in the tank's color
+  // Draw dotted trace line
   if (projectile.tracePoints.length > 0) {
     ctx.save();
-    ctx.strokeStyle = projectile.tankColor;
+    ctx.strokeStyle = visual.trailColor ?? projectile.tankColor;
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 8]);
     ctx.beginPath();
@@ -170,20 +391,26 @@ export function renderProjectile(
     ctx.restore();
   }
 
-  // Draw projectile as a filled circle
+  // Draw weapon-specific projectile
   ctx.save();
-  ctx.fillStyle = '#ffff00';
-  ctx.beginPath();
-  ctx.arc(canvasX, canvasY, 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Add a glow effect with the tank's color
-  ctx.shadowColor = projectile.tankColor;
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(canvasX, canvasY, 3, 0, Math.PI * 2);
-  ctx.fill();
+  switch (projectile.weaponType) {
+    case 'heavy_artillery':
+      renderHeavyArtillery(ctx, canvasX, canvasY, visual, projectile.launchConfig.angle);
+      break;
+    case 'precision':
+      renderPrecisionShot(ctx, canvasX, canvasY, visual, projectile.launchConfig.angle);
+      break;
+    case 'cluster_bomb':
+      renderClusterBomb(ctx, canvasX, canvasY, visual, currentTime);
+      break;
+    case 'napalm':
+      renderNapalm(ctx, canvasX, canvasY, visual, projectile.launchConfig.angle, currentTime);
+      break;
+    case 'standard':
+    default:
+      renderStandardShell(ctx, canvasX, canvasY, visual);
+      break;
+  }
   ctx.restore();
 }
 

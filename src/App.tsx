@@ -212,8 +212,10 @@ function App() {
 
     if (readyTanks.length === 0) return
 
-    // Get canvas height from current terrain size
-    const canvasHeight = TERRAIN_SIZES[currentState.terrainSize].height
+    // Get canvas dimensions from current terrain size
+    const terrainConfig = TERRAIN_SIZES[currentState.terrainSize]
+    const canvasHeight = terrainConfig.height
+    const canvasWidth = terrainConfig.width
     const launchTime = performance.now()
 
     // Get player tank to determine AI targets
@@ -233,13 +235,13 @@ function App() {
       let weaponType: WeaponType = 'standard'
       if (tank.id === 'player') {
         // Player uses their selected weapon
-        weaponType = currentState.playerWeapon as WeaponType
+        weaponType = currentState.selectedWeapon
       } else if (playerTankForAI) {
         // AI selects weapon based on difficulty and target
         weaponType = selectAIWeapon(currentState.aiDifficulty, tank, playerTankForAI)
       }
 
-      const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, weaponType)
+      const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, canvasWidth, weaponType)
       newProjectiles.push(projectile)
     }
 
@@ -287,7 +289,7 @@ function App() {
   }
 
   const handleWeaponConfirm = (weapon: WeaponType) => {
-    actions.setPlayerWeapon(weapon)
+    actions.setSelectedWeapon(weapon)
     actions.setPhase('playing')
   }
 

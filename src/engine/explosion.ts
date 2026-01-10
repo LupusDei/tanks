@@ -10,7 +10,7 @@ export const EXPLOSION_RADIUS = 20;
 /**
  * Duration of explosion animation in milliseconds.
  */
-export const EXPLOSION_DURATION_MS = 800;
+export const EXPLOSION_DURATION_MS = 1200;
 
 /**
  * Individual particle in the explosion effect.
@@ -142,7 +142,7 @@ export function updateExplosion(
     x: particle.x + particle.vx * deltaSeconds,
     y: particle.y + particle.vy * deltaSeconds,
     vy: particle.vy + 50 * deltaSeconds, // Gravity effect
-    life: Math.max(0, particle.life - deltaSeconds * 1.5),
+    life: Math.max(0, particle.life - deltaSeconds * 1.0),
   }));
 
   return {

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   GRAVITY,
   POWER_SCALE,
+  BASE_TERRAIN_WIDTH,
+  getTerrainPowerScale,
   powerToVelocity,
   degreesToRadians,
   calculatePosition,
@@ -26,6 +28,34 @@ describe('POWER_SCALE constant', () => {
   });
 });
 
+describe('BASE_TERRAIN_WIDTH constant', () => {
+  it('equals 800 (the calibration baseline)', () => {
+    expect(BASE_TERRAIN_WIDTH).toBe(800);
+  });
+});
+
+describe('getTerrainPowerScale', () => {
+  it('returns base POWER_SCALE for base terrain width (800)', () => {
+    expect(getTerrainPowerScale(800)).toBeCloseTo(POWER_SCALE, 5);
+  });
+
+  it('scales by sqrt(2) for double terrain width', () => {
+    const scale1600 = getTerrainPowerScale(1600);
+    expect(scale1600).toBeCloseTo(POWER_SCALE * Math.sqrt(2), 5);
+  });
+
+  it('scales correctly for all terrain sizes', () => {
+    // Small: 800px - base scale
+    expect(getTerrainPowerScale(800)).toBeCloseTo(1.12, 2);
+    // Medium: 1024px
+    expect(getTerrainPowerScale(1024)).toBeCloseTo(1.12 * Math.sqrt(1024 / 800), 2);
+    // Large: 1280px
+    expect(getTerrainPowerScale(1280)).toBeCloseTo(1.12 * Math.sqrt(1280 / 800), 2);
+    // Huge: 1600px
+    expect(getTerrainPowerScale(1600)).toBeCloseTo(1.12 * Math.sqrt(2), 2);
+  });
+});
+
 describe('powerToVelocity', () => {
   it('converts power to velocity using scale factor', () => {
     expect(powerToVelocity(100)).toBeCloseTo(112, 5);
@@ -37,6 +67,25 @@ describe('powerToVelocity', () => {
     const v1 = powerToVelocity(50);
     const v2 = powerToVelocity(100);
     expect(v2).toBeCloseTo(v1 * 2, 5);
+  });
+
+  it('uses base scale when terrain width not provided', () => {
+    expect(powerToVelocity(100)).toBeCloseTo(powerToVelocity(100, 800), 5);
+  });
+
+  it('scales velocity with terrain width', () => {
+    const v800 = powerToVelocity(100, 800);
+    const v1600 = powerToVelocity(100, 1600);
+    // Double terrain width should give sqrt(2) times velocity
+    expect(v1600 / v800).toBeCloseTo(Math.sqrt(2), 5);
+  });
+
+  it('produces correct velocity for each terrain size', () => {
+    // Power 100 should give different velocities for each terrain
+    expect(powerToVelocity(100, 800)).toBeCloseTo(112, 1);
+    expect(powerToVelocity(100, 1024)).toBeCloseTo(112 * Math.sqrt(1024 / 800), 1);
+    expect(powerToVelocity(100, 1280)).toBeCloseTo(112 * Math.sqrt(1280 / 800), 1);
+    expect(powerToVelocity(100, 1600)).toBeCloseTo(112 * Math.sqrt(2), 1);
   });
 });
 
@@ -151,6 +200,61 @@ describe('calculatePosition', () => {
     // y = 0 - (-10)*1 + 0.5*10*1 = 10 + 5 = 15
     expect(position.x).toBeCloseTo(10, 5);
     expect(position.y).toBeCloseTo(15, 5);
+  });
+
+  it('scales projectile distance with terrain width', () => {
+    // Same power/angle, different terrain widths
+    const config800: LaunchConfig = {
+      position: { x: 0, y: 0 },
+      angle: 0,
+      power: 100,
+      terrainWidth: 800,
+    };
+    const config1600: LaunchConfig = {
+      position: { x: 0, y: 0 },
+      angle: 0,
+      power: 100,
+      terrainWidth: 1600,
+    };
+
+    const pos800 = calculatePosition(config800, 1);
+    const pos1600 = calculatePosition(config1600, 1);
+
+    // With double terrain width, velocity is sqrt(2) times higher
+    // so horizontal distance should be sqrt(2) times farther
+    expect(pos1600.x / pos800.x).toBeCloseTo(Math.sqrt(2), 5);
+  });
+
+  it('maintains relative coverage across terrain sizes', () => {
+    // The key property: full power should cover approximately
+    // the same relative distance on all terrain sizes
+    // Range is proportional to v^2, and v scales with sqrt(width)
+    // So range scales linearly with terrain width
+
+    // For a 45 degree angle horizontal shot at power 100
+    const makeConfig = (terrainWidth: number): LaunchConfig => ({
+      position: { x: 0, y: 0 },
+      angle: 45,
+      power: 100,
+      terrainWidth,
+    });
+
+    // Calculate horizontal range (approximate by checking position at landing time)
+    const config800 = makeConfig(800);
+    const config1600 = makeConfig(1600);
+
+    // After 1 second, check relative horizontal distance
+    const pos800 = calculatePosition(config800, 1);
+    const pos1600 = calculatePosition(config1600, 1);
+
+    // Horizontal velocities scale with sqrt(terrainWidth)
+    // So relative positions (position/terrainWidth) should scale accordingly
+    const relPos800 = pos800.x / 800;
+    const relPos1600 = pos1600.x / 1600;
+
+    // Both should achieve similar relative coverage
+    // (not exact because we're not at the full trajectory, but proportional)
+    expect(relPos800).toBeCloseTo(relPos1600, 1);
   });
 });
 

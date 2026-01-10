@@ -21,8 +21,8 @@ describe('EXPLOSION_RADIUS constant', () => {
 });
 
 describe('EXPLOSION_DURATION_MS constant', () => {
-  it('equals 800 milliseconds', () => {
-    expect(EXPLOSION_DURATION_MS).toBe(800);
+  it('equals 1200 milliseconds', () => {
+    expect(EXPLOSION_DURATION_MS).toBe(1200);
   });
 });
 

@@ -182,7 +182,7 @@ export function renderTank(
     ctx.fill();
   }
 
-  // Draw Panther-style tank body - rectangular with slight front slope
+  // Draw Panther-style tank body with angled front glacis
   const bodyGradient = createMetallicGradient(
     ctx,
     -bodyWidth / 2, -bodyHeight / 2,
@@ -191,28 +191,55 @@ export function renderTank(
   );
   ctx.fillStyle = bodyGradient;
 
-  // Hull shape - mostly rectangular with small angled front
-  const frontSlope = 4; // Small slope on front only
+  // Panther hull dimensions
+  const frontExtension = 6;    // How far front extends past tracks
+  const lowerPlateHeight = 6;  // Vertical section at bottom front
+  const glacisLength = 10;     // Horizontal length of the angled glacis
+
+  // Hull shape - Panther-style with vertical lower plate + angled upper glacis
   ctx.beginPath();
-  ctx.moveTo(-bodyWidth / 2, bodyHeight / 2);           // Front bottom
-  ctx.lineTo(-bodyWidth / 2 + frontSlope, -bodyHeight / 2); // Front top (slight slope)
-  ctx.lineTo(bodyWidth / 2, -bodyHeight / 2);           // Rear top
-  ctx.lineTo(bodyWidth / 2, bodyHeight / 2);            // Rear bottom
+  // Start at front bottom (extends past tracks)
+  ctx.moveTo(-bodyWidth / 2 - frontExtension, bodyHeight / 2);
+  // Vertical lower front plate
+  ctx.lineTo(-bodyWidth / 2 - frontExtension, bodyHeight / 2 - lowerPlateHeight);
+  // Angled upper glacis (rises to top deck)
+  ctx.lineTo(-bodyWidth / 2 - frontExtension + glacisLength, -bodyHeight / 2);
+  // Flat top deck
+  ctx.lineTo(bodyWidth / 2, -bodyHeight / 2);
+  // Rear (vertical)
+  ctx.lineTo(bodyWidth / 2, bodyHeight / 2);
+  // Bottom
   ctx.closePath();
   ctx.fill();
+
+  // Front glacis highlight (angled armor face)
+  ctx.strokeStyle = lightenColor(tankColor, 0.4);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-bodyWidth / 2 - frontExtension + 1, bodyHeight / 2 - lowerPlateHeight);
+  ctx.lineTo(-bodyWidth / 2 - frontExtension + glacisLength - 1, -bodyHeight / 2 + 2);
+  ctx.stroke();
+
+  // Vertical lower plate edge highlight
+  ctx.strokeStyle = lightenColor(tankColor, 0.3);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-bodyWidth / 2 - frontExtension + 1, bodyHeight / 2 - 1);
+  ctx.lineTo(-bodyWidth / 2 - frontExtension + 1, bodyHeight / 2 - lowerPlateHeight + 1);
+  ctx.stroke();
 
   // Body edge highlight (top edge)
   ctx.strokeStyle = lightenColor(tankColor, 0.5);
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(-bodyWidth / 2 + frontSlope + 2, -bodyHeight / 2 + 1);
+  ctx.moveTo(-bodyWidth / 2 - frontExtension + glacisLength + 2, -bodyHeight / 2 + 1);
   ctx.lineTo(bodyWidth / 2 - 2, -bodyHeight / 2 + 1);
   ctx.stroke();
 
   // Body bottom edge shadow
   ctx.strokeStyle = darkenColor(tankColor, 0.5);
   ctx.beginPath();
-  ctx.moveTo(-bodyWidth / 2 + 4, bodyHeight / 2 - 1);
+  ctx.moveTo(-bodyWidth / 2, bodyHeight / 2 - 1);
   ctx.lineTo(bodyWidth / 2 - 4, bodyHeight / 2 - 1);
   ctx.stroke();
 
@@ -221,23 +248,23 @@ export function renderTank(
   ctx.lineWidth = 0.5;
   // Horizontal panel line
   ctx.beginPath();
-  ctx.moveTo(-bodyWidth / 2 + frontSlope, 0);
+  ctx.moveTo(-bodyWidth / 2 + 2, 0);
   ctx.lineTo(bodyWidth / 2, 0);
   ctx.stroke();
   // Vertical panel lines
   ctx.beginPath();
-  ctx.moveTo(-bodyWidth / 4, -bodyHeight / 2 + 2);
-  ctx.lineTo(-bodyWidth / 4, bodyHeight / 2 - 2);
+  ctx.moveTo(0, -bodyHeight / 2 + 2);
+  ctx.lineTo(0, bodyHeight / 2 - 2);
   ctx.stroke();
   ctx.beginPath();
   ctx.moveTo(bodyWidth / 4, -bodyHeight / 2 + 2);
   ctx.lineTo(bodyWidth / 4, bodyHeight / 2 - 2);
   ctx.stroke();
 
-  // Rivet details
+  // Rivet details along armor plates
   ctx.fillStyle = darkenColor(tankColor, 0.3);
   const rivetPositions: Array<[number, number]> = [
-    [-bodyWidth / 2 + frontSlope + 2, -bodyHeight / 2 + 3],
+    [-bodyWidth / 2 - frontExtension + glacisLength + 2, -bodyHeight / 2 + 3],
     [bodyWidth / 2 - 4, -bodyHeight / 2 + 3],
     [-bodyWidth / 2 + 4, bodyHeight / 2 - 3],
     [bodyWidth / 2 - 4, bodyHeight / 2 - 3],

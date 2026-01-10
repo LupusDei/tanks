@@ -10,6 +10,8 @@ export {
 export {
   GRAVITY,
   POWER_SCALE,
+  BASE_TERRAIN_WIDTH,
+  getTerrainPowerScale,
   powerToVelocity,
   degreesToRadians,
   calculatePosition,
