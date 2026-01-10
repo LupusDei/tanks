@@ -10,6 +10,10 @@ import {
   getUserBalance,
   spendMoney,
   addMoney,
+  getWeaponCount,
+  addWeapon,
+  removeWeapon,
+  getWeaponInventory,
 } from './userDatabase';
 import type { UserData } from '../types/game';
 import { STARTING_MONEY, calculateGameEarnings } from '../engine/weapons';
@@ -49,6 +53,7 @@ describe('userDatabase', () => {
         profile: { id: 'test-id', username: 'TestUser', createdAt: 1000 },
         stats: { gamesPlayed: 5, gamesWon: 3, gamesLost: 2, totalKills: 10, winRate: 60, balance: 1000 },
         recentGames: [],
+        weaponInventory: { standard: Infinity },
       };
       localStorageMock.setItem('tanks_user_data', JSON.stringify(mockData));
 
@@ -68,6 +73,7 @@ describe('userDatabase', () => {
         profile: { id: 'test-id', username: 'TestUser', createdAt: 1000 },
         stats: { gamesPlayed: 0, gamesWon: 0, gamesLost: 0, totalKills: 0, winRate: 0, balance: STARTING_MONEY },
         recentGames: [],
+        weaponInventory: { standard: Infinity },
       };
 
       saveUserData(mockData);
@@ -337,6 +343,163 @@ describe('userDatabase', () => {
 
       expect(newBalance).toBe(STARTING_MONEY + 250);
       expect(getUserBalance()).toBe(STARTING_MONEY + 250);
+    });
+  });
+
+  // ============================================================================
+  // WEAPON INVENTORY TESTS
+  // ============================================================================
+
+  describe('getWeaponCount', () => {
+    it('returns 0 when no user exists', () => {
+      expect(getWeaponCount('heavy_artillery')).toBe(0);
+    });
+
+    it('returns Infinity for standard weapon', () => {
+      createUser('Player');
+      expect(getWeaponCount('standard')).toBe(Infinity);
+    });
+
+    it('returns 0 for non-owned weapons', () => {
+      createUser('Player');
+      expect(getWeaponCount('heavy_artillery')).toBe(0);
+      expect(getWeaponCount('precision')).toBe(0);
+    });
+  });
+
+  describe('addWeapon', () => {
+    it('returns null when no user exists', () => {
+      expect(addWeapon('heavy_artillery', 5)).toBeNull();
+    });
+
+    it('returns null for invalid quantity', () => {
+      createUser('Player');
+      expect(addWeapon('heavy_artillery', 0)).toBeNull();
+      expect(addWeapon('heavy_artillery', -1)).toBeNull();
+    });
+
+    it('returns Infinity when trying to add standard weapon', () => {
+      createUser('Player');
+      expect(addWeapon('standard', 5)).toBe(Infinity);
+    });
+
+    it('adds weapons to inventory and returns new count', () => {
+      createUser('Player');
+
+      const count1 = addWeapon('heavy_artillery', 3);
+      expect(count1).toBe(3);
+      expect(getWeaponCount('heavy_artillery')).toBe(3);
+
+      const count2 = addWeapon('heavy_artillery', 2);
+      expect(count2).toBe(5);
+      expect(getWeaponCount('heavy_artillery')).toBe(5);
+    });
+
+    it('can add different weapon types independently', () => {
+      createUser('Player');
+
+      addWeapon('heavy_artillery', 3);
+      addWeapon('precision', 5);
+      addWeapon('cluster_bomb', 2);
+
+      expect(getWeaponCount('heavy_artillery')).toBe(3);
+      expect(getWeaponCount('precision')).toBe(5);
+      expect(getWeaponCount('cluster_bomb')).toBe(2);
+    });
+  });
+
+  describe('removeWeapon', () => {
+    it('returns null when no user exists', () => {
+      expect(removeWeapon('heavy_artillery', 1)).toBeNull();
+    });
+
+    it('returns null for invalid quantity', () => {
+      createUser('Player');
+      addWeapon('heavy_artillery', 5);
+      expect(removeWeapon('heavy_artillery', 0)).toBeNull();
+      expect(removeWeapon('heavy_artillery', -1)).toBeNull();
+    });
+
+    it('returns Infinity when trying to remove standard weapon', () => {
+      createUser('Player');
+      expect(removeWeapon('standard', 1)).toBe(Infinity);
+    });
+
+    it('returns null when insufficient quantity', () => {
+      createUser('Player');
+      addWeapon('heavy_artillery', 2);
+      expect(removeWeapon('heavy_artillery', 3)).toBeNull();
+      // Verify count unchanged
+      expect(getWeaponCount('heavy_artillery')).toBe(2);
+    });
+
+    it('removes weapons and returns new count', () => {
+      createUser('Player');
+      addWeapon('heavy_artillery', 5);
+
+      const count = removeWeapon('heavy_artillery', 2);
+      expect(count).toBe(3);
+      expect(getWeaponCount('heavy_artillery')).toBe(3);
+    });
+
+    it('can remove all of a weapon type', () => {
+      createUser('Player');
+      addWeapon('precision', 3);
+
+      const count = removeWeapon('precision', 3);
+      expect(count).toBe(0);
+      expect(getWeaponCount('precision')).toBe(0);
+    });
+  });
+
+  describe('getWeaponInventory', () => {
+    it('returns null when no user exists', () => {
+      expect(getWeaponInventory()).toBeNull();
+    });
+
+    it('returns inventory with standard weapon for new user', () => {
+      createUser('Player');
+      const inventory = getWeaponInventory();
+
+      expect(inventory).not.toBeNull();
+      expect(inventory?.standard).toBe(Infinity);
+    });
+
+    it('returns full inventory with purchased weapons', () => {
+      createUser('Player');
+      addWeapon('heavy_artillery', 3);
+      addWeapon('napalm', 1);
+
+      const inventory = getWeaponInventory();
+
+      expect(inventory?.standard).toBe(Infinity);
+      expect(inventory?.heavy_artillery).toBe(3);
+      expect(inventory?.napalm).toBe(1);
+      expect(inventory?.precision).toBeUndefined();
+    });
+
+    it('migrates inventory for existing user without inventory', () => {
+      // Simulate old user data without weaponInventory
+      const oldUserData = {
+        profile: { id: 'test-id', username: 'OldUser', createdAt: 1000 },
+        stats: { gamesPlayed: 5, gamesWon: 3, gamesLost: 2, totalKills: 10, winRate: 60, balance: 1000 },
+        recentGames: [],
+      };
+      localStorageMock.setItem('tanks_user_data', JSON.stringify(oldUserData));
+
+      const inventory = getWeaponInventory();
+
+      expect(inventory).not.toBeNull();
+      expect(inventory?.standard).toBe(Infinity);
+    });
+  });
+
+  describe('weapon inventory initialization', () => {
+    it('new user has standard weapon with Infinity count', () => {
+      const user = createUser('Player');
+
+      expect(user.weaponInventory).toBeDefined();
+      expect(user.weaponInventory.standard).toBe(Infinity);
     });
   });
 });

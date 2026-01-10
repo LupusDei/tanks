@@ -1,3 +1,8 @@
+import type { WeaponType } from '../engine/weapons';
+
+// Re-export WeaponType for convenience
+export type { WeaponType };
+
 export type GamePhase = 'loading' | 'config' | 'weaponShop' | 'playing' | 'gameover';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
@@ -83,7 +88,9 @@ export interface GameState {
   terrainSize: TerrainSize;
   enemyCount: EnemyCount;
   /** Player's selected weapon for the current game */
-  playerWeapon: string;
+  selectedWeapon: WeaponType;
+  /** Remaining shots per weapon type for current game */
+  weaponAmmo: Partial<Record<WeaponType, number>>;
 }
 
 export interface GameActions {
@@ -100,7 +107,9 @@ export interface GameActions {
   setAIDifficulty: (difficulty: AIDifficulty) => void;
   setTerrainSize: (size: TerrainSize) => void;
   setEnemyCount: (count: EnemyCount) => void;
-  setPlayerWeapon: (weapon: string) => void;
+  setSelectedWeapon: (weapon: WeaponType) => void;
+  setWeaponAmmo: (ammo: Partial<Record<WeaponType, number>>) => void;
+  decrementAmmo: (weapon: WeaponType) => void;
 }
 
 // User and Statistics Types
@@ -133,8 +142,16 @@ export interface UserStats {
   balance: number; // Current money balance
 }
 
+/**
+ * Weapon inventory tracking owned quantities of each weapon type.
+ * Standard weapon has Infinity (always available).
+ */
+export type WeaponInventory = Partial<Record<WeaponType, number>>;
+
 export interface UserData {
   profile: UserProfile;
   stats: UserStats;
   recentGames: GameRecord[];
+  /** Owned weapons and their quantities. Standard is always Infinity. */
+  weaponInventory: WeaponInventory;
 }
