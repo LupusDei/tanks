@@ -1,18 +1,27 @@
 interface TurnIndicatorProps {
   turnNumber: number
-  isPlayerTurn: boolean
+  playerAlive: boolean
+  isFiring: boolean
 }
 
 export function TurnIndicator({
   turnNumber,
-  isPlayerTurn,
+  playerAlive,
+  isFiring,
 }: TurnIndicatorProps) {
-  // In simultaneous mode, isPlayerTurn means player is alive
-  const playerClass = isPlayerTurn
-    ? 'turn-indicator__player--you'
-    : 'turn-indicator__player--opponent'
+  let playerLabel: string
+  let playerClass: string
 
-  const playerLabel = isPlayerTurn ? 'Get Ready!' : 'Spectating'
+  if (!playerAlive) {
+    playerLabel = 'For Aiur!'
+    playerClass = 'turn-indicator__player--dead'
+  } else if (isFiring) {
+    playerLabel = 'Good Luck!'
+    playerClass = 'turn-indicator__player--firing'
+  } else {
+    playerLabel = 'Get Ready!'
+    playerClass = 'turn-indicator__player--ready'
+  }
 
   return (
     <div className="turn-indicator" data-testid="turn-indicator">
