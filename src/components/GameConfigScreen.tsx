@@ -34,6 +34,36 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
     }
   }
 
+  const renderEnemyTankIcons = (count: number) => {
+    if (count <= 5) {
+      return (
+        <div className="game-config-screen__enemy-preview-row">
+          {Array.from({ length: count }, (_, i) => (
+            <div key={i} className="game-config-screen__enemy-tank-icon" />
+          ))}
+        </div>
+      )
+    }
+
+    // For counts > 5, split into 2 rows
+    const topRow = Math.ceil(count / 2)
+    const bottomRow = count - topRow
+    return (
+      <>
+        <div className="game-config-screen__enemy-preview-row">
+          {Array.from({ length: topRow }, (_, i) => (
+            <div key={`top-${i}`} className="game-config-screen__enemy-tank-icon" />
+          ))}
+        </div>
+        <div className="game-config-screen__enemy-preview-row">
+          {Array.from({ length: bottomRow }, (_, i) => (
+            <div key={`bottom-${i}`} className="game-config-screen__enemy-tank-icon" />
+          ))}
+        </div>
+      </>
+    )
+  }
+
   return (
     <div className="game-config-screen" data-testid="game-config-screen">
       <h1 className="game-config-screen__title">Battle Configuration</h1>
@@ -89,12 +119,10 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
                 aria-pressed={enemyCount === count}
               >
                 <div className="game-config-screen__enemy-preview">
-                  {Array.from({ length: count }, (_, i) => (
-                    <div key={i} className="game-config-screen__enemy-tank-icon" />
-                  ))}
+                  {renderEnemyTankIcons(count)}
                 </div>
                 <span className="game-config-screen__enemy-label">
-                  {count} {count === 1 ? 'Enemy' : 'Enemies'}
+                  {count}
                 </span>
               </button>
             ))}
