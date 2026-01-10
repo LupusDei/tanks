@@ -117,39 +117,41 @@ export const DIFFICULTY_REWARD_MULTIPLIERS: Record<string, number> = {
 /**
  * Standard shell - the default weapon.
  * Balanced stats, no cost. This is what players start with.
+ * Low damage (35%) - requires multiple hits to kill.
  */
 export const WEAPON_STANDARD: WeaponConfig = {
   id: 'standard',
   name: 'Standard Shell',
-  description: 'Basic ammunition. Reliable and free.',
+  description: 'Basic ammunition. Reliable and free. ~3 hits to kill.',
   cost: 0,
-  damage: 100,
+  damage: 35,
   blastRadius: 20,
   projectileSpeedMultiplier: 1.0,
 };
 
 /**
  * Heavy Artillery - bigger explosions, more damage area.
- * Slower projectile but devastating on hit.
+ * Slower projectile, high damage (60%) but not one-shot.
  */
 export const WEAPON_HEAVY_ARTILLERY: WeaponConfig = {
   id: 'heavy_artillery',
   name: 'Heavy Artillery',
-  description: 'Massive blast radius. Slower but devastating.',
+  description: 'Massive blast radius. Slower but devastating. ~2 hits to kill.',
   cost: 200,
-  damage: 100,
+  damage: 60,
   blastRadius: 35,
   projectileSpeedMultiplier: 0.8,
 };
 
 /**
- * Precision Shot - smaller blast, faster projectile.
- * For skilled players who can aim accurately.
+ * Precision Shot (Sniper) - smaller blast, faster projectile.
+ * THE ONLY ONE-SHOT WEAPON. For skilled players who can aim accurately.
+ * Premium price reflects its instant-kill capability.
  */
 export const WEAPON_PRECISION: WeaponConfig = {
   id: 'precision',
-  name: 'Precision Shot',
-  description: 'Fast and accurate. Small blast radius.',
+  name: 'Sniper Shot',
+  description: 'One-shot kill. Fast and accurate. Small blast radius.',
   cost: 150,
   damage: 100,
   blastRadius: 12,
@@ -159,13 +161,14 @@ export const WEAPON_PRECISION: WeaponConfig = {
 /**
  * Cluster Bomb - splits into multiple smaller explosions.
  * Good for area denial. Each cluster does partial damage.
+ * 25% per hit × 5 = 125% total potential damage.
  */
 export const WEAPON_CLUSTER_BOMB: WeaponConfig = {
   id: 'cluster_bomb',
   name: 'Cluster Bomb',
-  description: 'Splits into 5 smaller explosions on impact.',
+  description: 'Splits into 5 explosions. 125% total potential damage.',
   cost: 300,
-  damage: 40, // Per cluster, 5 clusters = 200 potential if all hit
+  damage: 25, // Per cluster, 5 clusters = 125 potential if all hit
   blastRadius: 10,
   projectileSpeedMultiplier: 0.9,
 };
@@ -173,13 +176,14 @@ export const WEAPON_CLUSTER_BOMB: WeaponConfig = {
 /**
  * Napalm - fire damage over time.
  * Creates a burning area that damages tanks passing through.
+ * Lower initial damage but great for area denial.
  */
 export const WEAPON_NAPALM: WeaponConfig = {
   id: 'napalm',
   name: 'Napalm',
-  description: 'Creates a burning area. Damage over time.',
+  description: 'Creates a burning area. 20% initial + burn damage.',
   cost: 350,
-  damage: 25, // Initial hit damage
+  damage: 20, // Initial hit damage, plus DoT
   blastRadius: 30,
   projectileSpeedMultiplier: 0.85,
 };

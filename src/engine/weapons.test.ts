@@ -66,12 +66,31 @@ describe('Economy constants', () => {
 });
 
 describe('Weapon configurations', () => {
-  it('WEAPON_STANDARD is the default free weapon', () => {
+  it('WEAPON_STANDARD is the default free weapon with low damage', () => {
     expect(WEAPON_STANDARD.id).toBe('standard');
     expect(WEAPON_STANDARD.cost).toBe(0);
-    expect(WEAPON_STANDARD.damage).toBe(100);
+    expect(WEAPON_STANDARD.damage).toBe(35); // ~3 hits to kill
     expect(WEAPON_STANDARD.blastRadius).toBe(20);
     expect(WEAPON_STANDARD.projectileSpeedMultiplier).toBe(1.0);
+  });
+
+  it('WEAPON_HEAVY_ARTILLERY has high damage but not one-shot', () => {
+    expect(WEAPON_HEAVY_ARTILLERY.damage).toBe(60); // ~2 hits to kill
+    expect(WEAPON_HEAVY_ARTILLERY.damage).toBeLessThan(100);
+  });
+
+  it('WEAPON_PRECISION is the only one-shot weapon', () => {
+    expect(WEAPON_PRECISION.damage).toBe(100); // One-shot kill
+    // Verify it's the ONLY one-shot weapon
+    const otherWeapons = [
+      WEAPON_STANDARD,
+      WEAPON_HEAVY_ARTILLERY,
+      WEAPON_CLUSTER_BOMB,
+      WEAPON_NAPALM,
+    ];
+    for (const weapon of otherWeapons) {
+      expect(weapon.damage).toBeLessThan(100);
+    }
   });
 
   it('WEAPON_HEAVY_ARTILLERY has larger blast radius', () => {
