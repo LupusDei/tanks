@@ -399,7 +399,9 @@ function App() {
 
   const handleFire = () => {
     const playerTankForFire = state.tanks.find((t) => t.id === 'player')
-    if (!playerTankForFire || isProjectileActive || playerTankForFire.isReady) return
+    // Allow firing during projectile/explosion phases to queue next shot
+    // Only block if already queued (isReady) or player doesn't exist
+    if (!playerTankForFire || playerTankForFire.isReady) return
 
     // Prevent firing if player is stunned
     if (playerTankForFire.stunTurnsRemaining > 0) {
@@ -843,7 +845,7 @@ function App() {
             selectedWeapon={state.selectedWeapon}
             weaponAmmo={state.weaponAmmo}
             onWeaponSelect={actions.setSelectedWeapon}
-            enabled={!isProjectileActive && !isExplosionActive && !playerTank.isReady}
+            enabled={!playerTank.isReady}
           />
           <ControlPanel
             angle={playerTank.angle}
@@ -851,7 +853,7 @@ function App() {
             onAngleChange={handleAngleChange}
             onPowerChange={handlePowerChange}
             onFire={handleFire}
-            enabled={!isProjectileActive && !isExplosionActive && !playerTank.isReady}
+            enabled={!playerTank.isReady}
             isQueued={playerTank.isReady}
           />
         </>
