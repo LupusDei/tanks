@@ -23,11 +23,14 @@ import {
   isProjectileOutOfBounds,
   getInterpolatedHeightAt,
   calculateAIShot,
-  selectTarget,
+  selectTargetWithPersistence,
   selectAIWeapon,
   getChevronCount,
   getStarCount,
   getNextDifficulty,
+  resetAIState,
+  recordShot,
+  getConsecutiveShots,
   createExplosion,
   updateExplosion,
   renderExplosion,
@@ -159,17 +162,24 @@ function App() {
 
     // Calculate and queue shots for all AI tanks simultaneously
     for (const aiTank of aiTanks) {
-      // Select target from all alive tanks (free-for-all mode)
-      const target = selectTarget(aiTank, aliveTanks)
+      // Select target with persistence (sticks with same target unless dead or better opportunity)
+      const target = selectTargetWithPersistence(aiTank, aliveTanks)
       if (!target) continue
 
-      // Calculate AI shot targeting the selected tank
+      // Get consecutive shots for bracketing/zeroing
+      const consecutiveShots = getConsecutiveShots(aiTank.id, target.id)
+
+      // Calculate AI shot targeting the selected tank with bracketing
       const aiDecision = calculateAIShot(
         aiTank,
         target,
         currentState.terrain,
-        currentState.aiDifficulty
+        currentState.aiDifficulty,
+        { consecutiveShots }
       )
+
+      // Record this shot for bracketing system
+      recordShot(aiTank.id, target.id)
 
       // Update AI tank's angle and power immediately (rounded to integers)
       actions.updateTank(aiTank.id, {
@@ -307,6 +317,9 @@ function App() {
   }
 
   const handleConfigComplete = (config: GameConfig) => {
+    // Reset AI state for new game (target persistence and shot history)
+    resetAIState()
+
     // Get terrain dimensions from selected size
     const terrainConfig = TERRAIN_SIZES[config.terrainSize]
 

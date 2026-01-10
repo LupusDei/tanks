@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   calculateOptimalShot,
   applyDifficultyVariance,
@@ -10,6 +10,11 @@ import {
   selectAIWeapon,
   getAIWeaponChoice,
   selectTarget,
+  selectTargetWithPersistence,
+  resetAIState,
+  recordShot,
+  getConsecutiveShots,
+  wouldShotHitSelf,
   AI_DIFFICULTY_CONFIGS,
   AI_AVAILABLE_WEAPONS,
 } from './ai';
@@ -627,5 +632,300 @@ describe('selectTarget', () => {
 
     expect(target).not.toBeNull();
     expect(target!.id).toBe('player');
+  });
+});
+
+// ==========================================
+// New AI Improvement Tests
+// ==========================================
+
+describe('resetAIState', () => {
+  beforeEach(() => {
+    resetAIState();
+  });
+
+  it('should clear shot history', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+
+    // Record some shots
+    recordShot(shooter.id, target.id);
+    recordShot(shooter.id, target.id);
+    expect(getConsecutiveShots(shooter.id, target.id)).toBe(2);
+
+    // Reset and verify cleared
+    resetAIState();
+    expect(getConsecutiveShots(shooter.id, target.id)).toBe(0);
+  });
+});
+
+describe('recordShot and getConsecutiveShots', () => {
+  beforeEach(() => {
+    resetAIState();
+  });
+
+  it('should track consecutive shots', () => {
+    expect(getConsecutiveShots('ai-1', 'player')).toBe(0);
+
+    recordShot('ai-1', 'player');
+    expect(getConsecutiveShots('ai-1', 'player')).toBe(1);
+
+    recordShot('ai-1', 'player');
+    expect(getConsecutiveShots('ai-1', 'player')).toBe(2);
+
+    recordShot('ai-1', 'player');
+    expect(getConsecutiveShots('ai-1', 'player')).toBe(3);
+  });
+
+  it('should track shots independently per shooter-target pair', () => {
+    recordShot('ai-1', 'player');
+    recordShot('ai-1', 'player');
+    recordShot('ai-2', 'player');
+    recordShot('ai-1', 'ai-2');
+
+    expect(getConsecutiveShots('ai-1', 'player')).toBe(2);
+    expect(getConsecutiveShots('ai-2', 'player')).toBe(1);
+    expect(getConsecutiveShots('ai-1', 'ai-2')).toBe(1);
+    expect(getConsecutiveShots('ai-2', 'ai-1')).toBe(0);
+  });
+});
+
+describe('selectTargetWithPersistence', () => {
+  beforeEach(() => {
+    resetAIState();
+  });
+
+  it('should select a target when none exists', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const player = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+    const aliveTanks = [shooter, player];
+
+    const target = selectTargetWithPersistence(shooter, aliveTanks);
+
+    expect(target).not.toBeNull();
+    expect(target!.id).toBe('player');
+  });
+
+  it('should persist target across calls', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const player = createMockTank({ id: 'player', position: { x: 300, y: 100 } });
+    const enemy2 = createMockTank({ id: 'ai-2', position: { x: 500, y: 100 } });
+    const aliveTanks = [shooter, player, enemy2];
+
+    // Get initial target
+    const firstTarget = selectTargetWithPersistence(shooter, aliveTanks);
+
+    // Call multiple times - should return same target
+    for (let i = 0; i < 10; i++) {
+      const target = selectTargetWithPersistence(shooter, aliveTanks);
+      expect(target!.id).toBe(firstTarget!.id);
+    }
+  });
+
+  it('should switch to critically wounded target', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const player = createMockTank({ id: 'player', position: { x: 300, y: 100 }, health: 100 });
+    const enemy2 = createMockTank({ id: 'ai-2', position: { x: 500, y: 100 }, health: 15 }); // Critical!
+    const aliveTanks = [shooter, player, enemy2];
+
+    // First call selects initial target (could be either)
+    selectTargetWithPersistence(shooter, aliveTanks);
+
+    // Now that enemy2 is critical, should switch to it
+    const target = selectTargetWithPersistence(shooter, aliveTanks);
+    expect(target!.id).toBe('ai-2');
+  });
+
+  it('should select new target when current target is dead', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const player = createMockTank({ id: 'player', position: { x: 300, y: 100 } });
+    const enemy2 = createMockTank({ id: 'ai-2', position: { x: 500, y: 100 } });
+
+    // First selection
+    selectTargetWithPersistence(shooter, [shooter, player, enemy2]);
+    const firstTarget = selectTargetWithPersistence(shooter, [shooter, player, enemy2]);
+
+    // Now that first target is "dead" (not in alive list), should select new target
+    const remainingTargetId = firstTarget!.id === 'player' ? 'ai-2' : 'player';
+    const deadTargetId = firstTarget!.id;
+
+    // Remove dead target from alive tanks
+    const newAliveTanks = [shooter, player, enemy2].filter(t => t.id !== deadTargetId);
+    const newTarget = selectTargetWithPersistence(shooter, newAliveTanks);
+
+    expect(newTarget).not.toBeNull();
+    expect(newTarget!.id).toBe(remainingTargetId);
+  });
+
+  it('should return null when no targets available', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const aliveTanks = [shooter]; // Only self
+
+    const target = selectTargetWithPersistence(shooter, aliveTanks);
+
+    expect(target).toBeNull();
+  });
+});
+
+describe('applyDifficultyVariance with bracketing', () => {
+  it('should reduce variance with consecutive shots', () => {
+    const decision = { angle: 45, power: 50 };
+
+    // Collect samples with no consecutive shots
+    const noHistoryAngles: number[] = [];
+    for (let i = 0; i < 100; i++) {
+      noHistoryAngles.push(applyDifficultyVariance(decision, 'veteran', 0).angle);
+    }
+
+    // Collect samples with 4 consecutive shots (max reduction)
+    const withHistoryAngles: number[] = [];
+    for (let i = 0; i < 100; i++) {
+      withHistoryAngles.push(applyDifficultyVariance(decision, 'veteran', 4).angle);
+    }
+
+    // Calculate variance
+    const noHistoryVariance = standardDeviation(noHistoryAngles);
+    const withHistoryVariance = standardDeviation(withHistoryAngles);
+
+    // With history should have less variance
+    expect(withHistoryVariance).toBeLessThan(noHistoryVariance);
+  });
+
+  it('should cap variance reduction at maximum', () => {
+    const decision = { angle: 45, power: 50 };
+
+    // Compare 4 shots vs 10 shots (should be same due to cap)
+    const fourShotsAngles: number[] = [];
+    const tenShotsAngles: number[] = [];
+
+    for (let i = 0; i < 100; i++) {
+      fourShotsAngles.push(applyDifficultyVariance(decision, 'veteran', 4).angle);
+      tenShotsAngles.push(applyDifficultyVariance(decision, 'veteran', 10).angle);
+    }
+
+    const fourShotsVariance = standardDeviation(fourShotsAngles);
+    const tenShotsVariance = standardDeviation(tenShotsAngles);
+
+    // Should be approximately equal (both at cap)
+    expect(Math.abs(fourShotsVariance - tenShotsVariance)).toBeLessThan(1);
+  });
+});
+
+describe('wouldShotHitSelf', () => {
+  const terrain = createMockTerrain();
+
+  it('should detect shots landing near shooter', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 400, y: 100 } });
+
+    // A shot straight up with low power would land near self
+    const dangerousShot = { angle: 0, power: 15 }; // Straight up, low power
+
+    const wouldHit = wouldShotHitSelf(shooter, dangerousShot, terrain, 30);
+
+    expect(wouldHit).toBe(true);
+  });
+
+  it('should allow shots landing far from shooter', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+
+    // A shot to the right with decent power should land far away
+    const safeShot = { angle: -45, power: 70 }; // Shooting right
+
+    const wouldHit = wouldShotHitSelf(shooter, safeShot, terrain, 30);
+
+    expect(wouldHit).toBe(false);
+  });
+
+  it('should consider blast radius', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 400, y: 100 } });
+    const shot = { angle: 0, power: 20 };
+
+    // With small blast radius might be safe
+    const smallBlast = wouldShotHitSelf(shooter, shot, terrain, 10);
+
+    // With large blast radius might be dangerous
+    const largeBlast = wouldShotHitSelf(shooter, shot, terrain, 100);
+
+    // Large blast should be more likely to hit self
+    // (exact result depends on physics, but large should be >= small danger)
+    expect(largeBlast || !smallBlast).toBe(true); // At least one should be true
+  });
+});
+
+describe('calculateAIShot with improvements', () => {
+  beforeEach(() => {
+    resetAIState();
+  });
+
+  const terrain = createMockTerrain();
+
+  it('should return targetId in result', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 600, y: 100 } });
+
+    const result = calculateAIShot(shooter, target, terrain, 'veteran');
+
+    expect(result.targetId).toBe('player');
+  });
+
+  it('should accept consecutive shots parameter', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 600, y: 100 } });
+
+    // Get optimal shot for reference
+    const optimal = calculateOptimalShot(shooter, target, terrain);
+
+    // With many consecutive shots, should be closer to optimal
+    const results: number[] = [];
+    for (let i = 0; i < 50; i++) {
+      const result = calculateAIShot(shooter, target, terrain, 'veteran', {
+        consecutiveShots: 5,
+      });
+      results.push(Math.abs(result.angle - optimal.angle));
+    }
+
+    // Average error should be small due to bracketing
+    const avgError = results.reduce((a, b) => a + b, 0) / results.length;
+    expect(avgError).toBeLessThan(AI_DIFFICULTY_CONFIGS.veteran.angleVariance);
+  });
+
+  it('should not check self-harm for blind_fool', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 400, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 100, y: 100 } }); // Target to the left
+
+    // blind_fool doesn't check for self-harm, might shoot dangerously
+    // Just verify it doesn't throw and returns a result
+    const result = calculateAIShot(shooter, target, terrain, 'blind_fool');
+
+    expect(result.angle).toBeDefined();
+    expect(result.power).toBeDefined();
+    expect(result.thinkingTimeMs).toBe(AI_DIFFICULTY_CONFIGS.blind_fool.thinkingTimeMs);
+  });
+
+  it('should not check self-harm for private', () => {
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 400, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 100, y: 100 } });
+
+    // private doesn't check for self-harm
+    const result = calculateAIShot(shooter, target, terrain, 'private');
+
+    expect(result.angle).toBeDefined();
+    expect(result.power).toBeDefined();
+    expect(result.thinkingTimeMs).toBe(AI_DIFFICULTY_CONFIGS.private.thinkingTimeMs);
+  });
+
+  it('should try to avoid self-harm for veteran and above', () => {
+    // This is harder to test deterministically since the AI may find safe shots
+    // Just verify the function works for higher difficulties
+    const shooter = createMockTank({ id: 'ai-1', position: { x: 400, y: 100 } });
+    const target = createMockTank({ id: 'player', position: { x: 600, y: 100 } });
+
+    for (const difficulty of ['veteran', 'centurion', 'primus'] as const) {
+      const result = calculateAIShot(shooter, target, terrain, difficulty);
+
+      expect(result.angle).toBeDefined();
+      expect(result.power).toBeDefined();
+      expect(result.thinkingTimeMs).toBe(AI_DIFFICULTY_CONFIGS[difficulty].thinkingTimeMs);
+    }
   });
 });

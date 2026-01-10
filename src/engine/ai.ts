@@ -7,6 +7,67 @@ import { type WeaponType, WEAPON_TYPES, WEAPONS } from './weapons';
 export type { AIDifficulty } from '../types/game';
 export { AI_DIFFICULTY_ORDER } from '../types/game';
 
+// ==========================================
+// AI State Management (Target Persistence & Shot History)
+// ==========================================
+
+/** Tracks each AI's current target for target persistence */
+const aiCurrentTargets: Map<string, string> = new Map();
+
+/** Tracks consecutive shots at the same target for bracketing/zeroing */
+const aiShotHistory: Map<string, number> = new Map();
+
+/** Health threshold below which a target is considered "nearly destroyed" */
+const CRITICAL_HEALTH_THRESHOLD = 20;
+
+/** Maximum variance reduction from shot history (prevents perfect accuracy) */
+const MAX_BRACKETING_REDUCTION = 0.6;
+
+/** Variance reduction per consecutive shot at same target */
+const BRACKETING_REDUCTION_PER_SHOT = 0.15;
+
+/**
+ * Clear all AI state. Call this when starting a new game.
+ */
+export function resetAIState(): void {
+  aiCurrentTargets.clear();
+  aiShotHistory.clear();
+}
+
+/**
+ * Get the shot history key for a shooter-target pair.
+ */
+function getShotHistoryKey(shooterId: string, targetId: string): string {
+  return `${shooterId}->${targetId}`;
+}
+
+/**
+ * Get the number of consecutive shots an AI has taken at a target.
+ */
+export function getConsecutiveShots(shooterId: string, targetId: string): number {
+  return aiShotHistory.get(getShotHistoryKey(shooterId, targetId)) ?? 0;
+}
+
+/**
+ * Record a shot taken by an AI at a target.
+ */
+export function recordShot(shooterId: string, targetId: string): void {
+  const key = getShotHistoryKey(shooterId, targetId);
+  const currentCount = aiShotHistory.get(key) ?? 0;
+  aiShotHistory.set(key, currentCount + 1);
+}
+
+/**
+ * Clear shot history for a shooter when they switch targets.
+ */
+function clearShotHistoryForShooter(shooterId: string): void {
+  for (const key of aiShotHistory.keys()) {
+    if (key.startsWith(`${shooterId}->`)) {
+      aiShotHistory.delete(key);
+    }
+  }
+}
+
 export interface AIDifficultyConfig {
   name: string;
   description: string;
@@ -215,16 +276,30 @@ function simulateShotLanding(
 /**
  * Apply difficulty-based variance to a shot decision.
  * Adds random error based on difficulty level.
+ * Optionally reduces variance based on consecutive shots (bracketing/zeroing).
+ *
+ * @param decision - The optimal shot decision
+ * @param difficulty - AI difficulty level
+ * @param consecutiveShots - Number of consecutive shots at the same target (for bracketing)
  */
 export function applyDifficultyVariance(
   decision: AIDecision,
-  difficulty: AIDifficulty
+  difficulty: AIDifficulty,
+  consecutiveShots: number = 0
 ): AIDecision {
   const config = AI_DIFFICULTY_CONFIGS[difficulty];
 
-  // Generate random variance within the difficulty's bounds
-  const angleError = (Math.random() - 0.5) * 2 * config.angleVariance;
-  const powerError = (Math.random() - 0.5) * 2 * config.powerVariance;
+  // Calculate bracketing reduction: each consecutive shot reduces variance
+  // Cap at MAX_BRACKETING_REDUCTION to prevent perfect accuracy
+  const bracketingReduction = Math.min(
+    consecutiveShots * BRACKETING_REDUCTION_PER_SHOT,
+    MAX_BRACKETING_REDUCTION
+  );
+  const varianceMultiplier = 1 - bracketingReduction;
+
+  // Generate random variance within the difficulty's bounds, reduced by bracketing
+  const angleError = (Math.random() - 0.5) * 2 * config.angleVariance * varianceMultiplier;
+  const powerError = (Math.random() - 0.5) * 2 * config.powerVariance * varianceMultiplier;
 
   // Apply variance and clamp to valid ranges
   const adjustedAngle = clampUIAngle(decision.angle + angleError);
@@ -236,21 +311,120 @@ export function applyDifficultyVariance(
   };
 }
 
+// ==========================================
+// Self-Preservation Logic
+// ==========================================
+
+/** Difficulties that are "too dumb" to check for self-harm */
+const SELF_HARM_IGNORANT_DIFFICULTIES: AIDifficulty[] = ['blind_fool', 'private'];
+
+/** Blast radius margin to check for self-harm (extra safety buffer) */
+const SELF_HARM_SAFETY_MARGIN = 10;
+
+/** Default blast radius to use if weapon config unavailable */
+const DEFAULT_BLAST_RADIUS = 30;
+
+/**
+ * Check if a shot would land dangerously close to the shooter.
+ * Returns true if the shot would likely harm the shooter.
+ */
+export function wouldShotHitSelf(
+  shooter: TankState,
+  decision: AIDecision,
+  terrain: TerrainData | null,
+  blastRadius: number = DEFAULT_BLAST_RADIUS
+): boolean {
+  // Convert UI angle to physics angle
+  const physicsAngle = decision.angle + 90;
+
+  // Simulate where the shot would land
+  const landingX = simulateShotLanding(
+    shooter.position,
+    physicsAngle,
+    decision.power,
+    terrain
+  );
+
+  if (landingX === null) {
+    // Shot goes off screen - not a self-harm risk
+    return false;
+  }
+
+  // Check if landing is dangerously close to shooter
+  const distance = Math.abs(landingX - shooter.position.x);
+  return distance < (blastRadius + SELF_HARM_SAFETY_MARGIN);
+}
+
+/**
+ * Find a safe alternative shot that won't harm the shooter.
+ * Tries variations of angle and power to find a safe shot.
+ * Returns null if no safe shot can be found.
+ */
+function findSafeShot(
+  shooter: TankState,
+  originalDecision: AIDecision,
+  terrain: TerrainData | null,
+  blastRadius: number = DEFAULT_BLAST_RADIUS
+): AIDecision | null {
+  // Try adjusting angle in both directions
+  const angleAdjustments = [5, 10, 15, -5, -10, -15, 20, -20];
+  // Try reducing power (safer, lands shorter)
+  const powerAdjustments = [0, -10, -20, 10, 20];
+
+  for (const powerAdj of powerAdjustments) {
+    for (const angleAdj of angleAdjustments) {
+      const testDecision: AIDecision = {
+        angle: clampUIAngle(originalDecision.angle + angleAdj),
+        power: Math.max(10, Math.min(100, originalDecision.power + powerAdj)),
+      };
+
+      if (!wouldShotHitSelf(shooter, testDecision, terrain, blastRadius)) {
+        return testDecision;
+      }
+    }
+  }
+
+  return null;
+}
+
 /**
  * Main AI function: calculate the shot for an AI-controlled tank.
  * Returns the angle, power, and recommended thinking time.
+ *
+ * This version incorporates:
+ * - Shot bracketing/zeroing (reduced variance with consecutive shots)
+ * - Self-preservation (avoids self-harm except for lowest difficulties)
  */
 export function calculateAIShot(
   aiTank: TankState,
   targetTank: TankState,
   terrain: TerrainData | null,
-  difficulty: AIDifficulty
-): AIDecision & { thinkingTimeMs: number } {
+  difficulty: AIDifficulty,
+  options: {
+    consecutiveShots?: number;
+    blastRadius?: number;
+  } = {}
+): AIDecision & { thinkingTimeMs: number; targetId: string } {
+  const { consecutiveShots = 0, blastRadius = DEFAULT_BLAST_RADIUS } = options;
+
   // Calculate the optimal shot
   const optimalShot = calculateOptimalShot(aiTank, targetTank, terrain);
 
-  // Apply difficulty variance
-  const finalShot = applyDifficultyVariance(optimalShot, difficulty);
+  // Apply difficulty variance with bracketing
+  let finalShot = applyDifficultyVariance(optimalShot, difficulty, consecutiveShots);
+
+  // Self-preservation check (skip for blind_fool and private - they're too dumb)
+  if (!SELF_HARM_IGNORANT_DIFFICULTIES.includes(difficulty)) {
+    if (wouldShotHitSelf(aiTank, finalShot, terrain, blastRadius)) {
+      // Try to find a safe alternative
+      const safeShot = findSafeShot(aiTank, finalShot, terrain, blastRadius);
+      if (safeShot) {
+        finalShot = safeShot;
+      }
+      // If no safe shot found, still fire (better than doing nothing)
+      // Higher difficulty AIs will at least try to avoid self-harm
+    }
+  }
 
   // Get thinking time from difficulty config
   const config = AI_DIFFICULTY_CONFIGS[difficulty];
@@ -258,6 +432,7 @@ export function calculateAIShot(
   return {
     ...finalShot,
     thinkingTimeMs: config.thinkingTimeMs,
+    targetId: targetTank.id,
   };
 }
 
@@ -426,6 +601,9 @@ export function getAIWeaponChoice(
  * Select a target for an AI tank in free-for-all mode.
  * Picks a random alive tank that isn't itself.
  * Weights selection towards closer tanks and lower health tanks.
+ *
+ * This is the basic selection without persistence - used for testing
+ * and when persistence is not needed.
  */
 export function selectTarget(
   shooter: TankState,
@@ -465,4 +643,72 @@ export function selectTarget(
 
   // Fallback to first target
   return potentialTargets[0]!;
+}
+
+/**
+ * Select a target for an AI tank with persistence.
+ * Will stick with the current target unless:
+ * - Target is dead
+ * - Another target is critically low health (easier kill opportunity)
+ *
+ * This function updates the internal AI state to track targets and shot history.
+ */
+export function selectTargetWithPersistence(
+  shooter: TankState,
+  aliveTanks: TankState[]
+): TankState | null {
+  // Filter out self
+  const potentialTargets = aliveTanks.filter((t) => t.id !== shooter.id);
+
+  if (potentialTargets.length === 0) {
+    aiCurrentTargets.delete(shooter.id);
+    return null;
+  }
+
+  // Check if we have a current target
+  const currentTargetId = aiCurrentTargets.get(shooter.id);
+  const currentTarget = currentTargetId
+    ? potentialTargets.find((t) => t.id === currentTargetId)
+    : null;
+
+  // Check for critically low health targets (opportunity to finish off)
+  const criticalTargets = potentialTargets.filter(
+    (t) => t.health > 0 && t.health <= CRITICAL_HEALTH_THRESHOLD && t.id !== currentTargetId
+  );
+
+  // If there's a critically wounded target that's NOT our current target,
+  // consider switching to finish them off
+  if (criticalTargets.length > 0) {
+    // Find the lowest health critical target
+    const easiestKill = criticalTargets.reduce((lowest, current) =>
+      current.health < lowest.health ? current : lowest
+    );
+
+    // Switch targets - clear shot history since we're changing targets
+    if (currentTargetId !== easiestKill.id) {
+      clearShotHistoryForShooter(shooter.id);
+      aiCurrentTargets.set(shooter.id, easiestKill.id);
+    }
+    return easiestKill;
+  }
+
+  // If current target is still alive and valid, stick with it
+  if (currentTarget && currentTarget.health > 0) {
+    return currentTarget;
+  }
+
+  // Need to select a new target - use weighted random selection
+  const newTarget = selectTarget(shooter, aliveTanks);
+
+  if (newTarget) {
+    // Clear shot history since we're changing targets
+    if (currentTargetId !== newTarget.id) {
+      clearShotHistoryForShooter(shooter.id);
+    }
+    aiCurrentTargets.set(shooter.id, newTarget.id);
+  } else {
+    aiCurrentTargets.delete(shooter.id);
+  }
+
+  return newTarget;
 }
