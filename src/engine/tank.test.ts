@@ -59,25 +59,25 @@ describe('tank', () => {
     it('calculates position at left edge', () => {
       const position = calculateTankPosition(terrain, 0);
       // terrain height at x=0 is 100
-      // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 100 + 6 + 10 = 116
+      // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 100 + 5 + 8 = 113
       expect(position.x).toBe(0);
-      expect(position.y).toBe(116);
+      expect(position.y).toBe(113);
     });
 
     it('calculates position in the middle', () => {
       const position = calculateTankPosition(terrain, 5);
       // terrain height at x=5 is 110
-      // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 110 + 6 + 10 = 126
+      // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 110 + 5 + 8 = 123
       expect(position.x).toBe(5);
-      expect(position.y).toBe(126);
+      expect(position.y).toBe(123);
     });
 
     it('calculates position at a peak', () => {
       const position = calculateTankPosition(terrain, 2);
       // terrain height at x=2 is 150
-      // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 150 + 6 + 10 = 166
+      // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 150 + 5 + 8 = 163
       expect(position.x).toBe(2);
-      expect(position.y).toBe(166);
+      expect(position.y).toBe(163);
     });
 
     it('throws error for x outside terrain bounds', () => {
@@ -144,9 +144,9 @@ describe('tank', () => {
     it('calculates correct y positions on terrain', () => {
       const tanks = createInitialTanks(terrain, 'green', 1);
       // terrain height is 50 everywhere
-      // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 50 + 6 + 10 = 66
-      expect(tanks[0]?.position.y).toBe(66);
-      expect(tanks[1]?.position.y).toBe(66);
+      // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 50 + 5 + 8 = 63
+      expect(tanks[0]?.position.y).toBe(63);
+      expect(tanks[1]?.position.y).toBe(63);
     });
 
     it('assigns different colors to enemies', () => {
