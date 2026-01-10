@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, ENEMY_COUNT_OPTIONS } from '../types/game'
 import { PlayerStatsDisplay } from './PlayerStatsDisplay'
+import { loadGameConfig, saveGameConfig } from '../services/userDatabase'
 
 interface GameConfigScreenProps {
   onStartGame: (config: { terrainSize: TerrainSize; enemyCount: EnemyCount; playerColor: TankColor }) => void
@@ -21,15 +22,33 @@ const TANK_COLORS: { color: TankColor; hex: string; label: string }[] = [
   { color: 'brown', hex: '#8b5a2b', label: 'Brown' },
 ]
 
-export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
-  const [terrainSize, setTerrainSize] = useState<TerrainSize | null>(null)
-  const [enemyCount, setEnemyCount] = useState<EnemyCount | null>(null)
-  const [playerColor, setPlayerColor] = useState<TankColor | null>(null)
+// Default values: middle option for each selection
+const DEFAULT_TERRAIN_SIZE: TerrainSize = 'large' // Index 2 of 5 (small, medium, large, huge, epic)
+const DEFAULT_ENEMY_COUNT: EnemyCount = 5 // Index 4 of 10 (1-10)
+const DEFAULT_PLAYER_COLOR: TankColor = 'orange' // Index 4 of 10 colors
 
-  const allSelected = terrainSize !== null && enemyCount !== null && playerColor !== null
+export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
+  const [terrainSize, setTerrainSize] = useState<TerrainSize>(DEFAULT_TERRAIN_SIZE)
+  const [enemyCount, setEnemyCount] = useState<EnemyCount>(DEFAULT_ENEMY_COUNT)
+  const [playerColor, setPlayerColor] = useState<TankColor>(DEFAULT_PLAYER_COLOR)
+
+  // Load saved config on mount
+  useEffect(() => {
+    const savedConfig = loadGameConfig()
+    if (savedConfig) {
+      setTerrainSize(savedConfig.terrainSize)
+      setEnemyCount(savedConfig.enemyCount)
+      setPlayerColor(savedConfig.playerColor)
+    }
+  }, [])
+
+  // All selections now have defaults, so they're always valid
+  const allSelected = true
 
   const handleEngage = () => {
     if (allSelected) {
+      // Save config before starting game
+      saveGameConfig({ terrainSize, enemyCount, playerColor })
       onStartGame({ terrainSize, enemyCount, playerColor })
     }
   }

@@ -288,6 +288,32 @@ describe('GameContext', () => {
     expect(result.current.state.terrain).toBeNull();
   });
 
+  it('resets game state to config phase (for Play Again)', () => {
+    const { result } = renderHook(() => useGame(), {
+      wrapper: GameProvider,
+    });
+
+    act(() => {
+      result.current.actions.setPhase('gameover');
+      result.current.actions.setTerrain({
+        points: [100, 150, 200],
+        width: 800,
+        height: 600,
+      });
+    });
+
+    act(() => {
+      result.current.actions.resetToConfig();
+    });
+
+    // Should go directly to config phase instead of loading
+    expect(result.current.state.phase).toBe('config');
+    // Other state should still be reset
+    expect(result.current.state.currentTurn).toBe(0);
+    expect(result.current.state.tanks).toEqual([]);
+    expect(result.current.state.terrain).toBeNull();
+  });
+
   it('has default terrain size of medium', () => {
     const { result } = renderHook(() => useGame(), {
       wrapper: GameProvider,

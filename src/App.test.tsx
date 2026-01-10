@@ -84,7 +84,7 @@ describe('App', () => {
     expect(screen.queryByTestId('turn-indicator')).not.toBeInTheDocument()
   })
 
-  it('transitions to player name entry screen when start button clicked', () => {
+  it('transitions to player name entry screen when start button clicked (new user)', () => {
     renderWithProvider(<App />)
 
     fireEvent.click(screen.getByTestId('start-button'))
@@ -95,6 +95,28 @@ describe('App', () => {
     expect(screen.queryByTestId('loading-screen')).not.toBeInTheDocument()
     expect(screen.getByTestId('player-name-entry')).toBeInTheDocument()
     expect(screen.getByText('Enter Your Name')).toBeInTheDocument()
+  })
+
+  it('skips name entry and goes directly to config screen for existing user', () => {
+    // Set up existing user in localStorage
+    const existingUser = {
+      profile: { id: 'test-id', username: 'ExistingPlayer', createdAt: Date.now() },
+      stats: { gamesPlayed: 5, gamesWon: 3, gamesLost: 2, totalKills: 10, winRate: 60, balance: 1000 },
+      recentGames: [],
+      weaponInventory: { standard: null }, // null represents Infinity in serialized JSON
+    }
+    localStorageMock.setItem('tanks_players_db', JSON.stringify({ ExistingPlayer: existingUser }))
+    localStorageMock.setItem('tanks_current_player', 'ExistingPlayer')
+
+    renderWithProvider(<App />)
+
+    // Click start button
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Should skip name entry and go directly to config screen
+    expect(screen.queryByTestId('player-name-entry')).not.toBeInTheDocument()
+    expect(screen.getByTestId('game-config-screen')).toBeInTheDocument()
   })
 
   it('transitions to configuration screen after entering player name', () => {
@@ -133,13 +155,13 @@ describe('App', () => {
     expect(screen.getByText('Enemy Count')).toBeInTheDocument()
     expect(screen.getByText('Your Tank')).toBeInTheDocument()
 
-    // Check Engage button is present but disabled
+    // Check Engage button is present and enabled (default selections are pre-selected)
     const engageButton = screen.getByTestId('config-engage-button')
     expect(engageButton).toBeInTheDocument()
-    expect(engageButton).toBeDisabled()
+    expect(engageButton).not.toBeDisabled()
   })
 
-  it('enables Engage button only when all selections are made', () => {
+  it('has default selections pre-selected and Engage button enabled', () => {
     renderWithProvider(<App />)
 
     // Go through loading screen
@@ -154,20 +176,16 @@ describe('App', () => {
 
     const engageButton = screen.getByTestId('config-engage-button')
 
-    // Button should be disabled initially
-    expect(engageButton).toBeDisabled()
-
-    // Select terrain size - still disabled
-    fireEvent.click(screen.getByTestId('config-terrain-medium'))
-    expect(engageButton).toBeDisabled()
-
-    // Select enemy count - still disabled
-    fireEvent.click(screen.getByTestId('config-enemy-1'))
-    expect(engageButton).toBeDisabled()
-
-    // Select color - now enabled
-    fireEvent.click(screen.getByTestId('config-color-red'))
+    // Button should be enabled immediately with default selections
     expect(engageButton).not.toBeDisabled()
+
+    // Default selections should be pre-selected (middle options)
+    // Terrain: 'large' (middle of 5)
+    expect(screen.getByTestId('config-terrain-large')).toHaveAttribute('aria-pressed', 'true')
+    // Enemy count: 5 (middle of 10)
+    expect(screen.getByTestId('config-enemy-5')).toHaveAttribute('aria-pressed', 'true')
+    // Color: 'orange' (middle of 10)
+    expect(screen.getByTestId('config-color-orange')).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('transitions to weapon shop when Engage button is clicked with all selections', () => {

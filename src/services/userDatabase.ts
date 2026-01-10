@@ -14,6 +14,14 @@ import { STARTING_MONEY, calculateGameEarnings, type WeaponType } from '../engin
 const PLAYERS_DB_KEY = 'tanks_players_db';
 const CURRENT_PLAYER_KEY = 'tanks_current_player';
 const LEGACY_STORAGE_KEY = 'tanks_user_data';
+const GAME_CONFIG_KEY = 'tanks_game_config';
+
+// Game config interface for persisting selections between sessions
+export interface GameConfig {
+  terrainSize: TerrainSize;
+  enemyCount: EnemyCount;
+  playerColor: TankColor;
+}
 
 const MAX_RECENT_GAMES = 50;
 
@@ -491,4 +499,34 @@ export function getWeaponInventory(): WeaponInventory | null {
   migrateWeaponInventory(userData);
   saveUserData(userData); // Persist migration if it occurred
   return userData.weaponInventory;
+}
+
+// ============================================================================
+// GAME CONFIG PERSISTENCE
+// ============================================================================
+
+/**
+ * Save game configuration for the current player.
+ * Persists terrain size, enemy count, and player color selections.
+ */
+export function saveGameConfig(config: GameConfig): void {
+  try {
+    localStorage.setItem(GAME_CONFIG_KEY, JSON.stringify(config));
+  } catch {
+    console.error('Failed to save game config to localStorage');
+  }
+}
+
+/**
+ * Load saved game configuration.
+ * Returns null if no config saved.
+ */
+export function loadGameConfig(): GameConfig | null {
+  try {
+    const stored = localStorage.getItem(GAME_CONFIG_KEY);
+    if (!stored) return null;
+    return JSON.parse(stored) as GameConfig;
+  } catch {
+    return null;
+  }
 }

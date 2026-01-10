@@ -106,6 +106,7 @@ export interface GameActions {
   damageTank: (tankId: string, damage: number, weaponType?: WeaponType) => void;
   setWinner: (tankId: string) => void;
   resetGame: () => void;
+  resetToConfig: () => void;
   setPlayerColor: (color: TankColor) => void;
   setAIDifficulty: (difficulty: AIDifficulty) => void;
   setTerrainSize: (size: TerrainSize) => void;
