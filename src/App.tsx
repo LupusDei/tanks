@@ -52,7 +52,8 @@ function App() {
   const { userData, createNewUser, recordGame } = useUser()
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
-  const explosionRef = useRef<ExplosionState | null>(null)
+  // Array of active explosions for simultaneous impacts
+  const explosionsRef = useRef<ExplosionState[]>([])
   const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
@@ -388,11 +389,9 @@ function App() {
         updatedProjectiles.push({ ...updatedProjectile, isActive: false })
 
         // Create explosion at the landing position (in screen coordinates)
-        // TODO: Support multiple simultaneous explosions in tanks-qr0
-        if (!explosionRef.current?.isActive) {
-          explosionRef.current = createExplosion(position, currentTime)
-          setIsExplosionActive(true)
-        }
+        const newExplosion = createExplosion(position, currentTime)
+        explosionsRef.current = [...explosionsRef.current, newExplosion]
+        setIsExplosionActive(true)
 
         // Check for tank hits and apply damage
         for (const tank of tanks) {
@@ -418,22 +417,38 @@ function App() {
       setIsProjectileActive(false)
     }
 
-    // Render and update explosion
-    if (explosionRef.current?.isActive) {
-      const explosion = explosionRef.current
+    // Render and update all explosions
+    let anyExplosionActive = false
+    const updatedExplosions: ExplosionState[] = []
+
+    for (const explosion of explosionsRef.current) {
+      if (!explosion.isActive) {
+        continue // Don't keep inactive explosions
+      }
 
       // Update explosion state
-      explosionRef.current = updateExplosion(explosion, currentTime, deltaTime)
+      const updatedExplosion = updateExplosion(explosion, currentTime, deltaTime)
 
       // Render explosion
-      renderExplosion(ctx, explosionRef.current, currentTime)
+      renderExplosion(ctx, updatedExplosion, currentTime)
 
       // Check if explosion is complete
-      if (isExplosionComplete(explosionRef.current, currentTime)) {
-        explosionRef.current = { ...explosionRef.current, isActive: false }
-        setIsExplosionActive(false)
-        actions.nextTurn()
+      if (isExplosionComplete(updatedExplosion, currentTime)) {
+        // Don't add completed explosions to the array
+        continue
+      } else {
+        updatedExplosions.push(updatedExplosion)
+        anyExplosionActive = true
       }
+    }
+
+    // Update explosions ref
+    explosionsRef.current = updatedExplosions
+
+    // Only advance turn when ALL explosions are complete
+    if (isExplosionActive && !anyExplosionActive) {
+      setIsExplosionActive(false)
+      actions.nextTurn()
     }
   }
 
