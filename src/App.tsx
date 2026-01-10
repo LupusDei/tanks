@@ -322,6 +322,7 @@ function App() {
   const handleWeaponConfirm = (weapon: WeaponType) => {
     // Copy user's weapon inventory to game state for this session
     // Standard always has infinite ammo
+    console.log('[handleWeaponConfirm] weaponInventory being copied:', weaponInventory)
     actions.setWeaponAmmo({
       ...weaponInventory,
       standard: Infinity,
