@@ -10,6 +10,8 @@ import {
   screenToWorld,
   checkTerrainCollision,
   uiAngleToPhysicsAngle,
+  getProjectileVisual,
+  renderProjectile,
 } from './projectile';
 import type { TankState, TerrainData } from '../types/game';
 
@@ -454,6 +456,162 @@ describe('weapon-based projectile behavior', () => {
       expect(state.speedMultiplier).toBeGreaterThan(0);
       expect(state.tankId).toBe(tank.id);
       expect(state.tankColor).toBe(tank.color);
+    }
+  });
+});
+
+describe('getProjectileVisual', () => {
+  it('returns distinct visual config for each weapon type', () => {
+    const weaponTypes = ['standard', 'heavy_artillery', 'precision', 'cluster_bomb', 'napalm'] as const;
+    const visuals = weaponTypes.map(type => getProjectileVisual(type));
+
+    // Each weapon should have unique color
+    const colors = visuals.map(v => v.color);
+    const uniqueColors = new Set(colors);
+    expect(uniqueColors.size).toBe(weaponTypes.length);
+  });
+
+  it('standard shell has yellow color with white glow', () => {
+    const visual = getProjectileVisual('standard');
+    expect(visual.color).toBe('#ffff00');
+    expect(visual.glowColor).toBe('#ffffff');
+    expect(visual.radius).toBe(5);
+  });
+
+  it('heavy artillery is larger with dark color and red glow', () => {
+    const visual = getProjectileVisual('heavy_artillery');
+    expect(visual.color).toBe('#2a2a2a');
+    expect(visual.glowColor).toBe('#ff3300');
+    expect(visual.radius).toBe(8);
+    expect(visual.radius).toBeGreaterThan(getProjectileVisual('standard').radius);
+  });
+
+  it('precision shot is smaller with cyan color', () => {
+    const visual = getProjectileVisual('precision');
+    expect(visual.color).toBe('#00ddff');
+    expect(visual.glowColor).toBe('#66ffff');
+    expect(visual.radius).toBe(4);
+    expect(visual.radius).toBeLessThan(getProjectileVisual('standard').radius);
+    expect(visual.trailColor).toBe('#00aacc');
+  });
+
+  it('cluster bomb has brown/orange color', () => {
+    const visual = getProjectileVisual('cluster_bomb');
+    expect(visual.color).toBe('#cc6600');
+    expect(visual.glowColor).toBe('#ff9933');
+    expect(visual.radius).toBe(6);
+  });
+
+  it('napalm has orange/red color with glow', () => {
+    const visual = getProjectileVisual('napalm');
+    expect(visual.color).toBe('#ff4400');
+    expect(visual.glowColor).toBe('#ffaa00');
+    expect(visual.radius).toBe(6);
+  });
+
+  it('all visuals have positive radius', () => {
+    const weaponTypes = ['standard', 'heavy_artillery', 'precision', 'cluster_bomb', 'napalm'] as const;
+    for (const weaponType of weaponTypes) {
+      const visual = getProjectileVisual(weaponType);
+      expect(visual.radius).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('renderProjectile weapon-specific rendering', () => {
+  // Mock canvas context for testing
+  const createMockContext = (): CanvasRenderingContext2D => {
+    const methods: Record<string, () => void> = {};
+    const handler = {
+      get(_target: object, prop: string) {
+        if (prop === 'canvas') {
+          return { width: 800, height: 600 };
+        }
+        if (!(prop in methods)) {
+          methods[prop] = () => undefined;
+        }
+        return methods[prop];
+      },
+      set() {
+        return true;
+      },
+    };
+    return new Proxy({}, handler) as unknown as CanvasRenderingContext2D;
+  };
+
+  it('renders standard shell without throwing', () => {
+    const ctx = createMockContext();
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'standard');
+
+    expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
+  });
+
+  it('renders heavy artillery without throwing', () => {
+    const ctx = createMockContext();
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'heavy_artillery');
+
+    expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
+  });
+
+  it('renders precision shot without throwing', () => {
+    const ctx = createMockContext();
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'precision');
+
+    expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
+  });
+
+  it('renders cluster bomb without throwing', () => {
+    const ctx = createMockContext();
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'cluster_bomb');
+
+    expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
+  });
+
+  it('renders napalm without throwing', () => {
+    const ctx = createMockContext();
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'napalm');
+
+    expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
+  });
+
+  it('renders all weapon types at various angles', () => {
+    const ctx = createMockContext();
+    const weaponTypes = ['standard', 'heavy_artillery', 'precision', 'cluster_bomb', 'napalm'] as const;
+    const angles = [-90, -45, 0, 45, 90];
+
+    for (const weaponType of weaponTypes) {
+      for (const angle of angles) {
+        const tank = createMockTank({ angle });
+        const state = createProjectileState(tank, 0, CANVAS_HEIGHT, weaponType);
+        expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
+      }
+    }
+  });
+
+  it('renders cluster bomb wobble animation at different times', () => {
+    const ctx = createMockContext();
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'cluster_bomb');
+
+    // Render at different times to test wobble animation
+    for (let time = 0; time < 1000; time += 100) {
+      expect(() => renderProjectile(ctx, state, time)).not.toThrow();
+    }
+  });
+
+  it('renders napalm flame animation at different times', () => {
+    const ctx = createMockContext();
+    const tank = createMockTank();
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'napalm');
+
+    // Render at different times to test flame animation
+    for (let time = 0; time < 1000; time += 100) {
+      expect(() => renderProjectile(ctx, state, time)).not.toThrow();
     }
   });
 });
