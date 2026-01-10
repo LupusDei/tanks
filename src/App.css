@@ -1929,3 +1929,19 @@ p {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+/* ===========================================
+   MOBILE RESPONSIVE STYLES
+   Breakpoint: 768px
+   =========================================== */
+
+/* Hide keyboard hints on mobile */
+@media (max-width: 768px) {
+  .control-panel__keys,
+  .control-panel__hint,
+  .control-panel__fire-keys,
+  .fire-button__hint,
+  .weapon-selection-panel__hint {
+    display: none;
+  }
+}
