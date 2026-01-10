@@ -34,9 +34,14 @@ import {
   isExplosionComplete,
   checkTankHit,
   getWeaponConfig,
+  createTankDestruction,
+  updateTankDestruction,
+  renderTankDestruction,
+  isDestructionComplete,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
+  type TankDestructionState,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount } from './types/game'
 
@@ -58,6 +63,8 @@ function App() {
   const projectilesRef = useRef<ProjectileState[]>([])
   // Array of active explosions for simultaneous impacts
   const explosionsRef = useRef<ExplosionState[]>([])
+  // Array of active tank destruction animations
+  const destructionsRef = useRef<TankDestructionState[]>([])
   const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
@@ -398,9 +405,14 @@ function App() {
       ctx.fill()
     }
 
-    // Render tanks
+    // Render tanks (skip those with active destruction animations)
     const hasActiveProjectiles = projectilesRef.current.some((p) => p.isActive)
+    const destroyedTankIds = new Set(destructionsRef.current.filter(d => d.isActive).map(d => d.tankId))
     for (const tank of tanks) {
+      // Skip rendering tanks that have destruction animations playing
+      if (destroyedTankIds.has(tank.id)) {
+        continue
+      }
       const isCurrentTurn = tank.id === state.currentPlayerId && !hasActiveProjectiles
       // Show rank insignia on enemy tanks to indicate AI difficulty
       const isEnemy = tank.id !== 'player'
@@ -446,7 +458,20 @@ function App() {
         // Check for tank hits and apply weapon damage
         for (const tank of tanks) {
           if (checkTankHit(position, tank, ctx.canvas.height, weaponConfig.blastRadius)) {
+            // Check if this damage will kill the tank
+            const willKill = tank.health > 0 && tank.health - weaponConfig.damage <= 0
+
             actions.damageTank(tank.id, weaponConfig.damage, updatedProjectile.weaponType)
+
+            // Create destruction animation if tank was killed
+            if (willKill) {
+              // Create a temporary tank state with the killing weapon set
+              const killedTank = { ...tank, killedByWeapon: updatedProjectile.weaponType }
+              const destruction = createTankDestruction(killedTank, ctx.canvas.height, currentTime)
+              if (destruction) {
+                destructionsRef.current = [...destructionsRef.current, destruction]
+              }
+            }
           }
         }
       } else {
@@ -494,6 +519,32 @@ function App() {
 
     // Update explosions ref
     explosionsRef.current = updatedExplosions
+
+    // Render and update all tank destruction animations
+    const updatedDestructions: TankDestructionState[] = []
+
+    for (const destruction of destructionsRef.current) {
+      if (!destruction.isActive) {
+        continue // Don't keep inactive destructions
+      }
+
+      // Update destruction state
+      const updatedDestruction = updateTankDestruction(destruction, currentTime, deltaTime)
+
+      // Render destruction
+      renderTankDestruction(ctx, updatedDestruction, currentTime)
+
+      // Check if destruction is complete
+      if (isDestructionComplete(updatedDestruction, currentTime)) {
+        // Don't add completed destructions to the array
+        continue
+      } else {
+        updatedDestructions.push(updatedDestruction)
+      }
+    }
+
+    // Update destructions ref
+    destructionsRef.current = updatedDestructions
 
     // In simultaneous mode, just clear explosion state when all complete
     // No turn cycling - all tanks fire together each round

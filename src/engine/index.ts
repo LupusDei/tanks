@@ -107,7 +107,22 @@ export {
   calculateKillReward,
   calculateWinBonus,
   calculateGameEarnings,
+  getDestructionCategory,
   // Types
   type WeaponType,
   type WeaponConfig,
+  type DestructionCategory,
 } from './weapons';
+
+export {
+  DESTRUCTION_DURATION_MS,
+  createTankDestruction,
+  getDestructionProgress,
+  isDestructionComplete,
+  updateTankDestruction,
+  renderTankDestruction,
+  type TankDestructionState,
+  type TankDebris,
+  type DestructionParticle,
+  type DebrisType,
+} from './tankDestruction';
