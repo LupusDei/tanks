@@ -137,7 +137,7 @@ export function MagnetizeButton({
               borderRadius: '50%',
               pointerEvents: 'none',
               transform: `translate(${x - particle.size/2}px, ${y - particle.size/2}px) scale(${scale})`,
-              transition: isHovering ? 'transform 0.8s ease-in-out' : 'none',
+              transition: isHovering ? 'transform 0.2s ease-in-out' : 'none',
               background: `radial-gradient(circle at 30% 30%, hsl(${particle.hue}, 100%, 85%), hsl(${particle.hue}, 100%, 55%))`,
               boxShadow: `0 0 ${6 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 60%, 0.9), 0 0 ${10 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 50%, 0.5)`,
             }}
