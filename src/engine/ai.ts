@@ -178,8 +178,11 @@ function simulateShotLanding(
   const timeStep = 0.05;
   const maxTime = 20;
 
+  // Use terrain width for power scaling, default to 800 if no terrain
+  const terrainWidth = terrain?.width ?? 800;
+
   const angleRad = degreesToRadians(angle);
-  const velocity = powerToVelocity(power);
+  const velocity = powerToVelocity(power, terrainWidth);
   const vx = velocity * Math.cos(angleRad);
   const vy = velocity * Math.sin(angleRad);
 

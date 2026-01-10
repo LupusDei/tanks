@@ -14,6 +14,7 @@ import {
 import type { TankState, TerrainData } from '../types/game';
 
 const CANVAS_HEIGHT = 600;
+const CANVAS_WIDTH = 800;
 
 // UI angle system: 0 = up, positive = left, negative = right
 // Physics angle system: 0 = right, 90 = up
@@ -91,7 +92,7 @@ describe('getBarrelTipPosition', () => {
 describe('createLaunchConfig', () => {
   it('creates launch config with physics angle and power', () => {
     const tank = createMockTank({ angle: 60, power: 75 });
-    const config = createLaunchConfig(tank, CANVAS_HEIGHT);
+    const config = createLaunchConfig(tank, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     // UI angle 60 converts to physics angle 150 (90 + 60)
     expect(config.angle).toBe(150);
@@ -101,7 +102,7 @@ describe('createLaunchConfig', () => {
   it('converts barrel tip from world to screen coordinates', () => {
     // UI angle 0 = straight up, physics angle = 90
     const tank = createMockTank({ position: { x: 50, y: 100 }, angle: 0 });
-    const config = createLaunchConfig(tank, CANVAS_HEIGHT);
+    const config = createLaunchConfig(tank, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     // UI angle 0 = straight up, so barrel tip is directly above tank
     // Barrel tip in world coords: { x: 50, y: 100 + 5 (dome) + 25 = 130 }
@@ -115,7 +116,7 @@ describe('createProjectileState', () => {
   it('creates initial projectile state', () => {
     const tank = createMockTank();
     const startTime = 1000;
-    const state = createProjectileState(tank, startTime, CANVAS_HEIGHT);
+    const state = createProjectileState(tank, startTime, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     expect(state.isActive).toBe(true);
     expect(state.startTime).toBe(1000);
@@ -129,7 +130,7 @@ describe('createProjectileState', () => {
   it('initializes trace with barrel tip in screen coordinates', () => {
     // UI angle 0 = straight up
     const tank = createMockTank({ position: { x: 100, y: 200 }, angle: 0 });
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     // UI angle 0 = straight up, barrel tip directly above tank
     // Barrel tip world: { x: 100, y: 200 + 5 (dome) + 25 = 230 }
@@ -143,7 +144,7 @@ describe('getProjectilePosition', () => {
   it('returns launch position at time 0', () => {
     // UI angle -45 = 45° right of up (toward opponent)
     const tank = createMockTank({ angle: -45, power: 50 });
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH);
     const pos = getProjectilePosition(state, 0);
 
     expect(pos.x).toBeCloseTo(state.launchConfig.position.x, 1);
@@ -153,7 +154,7 @@ describe('getProjectilePosition', () => {
   it('moves projectile over time', () => {
     // UI angle -45 = 45° right of up, physics angle = 45
     const tank = createMockTank({ angle: -45, power: 50 });
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     const pos1 = getProjectilePosition(state, 500); // 0.5 seconds
     const pos2 = getProjectilePosition(state, 1000); // 1 second
@@ -165,7 +166,7 @@ describe('getProjectilePosition', () => {
   it('applies gravity to projectile (y increases in screen coords)', () => {
     // UI angle -90 = horizontal shot to the right, physics angle = 0
     const tank = createMockTank({ angle: -90, power: 50 });
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     const pos0 = getProjectilePosition(state, 0);
     const pos1 = getProjectilePosition(state, 1000); // 1 second
@@ -179,7 +180,7 @@ describe('updateProjectileTrace', () => {
   it('adds trace point when distance threshold is exceeded', () => {
     // UI angle -45 = 45° right of up
     const tank = createMockTank({ angle: -45, power: 100 });
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     // After enough time, projectile travels enough distance
     const updated = updateProjectileTrace(state, 200);
@@ -190,7 +191,7 @@ describe('updateProjectileTrace', () => {
   it('preserves existing trace points', () => {
     // UI angle -45 = 45° right of up
     const tank = createMockTank({ angle: -45, power: 100 });
-    let state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+    let state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     // Add multiple trace points
     state = updateProjectileTrace(state, 100);
@@ -204,7 +205,7 @@ describe('updateProjectileTrace', () => {
   it('does not add point if distance is too small', () => {
     // UI angle -45, very slow power
     const tank = createMockTank({ angle: -45, power: 1 });
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     // Very short time, projectile barely moves
     const updated = updateProjectileTrace(state, 1);
@@ -383,7 +384,7 @@ describe('checkTerrainCollision', () => {
 describe('weapon-based projectile behavior', () => {
   it('defaults to standard weapon type when not specified', () => {
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT);
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH);
 
     expect(state.weaponType).toBe('standard');
     expect(state.speedMultiplier).toBe(1.0);
@@ -391,7 +392,7 @@ describe('weapon-based projectile behavior', () => {
 
   it('accepts weapon type parameter', () => {
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'heavy_artillery');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'heavy_artillery');
 
     expect(state.weaponType).toBe('heavy_artillery');
     expect(state.speedMultiplier).toBe(0.8);
@@ -399,7 +400,7 @@ describe('weapon-based projectile behavior', () => {
 
   it('stores correct speed multiplier for precision weapon', () => {
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'precision');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'precision');
 
     expect(state.weaponType).toBe('precision');
     expect(state.speedMultiplier).toBe(1.3);
@@ -407,8 +408,8 @@ describe('weapon-based projectile behavior', () => {
 
   it('precision weapon travels faster than standard', () => {
     const tank = createMockTank({ angle: -45, power: 50 });
-    const standardState = createProjectileState(tank, 0, CANVAS_HEIGHT, 'standard');
-    const precisionState = createProjectileState(tank, 0, CANVAS_HEIGHT, 'precision');
+    const standardState = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'standard');
+    const precisionState = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'precision');
 
     // After same elapsed time, precision should have traveled further
     const time = 500;
@@ -426,8 +427,8 @@ describe('weapon-based projectile behavior', () => {
 
   it('heavy artillery travels slower than standard', () => {
     const tank = createMockTank({ angle: -45, power: 50 });
-    const standardState = createProjectileState(tank, 0, CANVAS_HEIGHT, 'standard');
-    const heavyState = createProjectileState(tank, 0, CANVAS_HEIGHT, 'heavy_artillery');
+    const standardState = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'standard');
+    const heavyState = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'heavy_artillery');
 
     // After same elapsed time, heavy should have traveled less
     const time = 500;
@@ -447,7 +448,7 @@ describe('weapon-based projectile behavior', () => {
     const weaponTypes = ['standard', 'heavy_artillery', 'precision', 'cluster_bomb', 'napalm'] as const;
 
     for (const weaponType of weaponTypes) {
-      const state = createProjectileState(tank, 0, CANVAS_HEIGHT, weaponType);
+      const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, weaponType);
 
       expect(state.isActive).toBe(true);
       expect(state.weaponType).toBe(weaponType);

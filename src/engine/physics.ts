@@ -7,16 +7,40 @@ import type { Position } from '../types/game';
 export const GRAVITY = 10;
 
 /**
+ * Base terrain width that POWER_SCALE was calibrated for.
+ * Used to scale power for different terrain sizes.
+ */
+export const BASE_TERRAIN_WIDTH = 800;
+
+/**
  * Power scaling factor to convert UI power (10-100) to velocity.
  * Calibrated so full power (100) at 70° covers approximately 800px.
  */
 export const POWER_SCALE = 1.12;
 
 /**
- * Convert UI power value to actual velocity for physics calculations.
+ * Calculate the power scale factor for a given terrain width.
+ * Scales velocity so that full power covers the same relative distance
+ * regardless of terrain size.
+ *
+ * The range of a projectile is proportional to v².
+ * To double the range, velocity must increase by sqrt(2).
  */
-export function powerToVelocity(power: number): number {
-  return power * POWER_SCALE;
+export function getTerrainPowerScale(terrainWidth: number): number {
+  return POWER_SCALE * Math.sqrt(terrainWidth / BASE_TERRAIN_WIDTH);
+}
+
+/**
+ * Convert UI power value to actual velocity for physics calculations.
+ * @param power - UI power value (10-100)
+ * @param terrainWidth - Optional terrain width for scaling. If not provided,
+ *                       uses base terrain width (800px) calibration.
+ */
+export function powerToVelocity(power: number, terrainWidth?: number): number {
+  const scale = terrainWidth !== undefined
+    ? getTerrainPowerScale(terrainWidth)
+    : POWER_SCALE;
+  return power * scale;
 }
 
 /**
@@ -25,7 +49,8 @@ export function powerToVelocity(power: number): number {
 export interface LaunchConfig {
   position: Position;
   angle: number; // Angle in degrees (0 = right, 90 = up)
-  power: number; // Initial velocity in m/s
+  power: number; // UI power value (10-100)
+  terrainWidth?: number; // Terrain width for power scaling
 }
 
 /**
@@ -52,9 +77,9 @@ export function degreesToRadians(degrees: number): number {
  * Note: In screen coordinates, y increases downward, so gravity adds to y.
  */
 export function calculatePosition(config: LaunchConfig, time: number): Position {
-  const { position, angle, power } = config;
+  const { position, angle, power, terrainWidth } = config;
   const angleRad = degreesToRadians(angle);
-  const velocity = powerToVelocity(power);
+  const velocity = powerToVelocity(power, terrainWidth);
 
   const vx = velocity * Math.cos(angleRad);
   const vy = velocity * Math.sin(angleRad);
@@ -73,9 +98,9 @@ export function calculateVelocity(
   config: LaunchConfig,
   time: number
 ): { vx: number; vy: number } {
-  const { angle, power } = config;
+  const { angle, power, terrainWidth } = config;
   const angleRad = degreesToRadians(angle);
-  const velocity = powerToVelocity(power);
+  const velocity = powerToVelocity(power, terrainWidth);
 
   const vx = velocity * Math.cos(angleRad);
   // In screen coordinates, gravity pulls down (increases y), so vy decreases
@@ -89,9 +114,9 @@ export function calculateVelocity(
  * Returns 0 if the projectile is launched downward.
  */
 export function calculateApexTime(config: LaunchConfig): number {
-  const { angle, power } = config;
+  const { angle, power, terrainWidth } = config;
   const angleRad = degreesToRadians(angle);
-  const velocity = powerToVelocity(power);
+  const velocity = powerToVelocity(power, terrainWidth);
   const vy = velocity * Math.sin(angleRad);
 
   // Apex occurs when vertical velocity = 0
