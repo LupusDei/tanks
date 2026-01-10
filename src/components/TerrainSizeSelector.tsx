@@ -4,7 +4,7 @@ interface TerrainSizeSelectorProps {
   onSizeSelect: (size: TerrainSize) => void
 }
 
-const TERRAIN_SIZE_ORDER: TerrainSize[] = ['small', 'medium', 'large', 'huge']
+const TERRAIN_SIZE_ORDER: TerrainSize[] = ['small', 'medium', 'large', 'huge', 'epic']
 
 export function TerrainSizeSelector({ onSizeSelect }: TerrainSizeSelectorProps) {
   return (
@@ -25,8 +25,8 @@ export function TerrainSizeSelector({ onSizeSelect }: TerrainSizeSelectorProps) 
                 <div
                   className="terrain-size-selector__preview-inner"
                   style={{
-                    width: `${(config.width / 1280) * 100}%`,
-                    height: `${(config.height / 960) * 100}%`,
+                    width: `${(config.width / 2100) * 100}%`,
+                    height: `${(config.height / 2800) * 100}%`,
                   }}
                 />
               </div>

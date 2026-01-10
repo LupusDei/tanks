@@ -7,7 +7,7 @@ export type GamePhase = 'loading' | 'playerName' | 'config' | 'weaponShop' | 'pl
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple' | 'cyan' | 'pink' | 'white' | 'brown';
 
-export type TerrainSize = 'small' | 'medium' | 'large' | 'huge';
+export type TerrainSize = 'small' | 'medium' | 'large' | 'huge' | 'epic';
 
 export interface TerrainSizeConfig {
   width: number;
@@ -20,6 +20,7 @@ export const TERRAIN_SIZES: Record<TerrainSize, TerrainSizeConfig> = {
   medium: { width: 1024, height: 768, label: 'Medium' },
   large: { width: 1280, height: 960, label: 'Large' },
   huge: { width: 1600, height: 1200, label: 'Huge' },
+  epic: { width: 2100, height: 2800, label: 'Epic' },
 };
 
 export type AIDifficulty =
@@ -38,9 +39,9 @@ export const AI_DIFFICULTY_ORDER: AIDifficulty[] = [
   'primus',
 ];
 
-export type EnemyCount = 1 | 2 | 3 | 4 | 5;
+export type EnemyCount = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
-export const ENEMY_COUNT_OPTIONS: EnemyCount[] = [1, 2, 3, 4, 5];
+export const ENEMY_COUNT_OPTIONS: EnemyCount[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export interface Position {
   x: number;
