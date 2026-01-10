@@ -295,7 +295,7 @@ p {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
-  max-width: 700px;
+  width: 600px;
 }
 
 .enemy-count-selector__option {
