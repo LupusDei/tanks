@@ -82,8 +82,6 @@ function App() {
   // Array of active tank destruction animations
   const destructionsRef = useRef<TankDestructionState[]>([])
   const lastFrameTimeRef = useRef<number>(performance.now())
-  // Debug: track last projectile position to detect jumps
-  const lastProjectilePosRef = useRef<{ x: number; y: number } | null>(null)
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
   const gameRecordedRef = useRef(false)
@@ -280,8 +278,6 @@ function App() {
 
       const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, canvasWidth, weaponType)
       newProjectiles.push(projectile)
-      // Reset debug position tracker for new projectile
-      lastProjectilePosRef.current = null
 
       // Decrement ammo when player fires a non-standard weapon
       if (tank.id === 'player' && weaponType !== 'standard') {
@@ -595,28 +591,6 @@ function App() {
         // Get current position
         const position = getProjectilePosition(updatedProjectile, currentTime, state.wind)
 
-        // Debug: detect large position jumps
-        if (lastProjectilePosRef.current && updatedProjectile.weaponType === 'standard') {
-          const dx = position.x - lastProjectilePosRef.current.x
-          const dy = position.y - lastProjectilePosRef.current.y
-          const jumpDistance = Math.sqrt(dx * dx + dy * dy)
-          // Normal movement at 60fps should be ~10-20 pixels per frame max
-          if (jumpDistance > 30) {
-            console.warn('[POSITION JUMP DETECTED]', {
-              jumpDistance: jumpDistance.toFixed(2),
-              dx: dx.toFixed(2),
-              dy: dy.toFixed(2),
-              prevPos: lastProjectilePosRef.current,
-              newPos: { x: position.x.toFixed(2), y: position.y.toFixed(2) },
-              wind: state.wind,
-              elapsedMs: currentTime - updatedProjectile.startTime,
-              launchConfig: updatedProjectile.launchConfig,
-              deltaTime: deltaTime.toFixed(2),
-            })
-          }
-        }
-        lastProjectilePosRef.current = { x: position.x, y: position.y }
-
         // Check for in-flight tank collision (direct hit)
         const projectileVisual = getProjectileVisual(updatedProjectile.weaponType as WeaponType)
         let inFlightHit = false
@@ -766,6 +740,7 @@ function App() {
 
     // Render and update all tank destruction animations
     const updatedDestructions: TankDestructionState[] = []
+    let anyDestructionActive = false
 
     for (const destruction of destructionsRef.current) {
       if (!destruction.isActive) {
@@ -784,6 +759,7 @@ function App() {
         continue
       } else {
         updatedDestructions.push(updatedDestruction)
+        anyDestructionActive = true
       }
     }
 
@@ -792,7 +768,9 @@ function App() {
 
     // In simultaneous mode, just clear explosion state when all complete
     // No turn cycling - all tanks fire together each round
-    if (isExplosionActive && !anyExplosionActive) {
+    // IMPORTANT: Also check that no projectiles are still active to prevent
+    // wind changes mid-flight when multiple tanks fire simultaneously
+    if (isExplosionActive && !anyExplosionActive && !anyProjectileActive && !anyDestructionActive) {
       setIsExplosionActive(false)
       // Increment turn counter for round tracking
       actions.incrementTurn()
