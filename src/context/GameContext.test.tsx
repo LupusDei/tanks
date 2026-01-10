@@ -51,6 +51,8 @@ describe('GameContext', () => {
       power: 50,
       color: '#ff0000',
       isActive: true,
+      queuedShot: null,
+      isReady: false,
     };
 
     // Initially there are no tanks
@@ -79,6 +81,8 @@ describe('GameContext', () => {
       power: 50,
       color: '#ff0000',
       isActive: true,
+      queuedShot: null,
+      isReady: false,
     };
 
     const tank2 = {
@@ -89,6 +93,8 @@ describe('GameContext', () => {
       power: 50,
       color: '#0000ff',
       isActive: true,
+      queuedShot: null,
+      isReady: false,
     };
 
     act(() => {
@@ -116,6 +122,8 @@ describe('GameContext', () => {
       power: 50,
       color: '#ff0000',
       isActive: true,
+      queuedShot: null,
+      isReady: false,
     };
 
     const tank2 = {
@@ -126,6 +134,8 @@ describe('GameContext', () => {
       power: 50,
       color: '#0000ff',
       isActive: true,
+      queuedShot: null,
+      isReady: false,
     };
 
     act(() => {

@@ -42,6 +42,15 @@ export interface Position {
   y: number;
 }
 
+/**
+ * A queued shot configuration for simultaneous firing.
+ * Stores the angle and power that will be used when all tanks are ready.
+ */
+export interface QueuedShot {
+  angle: number;
+  power: number;
+}
+
 export interface TankState {
   id: string;
   position: Position;
@@ -50,6 +59,10 @@ export interface TankState {
   power: number;
   color: string;
   isActive: boolean;
+  /** Shot configuration queued for simultaneous firing */
+  queuedShot: QueuedShot | null;
+  /** Whether this tank has locked in their shot and is ready to fire */
+  isReady: boolean;
 }
 
 export interface TerrainData {
