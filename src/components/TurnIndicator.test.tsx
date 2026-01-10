@@ -8,24 +8,24 @@ describe('TurnIndicator', () => {
     expect(screen.getByTestId('turn-indicator')).toBeInTheDocument()
   })
 
-  it('displays the correct turn number (1-indexed)', () => {
+  it('displays the correct round number (1-indexed)', () => {
     render(<TurnIndicator turnNumber={0} isPlayerTurn={true} />)
-    expect(screen.getByText('Turn 1')).toBeInTheDocument()
+    expect(screen.getByText('Round 1')).toBeInTheDocument()
   })
 
-  it('displays turn 5 when turnNumber is 4', () => {
+  it('displays round 5 when turnNumber is 4', () => {
     render(<TurnIndicator turnNumber={4} isPlayerTurn={true} />)
-    expect(screen.getByText('Turn 5')).toBeInTheDocument()
+    expect(screen.getByText('Round 5')).toBeInTheDocument()
   })
 
-  it('displays "Your Turn" when it is player turn', () => {
+  it('displays "Get Ready!" when player is alive', () => {
     render(<TurnIndicator turnNumber={0} isPlayerTurn={true} />)
-    expect(screen.getByTestId('turn-player')).toHaveTextContent('Your Turn')
+    expect(screen.getByTestId('turn-player')).toHaveTextContent('Get Ready!')
   })
 
-  it('displays "Opponent\'s Turn" when it is not player turn', () => {
+  it('displays "Spectating" when player is not alive', () => {
     render(<TurnIndicator turnNumber={1} isPlayerTurn={false} />)
-    expect(screen.getByTestId('turn-player')).toHaveTextContent("Opponent's Turn")
+    expect(screen.getByTestId('turn-player')).toHaveTextContent('Spectating')
   })
 
   it('has correct class for player turn', () => {
@@ -40,11 +40,11 @@ describe('TurnIndicator', () => {
 
   it('updates when props change', () => {
     const { rerender } = render(<TurnIndicator turnNumber={0} isPlayerTurn={true} />)
-    expect(screen.getByText('Turn 1')).toBeInTheDocument()
-    expect(screen.getByTestId('turn-player')).toHaveTextContent('Your Turn')
+    expect(screen.getByText('Round 1')).toBeInTheDocument()
+    expect(screen.getByTestId('turn-player')).toHaveTextContent('Get Ready!')
 
     rerender(<TurnIndicator turnNumber={1} isPlayerTurn={false} />)
-    expect(screen.getByText('Turn 2')).toBeInTheDocument()
-    expect(screen.getByTestId('turn-player')).toHaveTextContent("Opponent's Turn")
+    expect(screen.getByText('Round 2')).toBeInTheDocument()
+    expect(screen.getByTestId('turn-player')).toHaveTextContent('Spectating')
   })
 })
