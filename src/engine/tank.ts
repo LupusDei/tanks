@@ -238,28 +238,8 @@ export function renderTank(
   const turretAngle = -(90 + angle) * (Math.PI / 180);
   ctx.rotate(turretAngle);
 
-  // Barrel with gradient
-  const barrelGradient = createMetallicGradient(
-    ctx,
-    0, -turretWidth / 2,
-    turretLength, turretWidth,
-    darkerColor,
-    'vertical'
-  );
-  ctx.fillStyle = barrelGradient;
-  ctx.beginPath();
-  ctx.roundRect(0, -turretWidth / 2, turretLength, turretWidth, 2);
-  ctx.fill();
-
-  // Barrel tip / muzzle brake
-  ctx.fillStyle = '#222';
-  ctx.fillRect(turretLength - 4, -turretWidth / 2 - 1, 4, turretWidth + 2);
-
-  // Muzzle opening
-  ctx.fillStyle = '#111';
-  ctx.beginPath();
-  ctx.arc(turretLength, 0, turretWidth / 3, 0, Math.PI * 2);
-  ctx.fill();
+  // Draw impressive cannon with detailed barrel
+  renderCannon(ctx, turretLength, turretWidth, darkerColor);
 
   ctx.restore();
 
@@ -662,6 +642,171 @@ function renderGroundDust(
   ctx.moveTo(bodyWidth / 2 + 4, bodyHeight / 2 + wheelRadius);
   ctx.lineTo(bodyWidth / 2 + 8, bodyHeight / 2 + wheelRadius + 3);
   ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Render an impressive cannon with detailed barrel, muzzle brake, and heat glow.
+ * Creates a powerful, dangerous-looking weapon with metallic sheen.
+ */
+function renderCannon(
+  ctx: CanvasRenderingContext2D,
+  turretLength: number,
+  turretWidth: number,
+  baseColor: string
+): void {
+  ctx.save();
+
+  // Cannon dimensions - tapered design
+  const baseWidth = turretWidth * 1.3;  // Thicker at base
+  const midWidth = turretWidth * 1.1;   // Slightly thinner in middle
+  const tipWidth = turretWidth * 0.85;  // Thinner at tip before muzzle brake
+  const muzzleBrakeLength = 6;
+  const muzzleBrakeWidth = turretWidth * 1.5;
+  const barrelLength = turretLength - muzzleBrakeLength;
+
+  // Heat glow effect at muzzle (draw first, behind everything)
+  const glowGradient = ctx.createRadialGradient(
+    turretLength, 0, 0,
+    turretLength, 0, turretWidth * 2
+  );
+  glowGradient.addColorStop(0, 'rgba(255, 100, 50, 0.4)');
+  glowGradient.addColorStop(0.3, 'rgba(255, 60, 20, 0.2)');
+  glowGradient.addColorStop(0.6, 'rgba(255, 30, 0, 0.1)');
+  glowGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+  ctx.fillStyle = glowGradient;
+  ctx.beginPath();
+  ctx.arc(turretLength, 0, turretWidth * 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Main barrel - tapered shape using path
+  const barrelGradient = ctx.createLinearGradient(0, -baseWidth / 2, 0, baseWidth / 2);
+  const highlight = lightenColor(baseColor, 0.5);
+  const midLight = lightenColor(baseColor, 0.2);
+  const shadow = darkenColor(baseColor, 0.4);
+  barrelGradient.addColorStop(0, highlight);
+  barrelGradient.addColorStop(0.2, midLight);
+  barrelGradient.addColorStop(0.5, baseColor);
+  barrelGradient.addColorStop(0.8, darkenColor(baseColor, 0.2));
+  barrelGradient.addColorStop(1, shadow);
+
+  ctx.fillStyle = barrelGradient;
+  ctx.beginPath();
+  // Start at base (thick end)
+  ctx.moveTo(0, -baseWidth / 2);
+  // Curve to middle section
+  ctx.quadraticCurveTo(barrelLength * 0.3, -midWidth / 2, barrelLength * 0.5, -midWidth / 2);
+  // Taper to tip
+  ctx.lineTo(barrelLength, -tipWidth / 2);
+  // Bottom edge (mirror)
+  ctx.lineTo(barrelLength, tipWidth / 2);
+  ctx.lineTo(barrelLength * 0.5, midWidth / 2);
+  ctx.quadraticCurveTo(barrelLength * 0.3, midWidth / 2, 0, baseWidth / 2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Barrel top highlight (specular reflection)
+  ctx.strokeStyle = lightenColor(baseColor, 0.6);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(2, -baseWidth / 2 + 1);
+  ctx.quadraticCurveTo(barrelLength * 0.3, -midWidth / 2 + 1, barrelLength * 0.7, -tipWidth / 2 + 1);
+  ctx.stroke();
+
+  // Reinforcing rings along barrel
+  const ringPositions = [0.15, 0.4, 0.7];
+  for (const pos of ringPositions) {
+    const ringX = barrelLength * pos;
+    const ringWidth = baseWidth - (baseWidth - tipWidth) * pos;
+
+    // Ring shadow
+    ctx.strokeStyle = darkenColor(baseColor, 0.5);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ringX, -ringWidth / 2 - 0.5);
+    ctx.lineTo(ringX, ringWidth / 2 + 0.5);
+    ctx.stroke();
+
+    // Ring highlight
+    ctx.strokeStyle = lightenColor(baseColor, 0.3);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ringX + 1, -ringWidth / 2);
+    ctx.lineTo(ringX + 1, ringWidth / 2);
+    ctx.stroke();
+  }
+
+  // Muzzle brake - wider section at end with slots
+  const muzzleX = barrelLength;
+  const muzzleGradient = ctx.createLinearGradient(0, -muzzleBrakeWidth / 2, 0, muzzleBrakeWidth / 2);
+  muzzleGradient.addColorStop(0, '#4a4a4a');
+  muzzleGradient.addColorStop(0.3, '#3a3a3a');
+  muzzleGradient.addColorStop(0.5, '#333');
+  muzzleGradient.addColorStop(0.7, '#2a2a2a');
+  muzzleGradient.addColorStop(1, '#1a1a1a');
+
+  ctx.fillStyle = muzzleGradient;
+  ctx.beginPath();
+  ctx.roundRect(muzzleX, -muzzleBrakeWidth / 2, muzzleBrakeLength, muzzleBrakeWidth, 1);
+  ctx.fill();
+
+  // Muzzle brake slots (vents)
+  ctx.fillStyle = '#111';
+  const slotWidth = 1.5;
+  const slotHeight = muzzleBrakeWidth * 0.3;
+  const slotSpacing = 2;
+  for (let i = 0; i < 2; i++) {
+    const slotX = muzzleX + 1.5 + i * slotSpacing;
+    // Top slot
+    ctx.fillRect(slotX, -muzzleBrakeWidth / 2 + 1, slotWidth, slotHeight);
+    // Bottom slot
+    ctx.fillRect(slotX, muzzleBrakeWidth / 2 - slotHeight - 1, slotWidth, slotHeight);
+  }
+
+  // Muzzle brake edge highlight
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(muzzleX, -muzzleBrakeWidth / 2 + 1);
+  ctx.lineTo(muzzleX + muzzleBrakeLength - 1, -muzzleBrakeWidth / 2 + 1);
+  ctx.stroke();
+
+  // Muzzle opening with depth effect
+  const muzzleOpeningRadius = tipWidth / 2.5;
+  const muzzleEndX = turretLength;
+
+  // Outer ring (bore)
+  const boreGradient = ctx.createRadialGradient(
+    muzzleEndX, 0, 0,
+    muzzleEndX, 0, muzzleOpeningRadius * 1.5
+  );
+  boreGradient.addColorStop(0, '#000');
+  boreGradient.addColorStop(0.5, '#111');
+  boreGradient.addColorStop(1, '#222');
+  ctx.fillStyle = boreGradient;
+  ctx.beginPath();
+  ctx.arc(muzzleEndX, 0, muzzleOpeningRadius * 1.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner bore (deep black)
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(muzzleEndX, 0, muzzleOpeningRadius * 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner heat glow in bore
+  const innerGlow = ctx.createRadialGradient(
+    muzzleEndX, 0, 0,
+    muzzleEndX, 0, muzzleOpeningRadius * 0.6
+  );
+  innerGlow.addColorStop(0, 'rgba(255, 80, 30, 0.5)');
+  innerGlow.addColorStop(0.5, 'rgba(255, 40, 10, 0.2)');
+  innerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = innerGlow;
+  ctx.beginPath();
+  ctx.arc(muzzleEndX, 0, muzzleOpeningRadius * 0.8, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.restore();
 }
