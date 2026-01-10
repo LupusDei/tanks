@@ -6,7 +6,7 @@ interface GameConfigScreenProps {
   onStartGame: (config: { terrainSize: TerrainSize; enemyCount: EnemyCount; playerColor: TankColor }) => void
 }
 
-const TERRAIN_SIZE_ORDER: TerrainSize[] = ['small', 'medium', 'large', 'huge']
+const TERRAIN_SIZE_ORDER: TerrainSize[] = ['small', 'medium', 'large', 'huge', 'epic']
 
 const TANK_COLORS: { color: TankColor; hex: string; label: string }[] = [
   { color: 'red', hex: '#ff4444', label: 'Red' },
@@ -54,8 +54,8 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
                     <div
                       className="game-config-screen__terrain-preview-inner"
                       style={{
-                        width: `${(config.width / 1280) * 100}%`,
-                        height: `${(config.height / 960) * 100}%`,
+                        width: `${(config.width / 2100) * 100}%`,
+                        height: `${(config.height / 2800) * 100}%`,
                       }}
                     />
                   </div>
