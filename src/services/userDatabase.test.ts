@@ -109,7 +109,7 @@ describe('userDatabase', () => {
       );
 
       // Verify the data is stored correctly
-      const stored = JSON.parse(localStorageMock._getStore()['tanks_players_db']);
+      const stored = JSON.parse(localStorageMock._getStore()['tanks_players_db']!);
       expect(stored['TestUser']).toBeDefined();
       expect(stored['TestUser'].profile.username).toBe('TestUser');
     });

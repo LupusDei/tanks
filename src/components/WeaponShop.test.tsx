@@ -209,20 +209,6 @@ describe('WeaponShop', () => {
       expect(screen.getByTestId('balance-after')).toHaveTextContent(`$${STARTING_MONEY - 200}`);
     });
 
-    it('shows item cost next to quantity when purchasing', () => {
-      const onConfirm = vi.fn();
-      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
-
-      // Initially no item cost shown
-      expect(screen.queryByTestId('item-cost-heavy_artillery')).not.toBeInTheDocument();
-
-      // Add 2 heavy artillery
-      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
-      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
-
-      expect(screen.getByTestId('item-cost-heavy_artillery')).toHaveTextContent('= $400');
-    });
-
     it('calculates cost correctly for multiple weapon types', () => {
       const onConfirm = vi.fn();
       renderWithUser(<WeaponShop onConfirm={onConfirm} />, 1000);

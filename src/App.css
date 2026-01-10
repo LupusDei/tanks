@@ -1382,13 +1382,6 @@ p {
   text-align: center;
 }
 
-.weapon-shop__item-cost {
-  font-family: monospace;
-  font-size: 0.75rem;
-  color: #ffcc00;
-  margin-left: 0.4rem;
-}
-
 /* Weapon Shop Summary Section */
 .weapon-shop__summary {
   background: rgba(0, 0, 0, 0.3);

@@ -161,11 +161,6 @@ export function WeaponShop({ onConfirm, onCancel }: WeaponShopProps) {
                     >
                       +
                     </button>
-                    {purchaseQty > 0 && (
-                      <span className="weapon-shop__item-cost" data-testid={`item-cost-${weaponType}`}>
-                        = ${weapon.cost * purchaseQty}
-                      </span>
-                    )}
                   </div>
                 )}
               </div>
