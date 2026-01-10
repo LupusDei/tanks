@@ -149,6 +149,7 @@ export function createProjectileState(
  * Uses the launch Y position as the target, assuming the projectile will land
  * at approximately the same height it was fired from (typical for tanks on terrain).
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function estimateLandingTimeFromLaunch(launchConfig: LaunchConfig, _canvasHeight: number): number {
   // Use the launch position Y as the target (projectile lands at similar height)
   // This is more accurate than using canvas bottom since terrain is usually
@@ -607,6 +608,7 @@ const CLUSTER_SPLIT_THRESHOLD = 0.85;
  * Uses the launch Y position as target (assumes landing at similar height).
  * Returns the physics time (before animation speed multiplier).
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function estimateLandingTime(launchConfig: LaunchConfig, _canvasHeight: number): number {
   // Use launch position Y as target - projectile lands at similar height
   const targetY = launchConfig.position.y;

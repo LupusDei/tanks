@@ -318,6 +318,201 @@ function createBallisticDebris(
 }
 
 /**
+ * Create debris pieces for fire destruction.
+ * The tank chars and slumps/melts rather than exploding apart.
+ * Parts stay mostly in place but warp and collapse.
+ */
+function createFireDebris(
+  centerX: number,
+  centerY: number,
+  tankColor: string
+): TankDebris[] {
+  const debris: TankDebris[] = [];
+
+  // Hull - stays in place but warps/slumps
+  // Front section melts downward slightly
+  debris.push({
+    type: 'hull_front',
+    x: centerX - TANK_DIMS.bodyWidth / 4,
+    y: centerY,
+    vx: -2 - Math.random() * 3, // Very minimal horizontal movement
+    vy: 5 + Math.random() * 5, // Slight downward slump
+    rotation: 0,
+    rotationSpeed: 0.2 + Math.random() * 0.3, // Slow warping rotation
+    width: TANK_DIMS.bodyWidth / 2,
+    height: TANK_DIMS.bodyHeight,
+    color: tankColor, // Will be charred during rendering
+    life: 1,
+  });
+
+  // Rear hull - slumps backward slightly
+  debris.push({
+    type: 'hull_rear',
+    x: centerX + TANK_DIMS.bodyWidth / 4,
+    y: centerY,
+    vx: 2 + Math.random() * 3,
+    vy: 3 + Math.random() * 4,
+    rotation: 0,
+    rotationSpeed: -(0.15 + Math.random() * 0.25),
+    width: TANK_DIMS.bodyWidth / 2,
+    height: TANK_DIMS.bodyHeight,
+    color: tankColor,
+    life: 1,
+  });
+
+  // Turret dome - stays on top but may tilt as it melts
+  const turretDirection = Math.random() > 0.5 ? 1 : -1;
+  debris.push({
+    type: 'turret',
+    x: centerX,
+    y: centerY - TANK_DIMS.bodyHeight / 2,
+    vx: turretDirection * (1 + Math.random() * 2),
+    vy: 2 + Math.random() * 3, // Slight sinking
+    rotation: 0,
+    rotationSpeed: turretDirection * (0.3 + Math.random() * 0.4),
+    width: TANK_DIMS.domeRadius * 2,
+    height: TANK_DIMS.domeRadius,
+    color: darkenColor(tankColor, 0.3),
+    life: 1,
+  });
+
+  // Barrel - droops downward as it softens from heat
+  debris.push({
+    type: 'barrel',
+    x: centerX + 10,
+    y: centerY - TANK_DIMS.bodyHeight / 2,
+    vx: 1 + Math.random() * 2,
+    vy: 8 + Math.random() * 5, // Droops down more
+    rotation: 0.1,
+    rotationSpeed: 0.5 + Math.random() * 0.5, // Slow droop
+    width: TANK_DIMS.turretLength,
+    height: TANK_DIMS.turretWidth,
+    color: darkenColor(tankColor, 0.4),
+    life: 1,
+  });
+
+  // Tracks - warp and buckle in place
+  debris.push({
+    type: 'track',
+    x: centerX - TANK_DIMS.bodyWidth / 3,
+    y: centerY + TANK_DIMS.bodyHeight / 2,
+    vx: -3 - Math.random() * 2,
+    vy: 2 + Math.random() * 2,
+    rotation: 0,
+    rotationSpeed: 0.1 + Math.random() * 0.2,
+    width: TANK_DIMS.bodyWidth / 2,
+    height: TANK_DIMS.wheelRadius * 2,
+    color: '#2a2a2a',
+    life: 1,
+  });
+
+  debris.push({
+    type: 'track',
+    x: centerX + TANK_DIMS.bodyWidth / 3,
+    y: centerY + TANK_DIMS.bodyHeight / 2,
+    vx: 3 + Math.random() * 2,
+    vy: 2 + Math.random() * 2,
+    rotation: 0,
+    rotationSpeed: -(0.1 + Math.random() * 0.2),
+    width: TANK_DIMS.bodyWidth / 2,
+    height: TANK_DIMS.wheelRadius * 2,
+    color: '#2a2a2a',
+    life: 1,
+  });
+
+  // Wheels - mostly stay in place, maybe one or two roll away slowly
+  for (let i = 0; i < 3; i++) {
+    const side = i === 0 ? -1 : i === 1 ? 1 : 0;
+    const rollsAway = i === 2; // Only the third wheel rolls away
+    debris.push({
+      type: 'wheel',
+      x: centerX + side * (TANK_DIMS.bodyWidth / 3),
+      y: centerY + TANK_DIMS.bodyHeight / 2,
+      vx: rollsAway ? (Math.random() - 0.5) * 20 : side * (1 + Math.random()),
+      vy: rollsAway ? -5 - Math.random() * 5 : 1 + Math.random() * 2,
+      rotation: 0,
+      rotationSpeed: rollsAway ? 2 + Math.random() * 2 : 0.2 + Math.random() * 0.3,
+      width: TANK_DIMS.wheelRadius * 2,
+      height: TANK_DIMS.wheelRadius * 2,
+      color: '#555555',
+      life: 1,
+    });
+  }
+
+  return debris;
+}
+
+/**
+ * Create fire, smoke, and ember particles for fire destruction.
+ * Sustained burning effect with flames, smoke rising, and floating embers.
+ */
+function createFireParticles(
+  centerX: number,
+  centerY: number
+): DestructionParticle[] {
+  const particles: DestructionParticle[] = [];
+
+  // Fire colors - oranges, yellows, reds
+  const fireColors = ['#ff4400', '#ff6600', '#ff8800', '#ffaa00', '#ffcc00', '#ff2200', '#ff0000'];
+  // Smoke colors - grays to black
+  const smokeColors = ['#333333', '#444444', '#555555', '#666666', '#222222'];
+  // Ember colors - bright orange/yellow
+  const emberColors = ['#ffaa00', '#ffcc00', '#ff8800', '#ffdd44'];
+
+  const fireCount = 25;
+  const smokeCount = 15;
+  const emberCount = 12;
+
+  // Fire particles - emanate from center, spread outward with upward bias
+  for (let i = 0; i < fireCount; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spread = 20 + Math.random() * 25; // How far from center
+    const speed = 20 + Math.random() * 40;
+
+    particles.push({
+      x: centerX + Math.cos(angle) * spread * 0.3,
+      y: centerY + Math.sin(angle) * spread * 0.2,
+      vx: Math.cos(angle) * speed * 0.3,
+      vy: -30 - Math.random() * 50, // Strong upward movement
+      radius: 4 + Math.random() * 8,
+      color: fireColors[Math.floor(Math.random() * fireColors.length)]!,
+      life: 1,
+    });
+  }
+
+  // Smoke particles - rise slowly from center
+  for (let i = 0; i < smokeCount; i++) {
+    const offsetX = (Math.random() - 0.5) * 40;
+    particles.push({
+      x: centerX + offsetX,
+      y: centerY - 5 - Math.random() * 10,
+      vx: (Math.random() - 0.5) * 15,
+      vy: -40 - Math.random() * 30, // Rise upward
+      radius: 10 + Math.random() * 15,
+      color: smokeColors[Math.floor(Math.random() * smokeColors.length)]!,
+      life: 1,
+    });
+  }
+
+  // Ember particles - float upward slowly
+  for (let i = 0; i < emberCount; i++) {
+    const offsetX = (Math.random() - 0.5) * 50;
+    const offsetY = (Math.random() - 0.5) * 20;
+    particles.push({
+      x: centerX + offsetX,
+      y: centerY + offsetY,
+      vx: (Math.random() - 0.5) * 25,
+      vy: -60 - Math.random() * 40, // Float upward
+      radius: 1 + Math.random() * 2, // Small bright particles
+      color: emberColors[Math.floor(Math.random() * emberColors.length)]!,
+      life: 1,
+    });
+  }
+
+  return particles;
+}
+
+/**
  * Create dust and debris particles for ballistic destruction.
  * No fire - just dust and small metal fragments.
  */
@@ -381,7 +576,7 @@ function createExplosiveParticles(
 
 /**
  * Create a tank destruction animation.
- * Supports explosive and ballistic destruction categories.
+ * Supports explosive, ballistic, and fire destruction categories.
  */
 export function createTankDestruction(
   tank: TankState,
@@ -394,11 +589,6 @@ export function createTankDestruction(
 
   const category = getDestructionCategory(tank.killedByWeapon);
 
-  // Fire category will be implemented in a separate task
-  if (category === 'fire') {
-    return null;
-  }
-
   const canvasY = canvasHeight - tank.position.y;
   const tankColor = getTankColorHex(tank.color);
 
@@ -408,6 +598,9 @@ export function createTankDestruction(
   if (category === 'explosive') {
     debris = createExplosiveDebris(tank.position.x, canvasY, tankColor);
     particles = createExplosiveParticles(tank.position.x, canvasY);
+  } else if (category === 'fire') {
+    debris = createFireDebris(tank.position.x, canvasY, tankColor);
+    particles = createFireParticles(tank.position.x, canvasY);
   } else {
     // ballistic
     debris = createBallisticDebris(tank.position.x, canvasY, tankColor);
@@ -454,7 +647,16 @@ export function updateTankDestruction(
 
   const progress = getDestructionProgress(destruction, currentTime);
   const deltaSeconds = deltaTimeMs / 1000;
-  const gravity = 400; // Pixels per second squared
+  const isFire = destruction.category === 'fire';
+
+  // Fire destruction uses lower gravity (debris slumps rather than falls)
+  const gravity = isFire ? 150 : 400;
+  // Fire debris fades slower (charred remains visible longer)
+  const debrisFadeRate = isFire ? 0.25 : 0.4;
+  // Fire particles fade slower (sustained burning)
+  const particleFadeRate = isFire ? 0.5 : 0.8;
+  // Fire uses more drag (heat shimmer effect)
+  const dragFactor = isFire ? 0.98 : 0.995;
 
   // Update debris
   const updatedDebris = destruction.debris.map((piece) => {
@@ -464,10 +666,10 @@ export function updateTankDestruction(
     const newRotation = piece.rotation + piece.rotationSpeed * deltaSeconds;
 
     // Slow down horizontal velocity due to air resistance
-    const newVx = piece.vx * 0.995;
+    const newVx = piece.vx * dragFactor;
 
     // Fade out over time
-    const newLife = Math.max(0, piece.life - deltaSeconds * 0.4);
+    const newLife = Math.max(0, piece.life - deltaSeconds * debrisFadeRate);
 
     return {
       ...piece,
@@ -481,13 +683,18 @@ export function updateTankDestruction(
   });
 
   // Update particles
-  const updatedParticles = destruction.particles.map((particle) => ({
-    ...particle,
-    x: particle.x + particle.vx * deltaSeconds,
-    y: particle.y + particle.vy * deltaSeconds,
-    vy: particle.vy + gravity * 0.3 * deltaSeconds, // Particles fall slower
-    life: Math.max(0, particle.life - deltaSeconds * 0.8),
-  }));
+  const updatedParticles = destruction.particles.map((particle) => {
+    // Fire particles rise (negative gravity effect for flames/embers)
+    const particleGravity = isFire ? -20 : gravity * 0.3;
+
+    return {
+      ...particle,
+      x: particle.x + particle.vx * deltaSeconds,
+      y: particle.y + particle.vy * deltaSeconds,
+      vy: particle.vy + particleGravity * deltaSeconds,
+      life: Math.max(0, particle.life - deltaSeconds * particleFadeRate),
+    };
+  });
 
   if (progress >= 1) {
     return { ...destruction, isActive: false, debris: updatedDebris, particles: updatedParticles };
@@ -668,6 +875,48 @@ export function renderTankDestruction(
       ctx.fill();
       ctx.restore();
     }
+  } else if (destruction.category === 'fire') {
+    // Draw fire engulfing effect (sustained through most of animation)
+    if (progress < 0.7) {
+      const fireIntensity = progress < 0.15
+        ? progress / 0.15 // Ramp up
+        : 1 - ((progress - 0.15) / 0.55) * 0.5; // Slow fade
+
+      const fireRadius = 35 + Math.sin(currentTime * 0.01) * 5; // Flickering size
+
+      ctx.save();
+
+      // Outer fire glow
+      const outerGlow = ctx.createRadialGradient(
+        destruction.position.x, destruction.canvasY, 0,
+        destruction.position.x, destruction.canvasY, fireRadius * 1.5
+      );
+      outerGlow.addColorStop(0, `rgba(255, 100, 0, ${fireIntensity * 0.4})`);
+      outerGlow.addColorStop(0.5, `rgba(255, 50, 0, ${fireIntensity * 0.2})`);
+      outerGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
+
+      ctx.fillStyle = outerGlow;
+      ctx.beginPath();
+      ctx.arc(destruction.position.x, destruction.canvasY, fireRadius * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner bright fire core
+      const innerFire = ctx.createRadialGradient(
+        destruction.position.x, destruction.canvasY - 5, 0,
+        destruction.position.x, destruction.canvasY - 5, fireRadius
+      );
+      innerFire.addColorStop(0, `rgba(255, 255, 150, ${fireIntensity * 0.6})`);
+      innerFire.addColorStop(0.3, `rgba(255, 200, 50, ${fireIntensity * 0.5})`);
+      innerFire.addColorStop(0.6, `rgba(255, 100, 0, ${fireIntensity * 0.3})`);
+      innerFire.addColorStop(1, 'rgba(255, 50, 0, 0)');
+
+      ctx.fillStyle = innerFire;
+      ctx.beginPath();
+      ctx.arc(destruction.position.x, destruction.canvasY - 5, fireRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
   }
 
   // Render particles (behind debris)
@@ -676,8 +925,15 @@ export function renderTankDestruction(
   }
 
   // Render debris pieces
-  for (const piece of destruction.debris) {
-    renderDebrisPiece(ctx, piece);
+  // For fire destruction, render with charring effect
+  if (destruction.category === 'fire') {
+    for (const piece of destruction.debris) {
+      renderFireDebrisPiece(ctx, piece, progress);
+    }
+  } else {
+    for (const piece of destruction.debris) {
+      renderDebrisPiece(ctx, piece);
+    }
   }
 
   // Category-specific trailing effects
@@ -723,7 +979,155 @@ export function renderTankDestruction(
       ctx.fill();
       ctx.restore();
     }
+  } else if (destruction.category === 'fire') {
+    // Draw rising smoke column for fire destruction
+    if (progress > 0.1 && progress < 0.9) {
+      const smokeHeight = progress * 100;
+      const smokeAlpha = (1 - (progress - 0.1) / 0.8) * 0.5;
+
+      ctx.save();
+      ctx.globalAlpha = smokeAlpha;
+
+      // Draw multiple smoke puffs rising
+      for (let i = 0; i < 3; i++) {
+        const puffY = destruction.canvasY - smokeHeight * (0.3 + i * 0.35);
+        const puffRadius = 15 + i * 8 + progress * 10;
+        const puffOffset = Math.sin(currentTime * 0.005 + i) * 8;
+
+        const smokeGradient = ctx.createRadialGradient(
+          destruction.position.x + puffOffset, puffY, 5,
+          destruction.position.x + puffOffset, puffY, puffRadius
+        );
+        smokeGradient.addColorStop(0, `rgba(50, 50, 50, ${0.4 - i * 0.1})`);
+        smokeGradient.addColorStop(0.5, `rgba(70, 70, 70, ${0.2 - i * 0.05})`);
+        smokeGradient.addColorStop(1, 'rgba(90, 90, 90, 0)');
+
+        ctx.fillStyle = smokeGradient;
+        ctx.beginPath();
+        ctx.arc(destruction.position.x + puffOffset, puffY, puffRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
   }
+}
+
+/**
+ * Render a fire-damaged debris piece with charring effect.
+ */
+function renderFireDebrisPiece(
+  ctx: CanvasRenderingContext2D,
+  debris: TankDebris,
+  progress: number
+): void {
+  if (debris.life <= 0) return;
+
+  ctx.save();
+  ctx.translate(debris.x, debris.y);
+  ctx.rotate(debris.rotation);
+  ctx.globalAlpha = debris.life;
+
+  // Calculate charring: debris darkens as animation progresses
+  const charFactor = Math.min(0.8, progress * 1.2); // Max 80% darkening
+  const charredColor = charColor(debris.color, charFactor);
+
+  switch (debris.type) {
+    case 'hull_front':
+    case 'hull_rear':
+    case 'hull_side':
+      // Draw charred hull chunk
+      ctx.fillStyle = charredColor;
+      ctx.beginPath();
+      ctx.moveTo(-debris.width / 2, -debris.height / 2);
+      ctx.lineTo(debris.width / 2 - 4, -debris.height / 2 + 2);
+      ctx.lineTo(debris.width / 2, debris.height / 2 - 2);
+      ctx.lineTo(-debris.width / 2 + 3, debris.height / 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Burnt edge effect (dark border)
+      ctx.strokeStyle = darkenColor(charredColor, 0.5);
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+
+    case 'turret':
+      // Draw charred turret dome
+      ctx.fillStyle = charredColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, debris.width / 2, Math.PI, 0);
+      ctx.fill();
+
+      // Burnt highlight
+      ctx.strokeStyle = darkenColor(charredColor, 0.4);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, debris.width / 2 - 2, Math.PI + 0.3, -0.3);
+      ctx.stroke();
+      break;
+
+    case 'barrel':
+      // Draw charred barrel
+      ctx.fillStyle = charredColor;
+      ctx.beginPath();
+      ctx.roundRect(-debris.width / 2, -debris.height / 2, debris.width, debris.height, 2);
+      ctx.fill();
+      break;
+
+    case 'track':
+      // Draw burnt track segment
+      ctx.fillStyle = darkenColor(debris.color, charFactor * 0.5);
+      ctx.beginPath();
+      ctx.roundRect(-debris.width / 2, -debris.height / 2, debris.width, debris.height, 3);
+      ctx.fill();
+
+      // Track links (darkened)
+      ctx.strokeStyle = darkenColor('#444', charFactor * 0.3);
+      ctx.lineWidth = 1;
+      for (let i = -debris.width / 2; i < debris.width / 2; i += 5) {
+        ctx.beginPath();
+        ctx.moveTo(i, -debris.height / 2);
+        ctx.lineTo(i, debris.height / 2);
+        ctx.stroke();
+      }
+      break;
+
+    case 'wheel':
+      // Draw burnt wheel
+      ctx.fillStyle = darkenColor(debris.color, charFactor * 0.4);
+      ctx.beginPath();
+      ctx.arc(0, 0, debris.width / 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Darkened hub
+      ctx.fillStyle = darkenColor('#333', charFactor * 0.3);
+      ctx.beginPath();
+      ctx.arc(0, 0, debris.width / 4, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Apply charring effect to a color (transition towards black/brown).
+ */
+function charColor(hex: string, factor: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+
+  // Char towards a burnt brown/black color
+  const targetR = 30;
+  const targetG = 20;
+  const targetB = 15;
+
+  const r = Math.floor(rgb.r + (targetR - rgb.r) * factor);
+  const g = Math.floor(rgb.g + (targetG - rgb.g) * factor);
+  const b = Math.floor(rgb.b + (targetB - rgb.b) * factor);
+
+  return rgbToHex(r, g, b);
 }
 
 /**

@@ -67,12 +67,15 @@ describe('createTankDestruction', () => {
     expect(destruction!.category).toBe('ballistic');
   });
 
-  it('returns null for fire weapon kills (not yet implemented)', () => {
+  it('creates destruction state for fire weapon kills (napalm)', () => {
     const tank = createMockTank({ killedByWeapon: 'napalm' });
     const destruction = createTankDestruction(tank, CANVAS_HEIGHT);
 
-    // Fire category not yet implemented
-    expect(destruction).toBeNull();
+    expect(destruction).not.toBeNull();
+    expect(destruction!.category).toBe('fire');
+    expect(destruction!.isActive).toBe(true);
+    expect(destruction!.debris.length).toBeGreaterThan(0);
+    expect(destruction!.particles.length).toBeGreaterThan(0);
   });
 
   it('returns null when killedByWeapon is null', () => {
