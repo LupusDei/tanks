@@ -166,11 +166,13 @@ function App() {
     aiProcessingRef.current = true
 
     // Mark stunned AI tanks as ready immediately (they skip their turn but don't hold up the round)
+    // Also decrement their stun counter since they're "consuming" their stun turn
     const stunnedAITanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady && t.stunTurnsRemaining > 0)
     for (const stunnedTank of stunnedAITanks) {
       actions.updateTank(stunnedTank.id, {
         queuedShot: null,
         isReady: true,
+        stunTurnsRemaining: stunnedTank.stunTurnsRemaining - 1,
       })
     }
 
@@ -403,9 +405,11 @@ function App() {
     // Prevent firing if player is stunned
     if (playerTankForFire.stunTurnsRemaining > 0) {
       // Auto-mark as ready but skip the shot (stunned tanks don't fire)
+      // Also decrement stun counter since player is "consuming" their stun turn
       actions.updateTank('player', {
         queuedShot: null,
         isReady: true,
+        stunTurnsRemaining: playerTankForFire.stunTurnsRemaining - 1,
       })
       return
     }
@@ -782,8 +786,8 @@ function App() {
       setIsExplosionActive(false)
       // Increment turn counter for round tracking
       actions.incrementTurn()
-      // Decrement stun counters for all tanks at end of round
-      actions.decrementStuns()
+      // Note: Stun counters are now decremented when each tank "consumes" their stun
+      // by skipping their turn, not globally at round end
       // Generate new wind for the next turn (based on current wind)
       actions.setWind(generateNextWind(state.wind))
     }
