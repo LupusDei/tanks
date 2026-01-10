@@ -141,6 +141,32 @@ function ProjectileIcon({ weaponType }: { weaponType: WeaponType }) {
         </svg>
       )
 
+    case 'bouncing_betty':
+      // Metallic ball with spring
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-bb" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feFlood floodColor="#ffcc00" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <radialGradient id="metal-grad" cx="30%" cy="30%">
+              <stop offset="0%" stopColor="#dddddd" />
+              <stop offset="50%" stopColor="#888888" />
+              <stop offset="100%" stopColor="#444444" />
+            </radialGradient>
+          </defs>
+          <circle cx={cx} cy={cy - 2} r={6} fill="url(#metal-grad)" filter="url(#glow-bb)" />
+          {/* Spring coil below */}
+          <path d={`M${cx - 4},${cy + 6} Q${cx - 2},${cy + 4} ${cx},${cy + 6} Q${cx + 2},${cy + 8} ${cx + 4},${cy + 6}`} stroke="#ffcc00" strokeWidth="1.5" fill="none" />
+        </svg>
+      )
+
     default:
       return null
   }

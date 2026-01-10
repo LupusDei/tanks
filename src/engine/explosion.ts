@@ -126,6 +126,17 @@ function getExplosionConfig(weaponType: WeaponType): ExplosionConfig {
         fireColorInner: 'rgba(100, 220, 255, 1)',
         fireColorOuter: 'rgba(0, 100, 200, 0)',
       };
+    case 'bouncing_betty':
+      return {
+        colors: ['#ffcc00', '#ff9900', '#ffff44', '#ff6600', '#888888', '#cccccc'],
+        durationMultiplier: 1.0,
+        particleMultiplier: 1.0,
+        speedMultiplier: 1.3,
+        flashColorInner: 'rgba(255, 220, 100, 1)',
+        flashColorOuter: 'rgba(255, 150, 50, 0)',
+        fireColorInner: 'rgba(255, 200, 50, 1)',
+        fireColorOuter: 'rgba(150, 100, 0, 0)',
+      };
     case 'standard':
     default:
       return {

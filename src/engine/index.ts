@@ -48,6 +48,7 @@ export {
   worldToScreen,
   screenToWorld,
   checkTerrainCollision,
+  handleProjectileBounce,
   updateClusterBombSplit,
   renderClusterSubProjectiles,
   getTrajectoryProgress,
@@ -101,6 +102,8 @@ export {
   WEAPON_PRECISION,
   WEAPON_CLUSTER_BOMB,
   WEAPON_NAPALM,
+  WEAPON_EMP,
+  WEAPON_BOUNCING_BETTY,
   WEAPONS,
   WEAPON_TYPES,
   // Utility functions

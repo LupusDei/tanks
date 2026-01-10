@@ -45,6 +45,10 @@ export interface ProjectileState {
   estimatedLandingTime?: number;
   /** Whether this is a sub-projectile (smaller, no further splitting) */
   isSubProjectile?: boolean;
+  /** Number of bounces completed (for bouncing weapons) */
+  bounceCount?: number;
+  /** Maximum bounces before exploding (for bouncing weapons) */
+  maxBounces?: number;
 }
 
 /**
@@ -129,6 +133,10 @@ export function createProjectileState(
     ? estimateLandingTimeFromLaunch(launchConfig, canvasHeight)
     : undefined;
 
+  // For bouncing weapons, initialize bounce tracking
+  const bounceCount = weaponConfig.maxBounces ? 0 : undefined;
+  const maxBounces = weaponConfig.maxBounces;
+
   return {
     isActive: true,
     launchConfig,
@@ -141,6 +149,8 @@ export function createProjectileState(
     weaponType,
     speedMultiplier: weaponConfig.projectileSpeedMultiplier,
     estimatedLandingTime,
+    bounceCount,
+    maxBounces,
   };
 }
 
@@ -211,6 +221,8 @@ export function getProjectileVisual(weaponType: WeaponType): ProjectileVisual {
       return { color: '#ff4400', glowColor: '#ffaa00', radius: 6 };
     case 'emp':
       return { color: '#0066ff', glowColor: '#00ccff', radius: 6, trailColor: '#0088ff' };
+    case 'bouncing_betty':
+      return { color: '#888888', glowColor: '#ffcc00', radius: 5, trailColor: '#666666' };
     case 'standard':
     default:
       return { color: '#ffff00', glowColor: '#ffffff', radius: 5 };
@@ -454,6 +466,63 @@ function renderEMPPulse(
 }
 
 /**
+ * Render Bouncing Betty - metallic ball with spring-like bounce indicator.
+ */
+function renderBouncingBetty(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual,
+  currentTime: number,
+  bounceCount: number = 0
+): void {
+  ctx.save();
+
+  // Yellow/orange glow - gets more intense with each bounce
+  const glowIntensity = 8 + bounceCount * 4;
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = glowIntensity;
+
+  // Metallic ball with gradient
+  const gradient = ctx.createRadialGradient(
+    x - 2, y - 2, 0,
+    x, y, visual.radius
+  );
+  gradient.addColorStop(0, '#cccccc');
+  gradient.addColorStop(0.5, visual.color);
+  gradient.addColorStop(1, '#444444');
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(x, y, visual.radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Spring coil visual (wobbles when bouncing)
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = '#ffcc00';
+  ctx.lineWidth = 1.5;
+  const wobble = Math.sin(currentTime * 0.05) * 2;
+  const coilY = y + visual.radius + 2;
+  ctx.beginPath();
+  ctx.moveTo(x - 3, coilY);
+  ctx.quadraticCurveTo(x - 1, coilY + wobble, x, coilY);
+  ctx.quadraticCurveTo(x + 1, coilY - wobble, x + 3, coilY);
+  ctx.stroke();
+
+  // Bounce count indicator (small dots below)
+  if (bounceCount > 0) {
+    ctx.fillStyle = '#ffcc00';
+    for (let i = 0; i < bounceCount; i++) {
+      ctx.beginPath();
+      ctx.arc(x - 3 + i * 6, y + visual.radius + 8, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  ctx.restore();
+}
+
+/**
  * Render the projectile and its dotted trace line on canvas.
  * All positions in projectile state are already in screen coordinates.
  * The trail color matches the tank that fired the projectile.
@@ -509,6 +578,9 @@ export function renderProjectile(
       break;
     case 'emp':
       renderEMPPulse(ctx, canvasX, canvasY, visual, currentTime);
+      break;
+    case 'bouncing_betty':
+      renderBouncingBetty(ctx, canvasX, canvasY, visual, currentTime, projectile.bounceCount ?? 0);
       break;
     case 'standard':
     default:
@@ -653,6 +725,71 @@ export function checkTerrainCollision(
   }
 
   return { hit: false, point: null, worldPoint: null };
+}
+
+/**
+ * Energy retained after a bounce (0.7 = 70% of velocity preserved).
+ */
+const BOUNCE_ENERGY_RETENTION = 0.7;
+
+/**
+ * Check if a projectile can bounce and handle the bounce if so.
+ * Returns a new projectile state if bounced, or null if should explode.
+ *
+ * @param projectile - Current projectile state
+ * @param collisionPoint - Where the collision occurred (screen coords)
+ * @param currentTime - Current animation time
+ * @returns New projectile state if bounced, null if should explode
+ */
+export function handleProjectileBounce(
+  projectile: ProjectileState,
+  collisionPoint: Position,
+  currentTime: number
+): ProjectileState | null {
+  // Only bounce if this is a bouncing weapon with bounces remaining
+  if (
+    projectile.maxBounces === undefined ||
+    projectile.bounceCount === undefined ||
+    projectile.bounceCount >= projectile.maxBounces
+  ) {
+    return null; // Should explode
+  }
+
+  // Calculate current velocity at time of impact
+  const elapsedMs = currentTime - projectile.startTime;
+  const elapsedPhysicsTime = (elapsedMs / 1000) * ANIMATION_SPEED_MULTIPLIER * projectile.speedMultiplier;
+  const { vx, vy } = calculateVelocity(projectile.launchConfig, elapsedPhysicsTime);
+
+  // Simple reflection: reverse vertical velocity, keep horizontal
+  // Apply energy loss to make bounces more realistic
+  const newVx = vx * BOUNCE_ENERGY_RETENTION;
+  const newVy = -vy * BOUNCE_ENERGY_RETENTION; // Negative because screen coords are inverted
+
+  // Calculate new angle from reflected velocity
+  const newAngle = Math.atan2(-newVy, newVx) * (180 / Math.PI); // Convert to degrees
+
+  // Calculate equivalent power from velocity magnitude
+  const velocityMagnitude = Math.sqrt(newVx * newVx + newVy * newVy);
+  // Reverse the power-to-velocity calculation to get power percentage
+  // velocity = power * terrainWidth * 0.005 (from physics.ts)
+  const newPower = (velocityMagnitude / (projectile.canvasWidth * 0.005)) * 100;
+
+  // Create new launch config from bounce point
+  const newLaunchConfig: LaunchConfig = {
+    position: { ...collisionPoint },
+    angle: newAngle,
+    power: Math.min(100, Math.max(10, newPower)), // Clamp power to valid range
+    terrainWidth: projectile.launchConfig.terrainWidth,
+  };
+
+  // Return new projectile state with bounce applied
+  return {
+    ...projectile,
+    launchConfig: newLaunchConfig,
+    startTime: currentTime,
+    tracePoints: [...projectile.tracePoints, { ...collisionPoint }],
+    bounceCount: projectile.bounceCount + 1,
+  };
 }
 
 /**

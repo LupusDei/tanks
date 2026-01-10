@@ -40,6 +40,8 @@ import {
   isDestructionComplete,
   updateClusterBombSplit,
   renderClusterSubProjectiles,
+  checkTerrainCollision,
+  handleProjectileBounce,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -525,12 +527,30 @@ function App() {
         // Get current position
         const position = getProjectilePosition(updatedProjectile, currentTime)
 
+        // Check for terrain collision first (for bouncing weapons)
+        const terrainCollision = terrain ? checkTerrainCollision(position, terrain, ctx.canvas.height) : { hit: false, point: null, worldPoint: null }
+
         // Check if projectile is out of bounds
         const terrainHeight = terrain ? getInterpolatedHeightAt(terrain, position.x) ?? 0 : 0
-        if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight)) {
-          // Projectile has landed - mark as inactive
-          currentProjectile = { ...updatedProjectile, isActive: false }
-          handleProjectileLanding(currentProjectile, position)
+        if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight) || terrainCollision.hit) {
+          // Try to bounce if this is a bouncing weapon
+          const bounceResult = terrainCollision.point
+            ? handleProjectileBounce(updatedProjectile, terrainCollision.point, currentTime)
+            : null
+
+          if (bounceResult) {
+            // Bounce succeeded - continue with bounced projectile
+            currentProjectile = bounceResult
+            anyProjectileActive = true
+            // Render projectile at new position
+            renderProjectile(ctx, bounceResult, currentTime)
+          } else {
+            // Projectile has landed - mark as inactive
+            currentProjectile = { ...updatedProjectile, isActive: false }
+            // Use collision point if available, otherwise use current position
+            const landingPos = terrainCollision.point ?? position
+            handleProjectileLanding(currentProjectile, landingPos)
+          }
         } else {
           // Projectile still active
           currentProjectile = updatedProjectile

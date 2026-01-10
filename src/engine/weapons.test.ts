@@ -13,6 +13,7 @@ import {
   WEAPON_CLUSTER_BOMB,
   WEAPON_NAPALM,
   WEAPON_EMP,
+  WEAPON_BOUNCING_BETTY,
   WEAPONS,
   WEAPON_TYPES,
   // Utility functions
@@ -89,6 +90,7 @@ describe('Weapon configurations', () => {
       WEAPON_CLUSTER_BOMB,
       WEAPON_NAPALM,
       WEAPON_EMP,
+      WEAPON_BOUNCING_BETTY,
     ];
     for (const weapon of otherWeapons) {
       expect(weapon.damage).toBeLessThan(100);
@@ -124,6 +126,12 @@ describe('Weapon configurations', () => {
     expect(WEAPON_EMP.stunTurns).toBe(1);
   });
 
+  it('WEAPON_BOUNCING_BETTY has moderate damage and bounces', () => {
+    expect(WEAPON_BOUNCING_BETTY.damage).toBeLessThan(100);
+    expect(WEAPON_BOUNCING_BETTY.cost).toBeGreaterThan(0);
+    expect(WEAPON_BOUNCING_BETTY.maxBounces).toBe(2);
+  });
+
   it('all weapons have required properties', () => {
     const allWeapons = [
       WEAPON_STANDARD,
@@ -132,6 +140,7 @@ describe('Weapon configurations', () => {
       WEAPON_CLUSTER_BOMB,
       WEAPON_NAPALM,
       WEAPON_EMP,
+      WEAPON_BOUNCING_BETTY,
     ];
 
     for (const weapon of allWeapons) {
@@ -151,13 +160,14 @@ describe('Weapon configurations', () => {
 
 describe('WEAPONS registry', () => {
   it('contains all weapon types', () => {
-    expect(Object.keys(WEAPONS)).toHaveLength(6);
+    expect(Object.keys(WEAPONS)).toHaveLength(7);
     expect(WEAPONS).toHaveProperty('standard');
     expect(WEAPONS).toHaveProperty('heavy_artillery');
     expect(WEAPONS).toHaveProperty('precision');
     expect(WEAPONS).toHaveProperty('cluster_bomb');
     expect(WEAPONS).toHaveProperty('napalm');
     expect(WEAPONS).toHaveProperty('emp');
+    expect(WEAPONS).toHaveProperty('bouncing_betty');
   });
 
   it('maps to correct weapon configs', () => {
@@ -167,18 +177,20 @@ describe('WEAPONS registry', () => {
     expect(WEAPONS['cluster_bomb']).toBe(WEAPON_CLUSTER_BOMB);
     expect(WEAPONS['napalm']).toBe(WEAPON_NAPALM);
     expect(WEAPONS['emp']).toBe(WEAPON_EMP);
+    expect(WEAPONS['bouncing_betty']).toBe(WEAPON_BOUNCING_BETTY);
   });
 });
 
 describe('WEAPON_TYPES array', () => {
   it('contains all weapon types in order', () => {
-    expect(WEAPON_TYPES).toHaveLength(6);
+    expect(WEAPON_TYPES).toHaveLength(7);
     expect(WEAPON_TYPES[0]).toBe('standard');
     expect(WEAPON_TYPES).toContain('heavy_artillery');
     expect(WEAPON_TYPES).toContain('precision');
     expect(WEAPON_TYPES).toContain('cluster_bomb');
     expect(WEAPON_TYPES).toContain('napalm');
     expect(WEAPON_TYPES).toContain('emp');
+    expect(WEAPON_TYPES).toContain('bouncing_betty');
   });
 });
 
@@ -190,6 +202,7 @@ describe('getWeaponConfig', () => {
     expect(getWeaponConfig('cluster_bomb')).toBe(WEAPON_CLUSTER_BOMB);
     expect(getWeaponConfig('napalm')).toBe(WEAPON_NAPALM);
     expect(getWeaponConfig('emp')).toBe(WEAPON_EMP);
+    expect(getWeaponConfig('bouncing_betty')).toBe(WEAPON_BOUNCING_BETTY);
   });
 });
 
@@ -197,13 +210,14 @@ describe('getPurchasableWeapons', () => {
   it('returns only weapons with cost > 0', () => {
     const purchasable = getPurchasableWeapons();
 
-    expect(purchasable).toHaveLength(5);
+    expect(purchasable).toHaveLength(6);
     expect(purchasable).not.toContain(WEAPON_STANDARD);
     expect(purchasable).toContain(WEAPON_HEAVY_ARTILLERY);
     expect(purchasable).toContain(WEAPON_PRECISION);
     expect(purchasable).toContain(WEAPON_CLUSTER_BOMB);
     expect(purchasable).toContain(WEAPON_NAPALM);
     expect(purchasable).toContain(WEAPON_EMP);
+    expect(purchasable).toContain(WEAPON_BOUNCING_BETTY);
 
     for (const weapon of purchasable) {
       expect(weapon.cost).toBeGreaterThan(0);
@@ -363,9 +377,10 @@ describe('getDestructionCategory', () => {
     expect(getDestructionCategory('precision')).toBe('ballistic');
   });
 
-  it('returns explosive for heavy artillery and cluster bomb', () => {
+  it('returns explosive for heavy artillery, cluster bomb, and bouncing betty', () => {
     expect(getDestructionCategory('heavy_artillery')).toBe('explosive');
     expect(getDestructionCategory('cluster_bomb')).toBe('explosive');
+    expect(getDestructionCategory('bouncing_betty')).toBe('explosive');
   });
 
   it('returns fire for napalm', () => {

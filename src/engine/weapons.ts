@@ -23,7 +23,8 @@ export type WeaponType =
   | 'precision'
   | 'cluster_bomb'
   | 'napalm'
-  | 'emp';
+  | 'emp'
+  | 'bouncing_betty';
 
 /**
  * Destruction animation category.
@@ -44,6 +45,7 @@ export function getDestructionCategory(weaponType: WeaponType): DestructionCateg
       return 'fire';
     case 'heavy_artillery':
     case 'cluster_bomb':
+    case 'bouncing_betty':
       return 'explosive';
     case 'emp':
       return 'electric';
@@ -74,6 +76,8 @@ export interface WeaponConfig {
   projectileSpeedMultiplier: number;
   /** Number of turns to stun hit targets (0 = no stun, EMP weapons) */
   stunTurns?: number;
+  /** Number of times projectile bounces off terrain before exploding (Bouncing Betty) */
+  maxBounces?: number;
 }
 
 // ============================================================================
@@ -210,6 +214,22 @@ export const WEAPON_EMP: WeaponConfig = {
   stunTurns: 1,
 };
 
+/**
+ * Bouncing Betty - bounces off terrain before exploding.
+ * Unpredictable trajectory makes it great for hitting behind cover.
+ * Moderate damage with tricky bounce mechanics.
+ */
+export const WEAPON_BOUNCING_BETTY: WeaponConfig = {
+  id: 'bouncing_betty',
+  name: 'Bouncing Betty',
+  description: 'Bounces 2x off terrain before exploding. Great for tricky shots.',
+  cost: 175,
+  damage: 45,
+  blastRadius: 18,
+  projectileSpeedMultiplier: 1.0,
+  maxBounces: 2,
+};
+
 // ============================================================================
 // WEAPON REGISTRY
 // ============================================================================
@@ -225,6 +245,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   cluster_bomb: WEAPON_CLUSTER_BOMB,
   napalm: WEAPON_NAPALM,
   emp: WEAPON_EMP,
+  bouncing_betty: WEAPON_BOUNCING_BETTY,
 };
 
 /**
@@ -238,6 +259,7 @@ export const WEAPON_TYPES: WeaponType[] = [
   'cluster_bomb',
   'napalm',
   'emp',
+  'bouncing_betty',
 ];
 
 /**
