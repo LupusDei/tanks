@@ -18,6 +18,11 @@ interface Particle {
   floatSpeed: number
   floatRadius: number
   floatPhase: number
+  // Visual properties for shiny effects
+  size: number // 4-10px varying sizes
+  hue: number // Color variation (120-180 range for green-cyan spectrum)
+  shimmerDelay: number // Random delay for shimmer animation
+  glowIntensity: number // 0.5-1.5 multiplier for glow strength
 }
 
 export function MagnetizeButton({
@@ -57,6 +62,11 @@ export function MagnetizeButton({
       floatSpeed: 0.5 + Math.random() * 1.0, // 0.5-1.5 speed multiplier
       floatRadius: 8 + Math.random() * 12, // 8-20px float radius
       floatPhase: Math.random() * Math.PI * 2, // Random starting phase
+      // Visual properties for shiny effects
+      size: 4 + Math.random() * 6, // 4-10px varying sizes
+      hue: 120 + Math.random() * 60, // 120-180 for green-cyan spectrum
+      shimmerDelay: Math.random() * 2, // 0-2s staggered shimmer
+      glowIntensity: 0.5 + Math.random() * 1.0, // 0.5-1.5 glow multiplier
     }))
     setParticles(newParticles)
   }, [particleCount])
@@ -164,6 +174,15 @@ export function MagnetizeButton({
           }}
           animate={particlesControl}
           className={`magnetize-button__particle ${isAttracting ? "magnetize-button__particle--attracting" : ""}`}
+          style={{
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            marginLeft: `${-particle.size / 2}px`,
+            marginTop: `${-particle.size / 2}px`,
+            background: `radial-gradient(circle at 30% 30%, hsl(${particle.hue}, 100%, 80%), hsl(${particle.hue}, 100%, 50%))`,
+            boxShadow: `0 0 ${4 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 60%, 0.6), 0 0 ${8 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 50%, 0.4), inset 0 0 ${2}px rgba(255, 255, 255, 0.3)`,
+            animationDelay: `${particle.shimmerDelay}s`,
+          }}
         />
       ))}
       <span className="magnetize-button__content">{children}</span>
