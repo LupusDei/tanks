@@ -1,0 +1,5 @@
+# Cloudflare Pages redirects configuration
+# https://developers.cloudflare.com/pages/configuration/redirects/
+
+# SPA fallback - serve index.html for all routes
+/*    /index.html   200
