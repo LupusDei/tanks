@@ -98,3 +98,37 @@ export interface GameActions {
   setTerrainSize: (size: TerrainSize) => void;
   setEnemyCount: (count: EnemyCount) => void;
 }
+
+// User and Statistics Types
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  createdAt: number; // Unix timestamp
+}
+
+export interface GameRecord {
+  id: string;
+  playedAt: number; // Unix timestamp
+  result: 'victory' | 'defeat';
+  enemyCount: EnemyCount;
+  enemiesKilled: number;
+  terrainSize: TerrainSize;
+  aiDifficulty: AIDifficulty;
+  turnsPlayed: number;
+  playerColor: TankColor;
+}
+
+export interface UserStats {
+  gamesPlayed: number;
+  gamesWon: number;
+  gamesLost: number;
+  totalKills: number;
+  winRate: number; // 0-100 percentage
+}
+
+export interface UserData {
+  profile: UserProfile;
+  stats: UserStats;
+  recentGames: GameRecord[];
+}
