@@ -2153,4 +2153,135 @@ p {
   .player-stats-display__stat-label {
     font-size: 0.5rem;
   }
+
+  /* Weapon Shop Mobile */
+  .weapon-shop-screen {
+    padding: 0.25rem;
+  }
+
+  .weapon-shop {
+    flex-direction: column;
+    gap: 0;
+    max-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .weapon-shop__main {
+    flex: 1;
+    min-height: 0;
+    max-height: calc(100vh - 140px);
+    padding: 0.5rem;
+    border-radius: 8px 8px 0 0;
+    border-bottom: none;
+  }
+
+  .weapon-shop__title {
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .weapon-shop__cart {
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 8px 8px 0 0;
+    padding: 0.5rem 0.75rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    z-index: 100;
+  }
+
+  .weapon-shop__balance {
+    flex-direction: row;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .weapon-shop__balance-label {
+    font-size: 0.6rem;
+  }
+
+  .weapon-shop__balance-amount {
+    font-size: 1rem;
+  }
+
+  .weapon-shop__summary {
+    padding: 0.3rem 0.4rem;
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .weapon-shop__summary-row {
+    font-size: 0.6rem;
+    padding: 0;
+  }
+
+  .weapon-shop__actions {
+    flex-direction: row;
+    gap: 0.4rem;
+  }
+
+  .weapon-shop__button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  /* Weapon items mobile */
+  .weapon-shop__weapons {
+    gap: 0.25rem;
+  }
+
+  .weapon-shop__weapon {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .weapon-shop__weapon-name {
+    font-size: 0.75rem;
+  }
+
+  .weapon-shop__weapon-cost {
+    font-size: 0.7rem;
+  }
+
+  .weapon-shop__weapon-description {
+    font-size: 0.6rem;
+  }
+
+  .weapon-shop__weapon-stats {
+    gap: 0.5rem;
+  }
+
+  .weapon-shop__stat-label {
+    font-size: 0.5rem;
+  }
+
+  .weapon-shop__stat-value {
+    font-size: 0.65rem;
+  }
+
+  .weapon-shop__weapon-inventory {
+    margin-top: 0.3rem;
+    padding-top: 0.3rem;
+  }
+
+  .weapon-shop__owned {
+    font-size: 0.65rem;
+  }
+
+  .weapon-shop__qty-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 1.1rem;
+  }
+
+  .weapon-shop__qty-value {
+    font-size: 0.85rem;
+    min-width: 1.25rem;
+  }
 }
