@@ -109,7 +109,8 @@ export function ControlPanel({
         </div>
 
         <div className="control-panel__hint">
-          <kbd>Shift</kbd> for faster
+          <kbd>Shift</kbd>
+          <span>for faster</span>
         </div>
 
         <div className="control-panel__control control-panel__control--power">

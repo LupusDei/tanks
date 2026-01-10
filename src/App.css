@@ -387,9 +387,13 @@ p {
 }
 
 .control-panel__hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-size: 0.5rem;
   color: #444;
   align-self: center;
+  gap: 0.15rem;
 }
 
 .control-panel__hint kbd {
