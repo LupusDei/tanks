@@ -543,7 +543,7 @@ describe('renderProjectile weapon-specific rendering', () => {
   it('renders standard shell without throwing', () => {
     const ctx = createMockContext();
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'standard');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'standard');
 
     expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
   });
@@ -551,7 +551,7 @@ describe('renderProjectile weapon-specific rendering', () => {
   it('renders heavy artillery without throwing', () => {
     const ctx = createMockContext();
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'heavy_artillery');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'heavy_artillery');
 
     expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
   });
@@ -559,7 +559,7 @@ describe('renderProjectile weapon-specific rendering', () => {
   it('renders precision shot without throwing', () => {
     const ctx = createMockContext();
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'precision');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'precision');
 
     expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
   });
@@ -567,7 +567,7 @@ describe('renderProjectile weapon-specific rendering', () => {
   it('renders cluster bomb without throwing', () => {
     const ctx = createMockContext();
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'cluster_bomb');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'cluster_bomb');
 
     expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
   });
@@ -575,7 +575,7 @@ describe('renderProjectile weapon-specific rendering', () => {
   it('renders napalm without throwing', () => {
     const ctx = createMockContext();
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'napalm');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'napalm');
 
     expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
   });
@@ -588,7 +588,7 @@ describe('renderProjectile weapon-specific rendering', () => {
     for (const weaponType of weaponTypes) {
       for (const angle of angles) {
         const tank = createMockTank({ angle });
-        const state = createProjectileState(tank, 0, CANVAS_HEIGHT, weaponType);
+        const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, weaponType);
         expect(() => renderProjectile(ctx, state, 100)).not.toThrow();
       }
     }
@@ -597,7 +597,7 @@ describe('renderProjectile weapon-specific rendering', () => {
   it('renders cluster bomb wobble animation at different times', () => {
     const ctx = createMockContext();
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'cluster_bomb');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'cluster_bomb');
 
     // Render at different times to test wobble animation
     for (let time = 0; time < 1000; time += 100) {
@@ -608,7 +608,7 @@ describe('renderProjectile weapon-specific rendering', () => {
   it('renders napalm flame animation at different times', () => {
     const ctx = createMockContext();
     const tank = createMockTank();
-    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, 'napalm');
+    const state = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'napalm');
 
     // Render at different times to test flame animation
     for (let time = 0; time < 1000; time += 100) {
