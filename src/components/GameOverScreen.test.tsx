@@ -11,7 +11,7 @@ describe('GameOverScreen', () => {
   it('displays Victory! when player wins', () => {
     render(<GameOverScreen winner="player" onPlayAgain={vi.fn()} />)
     expect(screen.getByTestId('game-over-title')).toHaveTextContent('Victory!')
-    expect(screen.getByText('You destroyed the enemy tank!')).toBeInTheDocument()
+    expect(screen.getByText('You destroyed all enemies!')).toBeInTheDocument()
   })
 
   it('displays Defeat! when opponent wins', () => {

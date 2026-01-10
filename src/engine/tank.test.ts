@@ -93,55 +93,83 @@ describe('tank', () => {
       height: 200,
     };
 
-    it('creates two tanks', () => {
-      const tanks = createInitialTanks(terrain, 'red', 'blue');
+    it('creates correct number of tanks for single enemy', () => {
+      const tanks = createInitialTanks(terrain, 'red', 1);
       expect(tanks).toHaveLength(2);
     });
 
+    it('creates correct number of tanks for multiple enemies', () => {
+      const tanks = createInitialTanks(terrain, 'red', 3);
+      expect(tanks).toHaveLength(4);
+    });
+
     it('creates player tank with correct properties', () => {
-      const tanks = createInitialTanks(terrain, 'red', 'blue');
+      const tanks = createInitialTanks(terrain, 'red', 1);
       const player = tanks[0];
 
       expect(player?.id).toBe('player');
       expect(player?.color).toBe('red');
       expect(player?.health).toBe(100);
-      expect(player?.angle).toBe(-45); // Aiming right toward opponent
+      expect(player?.angle).toBe(-45); // Aiming right toward enemies
       expect(player?.power).toBe(50);
       expect(player?.isActive).toBe(true);
     });
 
-    it('creates opponent tank with correct properties', () => {
-      const tanks = createInitialTanks(terrain, 'red', 'blue');
-      const opponent = tanks[1];
+    it('creates enemy tank with correct properties', () => {
+      const tanks = createInitialTanks(terrain, 'red', 1);
+      const enemy = tanks[1];
 
-      expect(opponent?.id).toBe('opponent');
-      expect(opponent?.color).toBe('blue');
-      expect(opponent?.health).toBe(100);
-      expect(opponent?.angle).toBe(45); // Aiming left toward player
-      expect(opponent?.power).toBe(50);
-      expect(opponent?.isActive).toBe(false);
+      expect(enemy?.id).toBe('enemy-1');
+      expect(enemy?.color).not.toBe('red'); // Different from player
+      expect(enemy?.health).toBe(100);
+      expect(enemy?.angle).toBe(45); // Aiming left toward player
+      expect(enemy?.power).toBe(50);
+      expect(enemy?.isActive).toBe(false);
     });
 
     it('places player tank on left side', () => {
-      const tanks = createInitialTanks(terrain, 'red', 'blue');
+      const tanks = createInitialTanks(terrain, 'red', 1);
       const player = tanks[0];
       // Should be at 15% of width
       expect(player?.position.x).toBe(15);
     });
 
-    it('places opponent tank on right side', () => {
-      const tanks = createInitialTanks(terrain, 'red', 'blue');
-      const opponent = tanks[1];
+    it('places single enemy tank on right side', () => {
+      const tanks = createInitialTanks(terrain, 'red', 1);
+      const enemy = tanks[1];
       // Should be at 85% of width
-      expect(opponent?.position.x).toBe(85);
+      expect(enemy?.position.x).toBe(85);
     });
 
     it('calculates correct y positions on terrain', () => {
-      const tanks = createInitialTanks(terrain, 'green', 'yellow');
+      const tanks = createInitialTanks(terrain, 'green', 1);
       // terrain height is 50 everywhere
       // tank y = terrainHeight + wheelRadius + bodyHeight/2 = 50 + 6 + 10 = 66
       expect(tanks[0]?.position.y).toBe(66);
       expect(tanks[1]?.position.y).toBe(66);
+    });
+
+    it('assigns different colors to enemies', () => {
+      const tanks = createInitialTanks(terrain, 'red', 3);
+      const enemies = tanks.filter((t) => t.id !== 'player');
+
+      // All enemies should have colors different from player
+      for (const enemy of enemies) {
+        expect(enemy.color).not.toBe('red');
+      }
+    });
+
+    it('enemy IDs are sequential', () => {
+      const tanks = createInitialTanks(terrain, 'red', 5);
+      const enemies = tanks.filter((t) => t.id !== 'player');
+
+      expect(enemies.map((e) => e.id)).toEqual([
+        'enemy-1',
+        'enemy-2',
+        'enemy-3',
+        'enemy-4',
+        'enemy-5',
+      ]);
     });
   });
 

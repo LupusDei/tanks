@@ -4,6 +4,7 @@ import {
   Canvas,
   ColorSelectionScreen,
   ControlPanel,
+  EnemyCountSelector,
   GameOverScreen,
   LoadingScreen,
   TerrainSizeSelector,
@@ -31,7 +32,7 @@ import {
   type ProjectileState,
   type ExplosionState,
 } from './engine'
-import { TankColor, TerrainSize, TERRAIN_SIZES } from './types/game'
+import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount } from './types/game'
 
 // Tank dimensions for hit detection (must match tank.ts)
 const TANK_BODY_WIDTH = 40
@@ -134,6 +135,11 @@ function App() {
 
   const handleTerrainSizeSelect = (size: TerrainSize) => {
     actions.setTerrainSize(size)
+    actions.setPhase('enemy_select')
+  }
+
+  const handleEnemyCountSelect = (count: EnemyCount) => {
+    actions.setEnemyCount(count)
     actions.setPhase('color_select')
   }
 
@@ -146,6 +152,7 @@ function App() {
       canvasWidth: terrainConfig.width,
       canvasHeight: terrainConfig.height,
       playerColor: color,
+      enemyCount: state.enemyCount,
     })
 
     // Store player's color choice
@@ -185,37 +192,39 @@ function App() {
     fireProjectileForTank(currentTank.id)
   }
 
-  // Handle canvas click to cycle AI difficulty when clicking on opponent tank
+  // Handle canvas click to cycle AI difficulty when clicking on any enemy tank
   const handleCanvasClick = useCallback((canvasX: number, canvasY: number) => {
     // Only allow clicking during player's turn and not during projectile/explosion animation
     if (state.phase !== 'playing' || isProjectileActive || isExplosionActive) return
 
-    const opponentTank = state.tanks.find((t) => t.id === 'opponent')
-    if (!opponentTank) return
-
     // Get canvas height from current terrain size
     const canvasHeight = TERRAIN_SIZES[state.terrainSize].height
 
-    // Convert world coordinates to canvas coordinates for hit detection
-    const tankCanvasX = opponentTank.position.x
-    const tankCanvasY = canvasHeight - opponentTank.position.y
+    // Check if click is on any enemy tank
+    const enemyTanks = state.tanks.filter((t) => t.id !== 'player')
+    for (const enemyTank of enemyTanks) {
+      // Convert world coordinates to canvas coordinates for hit detection
+      const tankCanvasX = enemyTank.position.x
+      const tankCanvasY = canvasHeight - enemyTank.position.y
 
-    // Calculate tank bounding box (approximate)
-    const tankLeft = tankCanvasX - TANK_BODY_WIDTH / 2
-    const tankRight = tankCanvasX + TANK_BODY_WIDTH / 2
-    const tankTop = tankCanvasY - TANK_BODY_HEIGHT / 2 - TANK_BODY_HEIGHT // Include dome
-    const tankBottom = tankCanvasY + TANK_BODY_HEIGHT / 2 + TANK_WHEEL_RADIUS
+      // Calculate tank bounding box (approximate)
+      const tankLeft = tankCanvasX - TANK_BODY_WIDTH / 2
+      const tankRight = tankCanvasX + TANK_BODY_WIDTH / 2
+      const tankTop = tankCanvasY - TANK_BODY_HEIGHT / 2 - TANK_BODY_HEIGHT // Include dome
+      const tankBottom = tankCanvasY + TANK_BODY_HEIGHT / 2 + TANK_WHEEL_RADIUS
 
-    // Check if click is within tank bounds
-    if (
-      canvasX >= tankLeft &&
-      canvasX <= tankRight &&
-      canvasY >= tankTop &&
-      canvasY <= tankBottom
-    ) {
-      // Cycle to next difficulty
-      const nextDifficulty = getNextDifficulty(state.aiDifficulty)
-      actions.setAIDifficulty(nextDifficulty)
+      // Check if click is within tank bounds
+      if (
+        canvasX >= tankLeft &&
+        canvasX <= tankRight &&
+        canvasY >= tankTop &&
+        canvasY <= tankBottom
+      ) {
+        // Cycle to next difficulty
+        const nextDifficulty = getNextDifficulty(state.aiDifficulty)
+        actions.setAIDifficulty(nextDifficulty)
+        return // Only handle one click
+      }
     }
   }, [state.phase, state.tanks, state.aiDifficulty, state.terrainSize, isProjectileActive, isExplosionActive, actions])
 
@@ -250,9 +259,10 @@ function App() {
     // Render tanks
     for (const tank of tanks) {
       const isCurrentTurn = tank.id === state.currentPlayerId && !projectileRef.current?.isActive
-      // Show rank insignia on opponent tank to indicate AI difficulty
-      const chevronCount = tank.id === 'opponent' ? getChevronCount(state.aiDifficulty) : 0
-      const starCount = tank.id === 'opponent' ? getStarCount(state.aiDifficulty) : 0
+      // Show rank insignia on enemy tanks to indicate AI difficulty
+      const isEnemy = tank.id !== 'player'
+      const chevronCount = isEnemy ? getChevronCount(state.aiDifficulty) : 0
+      const starCount = isEnemy ? getStarCount(state.aiDifficulty) : 0
       renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount })
     }
 
@@ -318,6 +328,10 @@ function App() {
 
   if (state.phase === 'terrain_select') {
     return <TerrainSizeSelector onSizeSelect={handleTerrainSizeSelect} />
+  }
+
+  if (state.phase === 'enemy_select') {
+    return <EnemyCountSelector onCountSelect={handleEnemyCountSelect} />
   }
 
   if (state.phase === 'color_select') {

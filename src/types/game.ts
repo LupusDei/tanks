@@ -1,4 +1,4 @@
-export type GamePhase = 'loading' | 'terrain_select' | 'color_select' | 'playing' | 'gameover';
+export type GamePhase = 'loading' | 'terrain_select' | 'enemy_select' | 'color_select' | 'playing' | 'gameover';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
 
@@ -33,6 +33,10 @@ export const AI_DIFFICULTY_ORDER: AIDifficulty[] = [
   'primus',
 ];
 
+export type EnemyCount = 1 | 2 | 3 | 4 | 5;
+
+export const ENEMY_COUNT_OPTIONS: EnemyCount[] = [1, 2, 3, 4, 5];
+
 export interface Position {
   x: number;
   y: number;
@@ -64,6 +68,7 @@ export interface GameState {
   playerColor: TankColor | null;
   aiDifficulty: AIDifficulty;
   terrainSize: TerrainSize;
+  enemyCount: EnemyCount;
 }
 
 export interface GameActions {
@@ -78,4 +83,5 @@ export interface GameActions {
   setPlayerColor: (color: TankColor) => void;
   setAIDifficulty: (difficulty: AIDifficulty) => void;
   setTerrainSize: (size: TerrainSize) => void;
+  setEnemyCount: (count: EnemyCount) => void;
 }
