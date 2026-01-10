@@ -1978,4 +1978,179 @@ p {
     font-size: 1rem;
     padding: 0.875rem 2rem;
   }
+
+  /* Game Config Screen Mobile */
+  .game-config-screen {
+    padding: 0.75rem;
+    justify-content: flex-start;
+    padding-top: 1rem;
+  }
+
+  .game-config-screen__title {
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .game-config-screen__sections {
+    gap: 0.6rem;
+  }
+
+  .game-config-screen__section-title {
+    font-size: 0.75rem;
+  }
+
+  /* Terrain Options - horizontal scroll on mobile */
+  .game-config-screen__terrain-options {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .game-config-screen__terrain-option {
+    min-width: 70px;
+    flex-shrink: 0;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .game-config-screen__terrain-preview {
+    width: 45px;
+    height: 35px;
+  }
+
+  .game-config-screen__terrain-label {
+    font-size: 0.6rem;
+  }
+
+  .game-config-screen__terrain-dimensions {
+    font-size: 0.45rem;
+  }
+
+  /* Enemy Options - 5 columns to fit on mobile */
+  .game-config-screen__enemy-options {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.35rem;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .game-config-screen__enemy-option {
+    padding: 0.25rem;
+  }
+
+  .game-config-screen__enemy-tank-icon {
+    width: 8px;
+    height: 5px;
+  }
+
+  .game-config-screen__enemy-tank-icon::before {
+    width: 3px;
+    height: 1.5px;
+    right: -2px;
+    top: 1px;
+  }
+
+  .game-config-screen__enemy-tank-icon::after {
+    height: 1.5px;
+    bottom: -1.5px;
+  }
+
+  .game-config-screen__enemy-label {
+    font-size: 0.45rem;
+  }
+
+  /* Difficulty Options - horizontal scroll */
+  .game-config-screen__difficulty-options {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .game-config-screen__difficulty-option {
+    min-width: 80px;
+    max-width: 90px;
+    flex-shrink: 0;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .game-config-screen__difficulty-name {
+    font-size: 0.55rem;
+  }
+
+  .game-config-screen__difficulty-description {
+    font-size: 0.4rem;
+  }
+
+  .game-config-screen__chevron,
+  .game-config-screen__star {
+    font-size: 0.6rem;
+  }
+
+  /* Color Options - 5 columns */
+  .game-config-screen__color-options {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.35rem;
+    max-width: 320px;
+  }
+
+  .game-config-screen__color-option {
+    padding: 0.35rem 0.3rem;
+  }
+
+  .game-config-screen__tank-preview {
+    width: 26px;
+    height: 15px;
+  }
+
+  .game-config-screen__tank-preview::before {
+    width: 8px;
+    height: 2.5px;
+    right: -6px;
+    top: 5px;
+  }
+
+  .game-config-screen__tank-preview::after {
+    height: 3px;
+    bottom: -2.5px;
+  }
+
+  .game-config-screen__color-label {
+    font-size: 0.45rem;
+  }
+
+  /* Engage Button Mobile */
+  .game-config-screen__engage-button {
+    margin-top: 0.6rem;
+    padding: 0.6rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  /* Player Stats Display Mobile */
+  .player-stats-display {
+    padding: 0.4rem 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .player-stats-display__name {
+    font-size: 0.9rem;
+  }
+
+  .player-stats-display__stats {
+    gap: 0.75rem;
+  }
+
+  .player-stats-display__stat {
+    min-width: 45px;
+  }
+
+  .player-stats-display__stat-value {
+    font-size: 0.85rem;
+  }
+
+  .player-stats-display__stat-label {
+    font-size: 0.5rem;
+  }
 }
