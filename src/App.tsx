@@ -45,12 +45,13 @@ import {
   type WeaponType,
   type TankDestructionState,
 } from './engine'
-import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount } from './types/game'
+import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, AIDifficulty } from './types/game'
 
 interface GameConfig {
   terrainSize: TerrainSize
   enemyCount: EnemyCount
   playerColor: TankColor
+  aiDifficulty: AIDifficulty
 }
 
 // Tank dimensions for hit detection (must match tank.ts)
@@ -315,6 +316,7 @@ function App() {
     actions.setTerrainSize(config.terrainSize)
     actions.setEnemyCount(config.enemyCount)
     actions.setPlayerColor(config.playerColor)
+    actions.setAIDifficulty(config.aiDifficulty)
 
     // Set terrain and tanks in game state
     actions.setTerrain(terrain)

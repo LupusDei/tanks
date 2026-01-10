@@ -1007,6 +1007,53 @@ p {
   letter-spacing: 0.03em;
 }
 
+/* Difficulty Options */
+.game-config-screen__difficulty-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.game-config-screen__difficulty-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.game-config-screen__difficulty-option:hover {
+  background: rgba(255, 170, 0, 0.1);
+  border-color: #ffaa00;
+}
+
+.game-config-screen__difficulty-option--selected {
+  background: rgba(255, 170, 0, 0.2);
+  border-color: #ffaa00;
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+}
+
+.game-config-screen__difficulty-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.9rem;
+  color: #ffaa00;
+  text-transform: uppercase;
+}
+
+.game-config-screen__difficulty-description {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
 /* Color Options */
 .game-config-screen__color-options {
   display: grid;

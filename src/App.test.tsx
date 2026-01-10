@@ -184,6 +184,8 @@ describe('App', () => {
     expect(screen.getByTestId('config-terrain-large')).toHaveAttribute('aria-pressed', 'true')
     // Enemy count: 5 (middle of 10)
     expect(screen.getByTestId('config-enemy-5')).toHaveAttribute('aria-pressed', 'true')
+    // Difficulty: 'veteran' (middle of 5)
+    expect(screen.getByTestId('config-difficulty-veteran')).toHaveAttribute('aria-pressed', 'true')
     // Color: 'orange' (middle of 10)
     expect(screen.getByTestId('config-color-orange')).toHaveAttribute('aria-pressed', 'true')
   })
@@ -204,6 +206,7 @@ describe('App', () => {
     // Make all selections
     fireEvent.click(screen.getByTestId('config-terrain-medium'))
     fireEvent.click(screen.getByTestId('config-enemy-1'))
+    fireEvent.click(screen.getByTestId('config-difficulty-veteran'))
     fireEvent.click(screen.getByTestId('config-color-red'))
 
     // Click Engage
@@ -230,6 +233,7 @@ describe('App', () => {
     // Make all selections
     fireEvent.click(screen.getByTestId('config-terrain-medium'))
     fireEvent.click(screen.getByTestId('config-enemy-1'))
+    fireEvent.click(screen.getByTestId('config-difficulty-veteran'))
     fireEvent.click(screen.getByTestId('config-color-red'))
 
     // Click Engage
@@ -259,6 +263,7 @@ describe('App', () => {
     // Make all selections
     fireEvent.click(screen.getByTestId('config-terrain-medium'))
     fireEvent.click(screen.getByTestId('config-enemy-1'))
+    fireEvent.click(screen.getByTestId('config-difficulty-veteran'))
     fireEvent.click(screen.getByTestId('config-color-blue'))
 
     // Click Engage

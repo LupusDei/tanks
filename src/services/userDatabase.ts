@@ -21,6 +21,7 @@ export interface GameConfig {
   terrainSize: TerrainSize;
   enemyCount: EnemyCount;
   playerColor: TankColor;
+  aiDifficulty?: AIDifficulty;
 }
 
 const MAX_RECENT_GAMES = 50;
