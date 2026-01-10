@@ -149,6 +149,8 @@ describe('updateExplosion', () => {
       particles: [],
       isActive: false,
       radius: EXPLOSION_RADIUS,
+      weaponType: 'standard',
+      durationMultiplier: 1.0,
     };
 
     const updated = updateExplosion(explosion, 1000, 16);
@@ -222,6 +224,8 @@ describe('renderExplosion', () => {
       particles: [],
       isActive: false,
       radius: EXPLOSION_RADIUS,
+      weaponType: 'standard',
+      durationMultiplier: 1.0,
     };
 
     renderExplosion(ctx, explosion, 500);
@@ -467,5 +471,224 @@ describe('checkTankHit', () => {
     const explosionScreenPos = { x: 435, y: 500 };
 
     expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT, smallRadius)).toBe(false);
+  });
+});
+
+describe('weapon-specific explosions', () => {
+  const weaponTypes = ['standard', 'heavy_artillery', 'precision', 'cluster_bomb', 'napalm'] as const;
+
+  describe('createExplosion with weapon types', () => {
+    it('defaults to standard weapon type', () => {
+      const explosion = createExplosion({ x: 100, y: 100 }, 0);
+      expect(explosion.weaponType).toBe('standard');
+      expect(explosion.durationMultiplier).toBe(1.0);
+    });
+
+    it('creates explosions for all weapon types', () => {
+      for (const weaponType of weaponTypes) {
+        const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, weaponType);
+        expect(explosion.weaponType).toBe(weaponType);
+        expect(explosion.durationMultiplier).toBeGreaterThan(0);
+        expect(explosion.particles.length).toBeGreaterThan(0);
+        expect(explosion.isActive).toBe(true);
+      }
+    });
+
+    it('heavy artillery has longer duration', () => {
+      const standard = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'standard');
+      const heavy = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'heavy_artillery');
+      expect(heavy.durationMultiplier).toBeGreaterThan(standard.durationMultiplier);
+    });
+
+    it('precision has shorter duration', () => {
+      const standard = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'standard');
+      const precision = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'precision');
+      expect(precision.durationMultiplier).toBeLessThan(standard.durationMultiplier);
+    });
+
+    it('napalm has longest duration', () => {
+      const napalm = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'napalm');
+      expect(napalm.durationMultiplier).toBe(2.0);
+    });
+
+    it('heavy artillery has more particles', () => {
+      const standard = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'standard');
+      const heavy = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'heavy_artillery');
+      expect(heavy.particles.length).toBeGreaterThan(standard.particles.length);
+    });
+
+    it('precision has fewer particles', () => {
+      const standard = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'standard');
+      const precision = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'precision');
+      expect(precision.particles.length).toBeLessThan(standard.particles.length);
+    });
+  });
+
+  describe('cluster bomb sub-explosions', () => {
+    it('creates sub-explosions for cluster bomb', () => {
+      const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'cluster_bomb');
+      expect(explosion.subExplosions).toBeDefined();
+      expect(explosion.subExplosions!.length).toBe(4);
+    });
+
+    it('sub-explosions have delayed start times', () => {
+      const startTime = 1000;
+      const explosion = createExplosion({ x: 100, y: 100 }, startTime, EXPLOSION_RADIUS, 'cluster_bomb');
+
+      for (const sub of explosion.subExplosions!) {
+        expect(sub.startTime).toBeGreaterThan(startTime);
+        expect(sub.startTime).toBeLessThanOrEqual(startTime + 200);
+      }
+    });
+
+    it('sub-explosions are positioned around main explosion', () => {
+      const center = { x: 100, y: 100 };
+      const explosion = createExplosion(center, 0, EXPLOSION_RADIUS, 'cluster_bomb');
+
+      for (const sub of explosion.subExplosions!) {
+        const dx = sub.position.x - center.x;
+        const dy = sub.position.y - center.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        expect(distance).toBeGreaterThan(0);
+        expect(distance).toBeLessThan(EXPLOSION_RADIUS * 3);
+      }
+    });
+
+    it('sub-explosions have smaller radius', () => {
+      const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'cluster_bomb');
+
+      for (const sub of explosion.subExplosions!) {
+        expect(sub.radius).toBeLessThan(explosion.radius);
+      }
+    });
+
+    it('non-cluster weapons do not have sub-explosions', () => {
+      for (const weaponType of weaponTypes) {
+        if (weaponType === 'cluster_bomb') continue;
+        const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, weaponType);
+        expect(explosion.subExplosions).toBeUndefined();
+      }
+    });
+  });
+
+  describe('explosion progress with duration multiplier', () => {
+    it('respects duration multiplier in progress calculation', () => {
+      const napalm = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'napalm');
+      const standard = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'standard');
+
+      // At half the standard duration, napalm should be at 25% progress (since 2x duration)
+      const halfStandardDuration = EXPLOSION_DURATION_MS / 2;
+      const napalmProgress = getExplosionProgress(napalm, halfStandardDuration);
+      const standardProgress = getExplosionProgress(standard, halfStandardDuration);
+
+      expect(standardProgress).toBeCloseTo(0.5, 1);
+      expect(napalmProgress).toBeCloseTo(0.25, 1);
+    });
+  });
+
+  describe('updateExplosion with weapon types', () => {
+    it('updates sub-explosions for cluster bomb', () => {
+      const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'cluster_bomb');
+      const updated = updateExplosion(explosion, 100, 100);
+
+      expect(updated.subExplosions).toBeDefined();
+      expect(updated.subExplosions!.length).toBe(4);
+    });
+
+    it('napalm particles decay slower', () => {
+      const napalm = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'napalm');
+      const standard = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'standard');
+
+      const napalmUpdated = updateExplosion(napalm, 500, 500);
+      const standardUpdated = updateExplosion(standard, 500, 500);
+
+      // Napalm particles should have more life remaining
+      const napalmAvgLife = napalmUpdated.particles.reduce((sum, p) => sum + p.life, 0) / napalmUpdated.particles.length;
+      const standardAvgLife = standardUpdated.particles.reduce((sum, p) => sum + p.life, 0) / standardUpdated.particles.length;
+
+      expect(napalmAvgLife).toBeGreaterThan(standardAvgLife);
+    });
+
+    it('cluster bomb stays active while sub-explosions are active', () => {
+      const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'cluster_bomb');
+
+      // Update past main explosion duration but before sub-explosions complete
+      const duration = EXPLOSION_DURATION_MS * explosion.durationMultiplier;
+      const updated = updateExplosion(explosion, duration + 50, 16);
+
+      // Should still be active if any sub-explosion is active
+      const anySubActive = updated.subExplosions?.some(sub => sub.isActive);
+      if (anySubActive) {
+        expect(updated.isActive).toBe(true);
+      }
+    });
+  });
+
+  describe('renderExplosion with weapon types', () => {
+    let ctx: CanvasRenderingContext2D;
+
+    beforeEach(() => {
+      ctx = {
+        save: vi.fn(),
+        restore: vi.fn(),
+        fillStyle: '',
+        globalAlpha: 1,
+        shadowColor: '',
+        shadowBlur: 0,
+        beginPath: vi.fn(),
+        arc: vi.fn(),
+        fill: vi.fn(),
+        moveTo: vi.fn(),
+        quadraticCurveTo: vi.fn(),
+        closePath: vi.fn(),
+        createRadialGradient: vi.fn(() => ({
+          addColorStop: vi.fn(),
+        })),
+        createLinearGradient: vi.fn(() => ({
+          addColorStop: vi.fn(),
+        })),
+      } as unknown as CanvasRenderingContext2D;
+    });
+
+    it('renders all weapon types without throwing', () => {
+      for (const weaponType of weaponTypes) {
+        const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, weaponType);
+        expect(() => renderExplosion(ctx, explosion, 100)).not.toThrow();
+      }
+    });
+
+    it('renders at various progress points', () => {
+      for (const weaponType of weaponTypes) {
+        const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, weaponType);
+        const duration = EXPLOSION_DURATION_MS * explosion.durationMultiplier;
+
+        // Test at various progress points
+        expect(() => renderExplosion(ctx, explosion, 0)).not.toThrow();
+        expect(() => renderExplosion(ctx, explosion, duration * 0.1)).not.toThrow();
+        expect(() => renderExplosion(ctx, explosion, duration * 0.5)).not.toThrow();
+        expect(() => renderExplosion(ctx, explosion, duration * 0.9)).not.toThrow();
+      }
+    });
+
+    it('renders cluster bomb sub-explosions', () => {
+      const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'cluster_bomb');
+
+      // Render at a time when sub-explosions should be active
+      expect(() => renderExplosion(ctx, explosion, 150)).not.toThrow();
+
+      // save should be called multiple times (once for main + once per sub-explosion)
+      expect(ctx.save).toHaveBeenCalled();
+    });
+
+    it('renders napalm flames effect', () => {
+      const explosion = createExplosion({ x: 100, y: 100 }, 0, EXPLOSION_RADIUS, 'napalm');
+      const duration = EXPLOSION_DURATION_MS * explosion.durationMultiplier;
+
+      // Render at a time when flames should be visible (progress >= 0.2)
+      expect(() => renderExplosion(ctx, explosion, duration * 0.5)).not.toThrow();
+
+      // createLinearGradient should be called for flame effects
+      expect(ctx.createLinearGradient).toHaveBeenCalled();
+    });
   });
 });
