@@ -235,7 +235,7 @@ function App() {
       let weaponType: WeaponType = 'standard'
       if (tank.id === 'player') {
         // Player uses their selected weapon
-        weaponType = currentState.playerWeapon as WeaponType
+        weaponType = currentState.selectedWeapon
       } else if (playerTankForAI) {
         // AI selects weapon based on difficulty and target
         weaponType = selectAIWeapon(currentState.aiDifficulty, tank, playerTankForAI)
@@ -289,7 +289,7 @@ function App() {
   }
 
   const handleWeaponConfirm = (weapon: WeaponType) => {
-    actions.setPlayerWeapon(weapon)
+    actions.setSelectedWeapon(weapon)
     actions.setPhase('playing')
   }
 

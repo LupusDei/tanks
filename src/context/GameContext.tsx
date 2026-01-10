@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useState, useCallback } from 'react';
-import { GameState, GameActions, GamePhase, TankState, TerrainData, TankColor, AIDifficulty, TerrainSize, EnemyCount } from '../types/game';
+import { GameState, GameActions, GamePhase, TankState, TerrainData, TankColor, AIDifficulty, TerrainSize, EnemyCount, WeaponType } from '../types/game';
 
 export interface GameContextValue {
   state: GameState;
@@ -19,7 +19,8 @@ const initialState: GameState = {
   aiDifficulty: 'veteran',
   terrainSize: 'medium',
   enemyCount: 1,
-  playerWeapon: 'standard',
+  selectedWeapon: 'standard',
+  weaponAmmo: { standard: Infinity },
 };
 
 interface GameProviderProps {
@@ -133,8 +134,32 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, enemyCount: count }));
   }, []);
 
-  const setPlayerWeapon = useCallback((weapon: string) => {
-    setState((prev) => ({ ...prev, playerWeapon: weapon }));
+  const setSelectedWeapon = useCallback((weapon: WeaponType) => {
+    setState((prev) => ({ ...prev, selectedWeapon: weapon }));
+  }, []);
+
+  const setWeaponAmmo = useCallback((ammo: Partial<Record<WeaponType, number>>) => {
+    setState((prev) => ({ ...prev, weaponAmmo: ammo }));
+  }, []);
+
+  const decrementAmmo = useCallback((weapon: WeaponType) => {
+    setState((prev) => {
+      const currentAmmo = prev.weaponAmmo[weapon];
+      // Standard weapon is infinite, don't decrement
+      if (weapon === 'standard' || currentAmmo === Infinity) {
+        return prev;
+      }
+      if (currentAmmo === undefined || currentAmmo <= 0) {
+        return prev;
+      }
+      return {
+        ...prev,
+        weaponAmmo: {
+          ...prev.weaponAmmo,
+          [weapon]: currentAmmo - 1,
+        },
+      };
+    });
   }, []);
 
   const actions: GameActions = {
@@ -151,7 +176,9 @@ export function GameProvider({ children }: GameProviderProps) {
     setAIDifficulty,
     setTerrainSize,
     setEnemyCount,
-    setPlayerWeapon,
+    setSelectedWeapon,
+    setWeaponAmmo,
+    decrementAmmo,
   };
 
   return (
