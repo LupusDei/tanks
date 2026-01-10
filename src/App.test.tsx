@@ -84,7 +84,7 @@ describe('App', () => {
     expect(screen.queryByTestId('turn-indicator')).not.toBeInTheDocument()
   })
 
-  it('transitions to player name entry screen when start button clicked', () => {
+  it('transitions to player name entry screen when start button clicked (new user)', () => {
     renderWithProvider(<App />)
 
     fireEvent.click(screen.getByTestId('start-button'))
@@ -95,6 +95,28 @@ describe('App', () => {
     expect(screen.queryByTestId('loading-screen')).not.toBeInTheDocument()
     expect(screen.getByTestId('player-name-entry')).toBeInTheDocument()
     expect(screen.getByText('Enter Your Name')).toBeInTheDocument()
+  })
+
+  it('skips name entry and goes directly to config screen for existing user', () => {
+    // Set up existing user in localStorage
+    const existingUser = {
+      profile: { id: 'test-id', username: 'ExistingPlayer', createdAt: Date.now() },
+      stats: { gamesPlayed: 5, gamesWon: 3, gamesLost: 2, totalKills: 10, winRate: 60, balance: 1000 },
+      recentGames: [],
+      weaponInventory: { standard: null }, // null represents Infinity in serialized JSON
+    }
+    localStorageMock.setItem('tanks_players_db', JSON.stringify({ ExistingPlayer: existingUser }))
+    localStorageMock.setItem('tanks_current_player', 'ExistingPlayer')
+
+    renderWithProvider(<App />)
+
+    // Click start button
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Should skip name entry and go directly to config screen
+    expect(screen.queryByTestId('player-name-entry')).not.toBeInTheDocument()
+    expect(screen.getByTestId('game-config-screen')).toBeInTheDocument()
   })
 
   it('transitions to configuration screen after entering player name', () => {

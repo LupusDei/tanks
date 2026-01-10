@@ -274,7 +274,12 @@ function App() {
   }, [allTanksReady])
 
   const handleStartGame = () => {
-    actions.setPhase('playerName')
+    // Skip name entry if user already exists (only show on browser refresh)
+    if (userData) {
+      actions.setPhase('config')
+    } else {
+      actions.setPhase('playerName')
+    }
   }
 
   const handlePlayerNameSubmit = (name: string) => {
