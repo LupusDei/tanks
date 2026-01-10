@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, ENEMY_COUNT_OPTIONS } from '../types/game'
+import { PlayerStatsDisplay } from './PlayerStatsDisplay'
 
 interface GameConfigScreenProps {
   onStartGame: (config: { terrainSize: TerrainSize; enemyCount: EnemyCount; playerColor: TankColor }) => void
@@ -30,6 +31,8 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
   return (
     <div className="game-config-screen" data-testid="game-config-screen">
       <h1 className="game-config-screen__title">Battle Configuration</h1>
+
+      <PlayerStatsDisplay />
 
       <div className="game-config-screen__sections">
         {/* Terrain Size Section */}
