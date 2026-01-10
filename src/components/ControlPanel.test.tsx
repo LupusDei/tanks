@@ -32,38 +32,38 @@ describe('ControlPanel', () => {
     expect(screen.getByText('Power')).toBeInTheDocument()
   })
 
-  it('calls onAngleChange when ArrowUp is pressed', () => {
+  it('calls onAngleChange when ArrowLeft is pressed', () => {
     const onAngleChange = vi.fn()
     render(<ControlPanel {...defaultProps} onAngleChange={onAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
 
     expect(onAngleChange).toHaveBeenCalledWith(46)
   })
 
-  it('calls onAngleChange when ArrowDown is pressed', () => {
+  it('calls onAngleChange when ArrowRight is pressed', () => {
     const onAngleChange = vi.fn()
     render(<ControlPanel {...defaultProps} onAngleChange={onAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
 
     expect(onAngleChange).toHaveBeenCalledWith(44)
   })
 
-  it('calls onPowerChange when ArrowRight is pressed', () => {
+  it('calls onPowerChange when ArrowUp is pressed', () => {
     const onPowerChange = vi.fn()
     render(<ControlPanel {...defaultProps} onPowerChange={onPowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
 
     expect(onPowerChange).toHaveBeenCalledWith(51)
   })
 
-  it('calls onPowerChange when ArrowLeft is pressed', () => {
+  it('calls onPowerChange when ArrowDown is pressed', () => {
     const onPowerChange = vi.fn()
     render(<ControlPanel {...defaultProps} onPowerChange={onPowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
 
     expect(onPowerChange).toHaveBeenCalledWith(49)
   })
@@ -72,7 +72,7 @@ describe('ControlPanel', () => {
     const onAngleChange = vi.fn()
     render(<ControlPanel {...defaultProps} onAngleChange={onAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true }))
 
     expect(onAngleChange).toHaveBeenCalledWith(50)
   })
@@ -81,7 +81,7 @@ describe('ControlPanel', () => {
     const onPowerChange = vi.fn()
     render(<ControlPanel {...defaultProps} onPowerChange={onPowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
 
     expect(onPowerChange).toHaveBeenCalledWith(60)
   })
@@ -90,7 +90,7 @@ describe('ControlPanel', () => {
     const onAngleChange = vi.fn()
     render(<ControlPanel {...defaultProps} angle={118} onAngleChange={onAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true }))
 
     expect(onAngleChange).toHaveBeenCalledWith(120)
   })
@@ -99,7 +99,7 @@ describe('ControlPanel', () => {
     const onAngleChange = vi.fn()
     render(<ControlPanel {...defaultProps} angle={-118} onAngleChange={onAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }))
 
     expect(onAngleChange).toHaveBeenCalledWith(-120)
   })
@@ -108,7 +108,7 @@ describe('ControlPanel', () => {
     const onPowerChange = vi.fn()
     render(<ControlPanel {...defaultProps} power={95} onPowerChange={onPowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
 
     expect(onPowerChange).toHaveBeenCalledWith(100)
   })
@@ -117,30 +117,30 @@ describe('ControlPanel', () => {
     const onPowerChange = vi.fn()
     render(<ControlPanel {...defaultProps} power={5} onPowerChange={onPowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true }))
 
     expect(onPowerChange).toHaveBeenCalledWith(0)
   })
 
-  it('responds to WASD keys for angle', () => {
+  it('responds to AD keys for angle', () => {
     const onAngleChange = vi.fn()
     render(<ControlPanel {...defaultProps} onAngleChange={onAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))
     expect(onAngleChange).toHaveBeenCalledWith(46)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }))
     expect(onAngleChange).toHaveBeenCalledWith(44)
   })
 
-  it('responds to AD keys for power', () => {
+  it('responds to WS keys for power', () => {
     const onPowerChange = vi.fn()
     render(<ControlPanel {...defaultProps} onPowerChange={onPowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }))
     expect(onPowerChange).toHaveBeenCalledWith(51)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }))
     expect(onPowerChange).toHaveBeenCalledWith(49)
   })
 

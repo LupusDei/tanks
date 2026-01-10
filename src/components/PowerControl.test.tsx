@@ -31,38 +31,38 @@ describe('PowerControl', () => {
     expect(screen.getByTestId('power-value')).toHaveTextContent('75%')
   })
 
-  it('calls onPowerChange when ArrowRight is pressed', () => {
+  it('calls onPowerChange when ArrowUp is pressed', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={50} onPowerChange={handlePowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
 
     expect(handlePowerChange).toHaveBeenCalledWith(51)
   })
 
-  it('calls onPowerChange when ArrowLeft is pressed', () => {
+  it('calls onPowerChange when ArrowDown is pressed', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={50} onPowerChange={handlePowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
 
     expect(handlePowerChange).toHaveBeenCalledWith(49)
   })
 
-  it('calls onPowerChange when D is pressed', () => {
+  it('calls onPowerChange when W is pressed', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={50} onPowerChange={handlePowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }))
 
     expect(handlePowerChange).toHaveBeenCalledWith(51)
   })
 
-  it('calls onPowerChange when A is pressed', () => {
+  it('calls onPowerChange when S is pressed', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={50} onPowerChange={handlePowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }))
 
     expect(handlePowerChange).toHaveBeenCalledWith(49)
   })
@@ -71,7 +71,7 @@ describe('PowerControl', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={50} onPowerChange={handlePowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
 
     expect(handlePowerChange).toHaveBeenCalledWith(60)
   })
@@ -80,7 +80,7 @@ describe('PowerControl', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={95} onPowerChange={handlePowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
 
     expect(handlePowerChange).toHaveBeenCalledWith(100)
   })
@@ -89,7 +89,7 @@ describe('PowerControl', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={5} onPowerChange={handlePowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true }))
 
     expect(handlePowerChange).toHaveBeenCalledWith(0)
   })
@@ -105,7 +105,7 @@ describe('PowerControl', () => {
       />
     )
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
 
     expect(handlePowerChange).toHaveBeenCalledWith(30)
   })
@@ -114,7 +114,7 @@ describe('PowerControl', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={50} onPowerChange={handlePowerChange} enabled={false} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
 
     expect(handlePowerChange).not.toHaveBeenCalled()
   })
@@ -123,7 +123,7 @@ describe('PowerControl', () => {
     const handlePowerChange = vi.fn()
     render(<PowerControl power={50} onPowerChange={handlePowerChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
 
