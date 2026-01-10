@@ -278,8 +278,14 @@ p {
   padding: 0.75rem 1rem;
   font-family: monospace;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 1.5rem;
+}
+
+.control-panel__controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
 }
 
 .control-panel__control {

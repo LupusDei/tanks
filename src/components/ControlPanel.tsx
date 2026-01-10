@@ -88,45 +88,47 @@ export function ControlPanel({
 
   return (
     <div className="control-panel" data-testid="control-panel">
-      <div className="control-panel__control control-panel__control--angle">
-        <div className="control-panel__label">Angle</div>
-        <div className="control-panel__display">
-          <div className="control-panel__value" data-testid="angle-value">
-            {Math.abs(angle)}° {angle !== 0 && (angle > 0 ? 'L' : 'R')}
+      <div className="control-panel__controls">
+        <div className="control-panel__control control-panel__control--angle">
+          <div className="control-panel__label">Angle</div>
+          <div className="control-panel__display">
+            <div className="control-panel__value" data-testid="angle-value">
+              {Math.abs(angle)}° {angle !== 0 && (angle > 0 ? 'L' : 'R')}
+            </div>
+            <div className="control-panel__bar control-panel__bar--angle">
+              <div className="control-panel__bar-center" />
+              <div
+                className={`control-panel__bar-fill control-panel__bar-fill--angle control-panel__bar-fill--${angleDirection}`}
+                style={{ width: `${anglePercentage / 2}%` }}
+              />
+            </div>
           </div>
-          <div className="control-panel__bar control-panel__bar--angle">
-            <div className="control-panel__bar-center" />
-            <div
-              className={`control-panel__bar-fill control-panel__bar-fill--angle control-panel__bar-fill--${angleDirection}`}
-              style={{ width: `${anglePercentage / 2}%` }}
-            />
+          <div className="control-panel__keys">
+            <kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd>
           </div>
         </div>
-        <div className="control-panel__keys">
-          <kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd>
-        </div>
-      </div>
 
-      <div className="control-panel__control control-panel__control--power">
-        <div className="control-panel__label control-panel__label--power">Power</div>
-        <div className="control-panel__display">
-          <div className="control-panel__value" data-testid="power-value">
-            {power}%
-          </div>
-          <div className="control-panel__bar">
-            <div
-              className="control-panel__bar-fill control-panel__bar-fill--power"
-              style={{ width: `${powerPercentage}%` }}
-            />
-          </div>
+        <div className="control-panel__hint">
+          <kbd>Shift</kbd> for faster
         </div>
-        <div className="control-panel__keys">
-          <kbd>↑</kbd><kbd>↓</kbd> <kbd>W</kbd><kbd>S</kbd>
-        </div>
-      </div>
 
-      <div className="control-panel__hint">
-        <kbd>Shift</kbd> for faster
+        <div className="control-panel__control control-panel__control--power">
+          <div className="control-panel__label control-panel__label--power">Power</div>
+          <div className="control-panel__display">
+            <div className="control-panel__value" data-testid="power-value">
+              {power}%
+            </div>
+            <div className="control-panel__bar">
+              <div
+                className="control-panel__bar-fill control-panel__bar-fill--power"
+                style={{ width: `${powerPercentage}%` }}
+              />
+            </div>
+          </div>
+          <div className="control-panel__keys">
+            <kbd>↑</kbd><kbd>↓</kbd> <kbd>W</kbd><kbd>S</kbd>
+          </div>
+        </div>
       </div>
 
       <button
