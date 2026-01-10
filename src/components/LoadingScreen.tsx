@@ -35,7 +35,6 @@ export function LoadingScreen({ onStart }: LoadingScreenProps) {
         <MagnetizeButton
           onClick={handleStartClick}
           data-testid="start-button"
-          particleCount={14}
         >
           Start Game
         </MagnetizeButton>
