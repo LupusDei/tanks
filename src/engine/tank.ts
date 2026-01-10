@@ -126,152 +126,63 @@ export function renderTank(
   // Draw dust/dirt particles around tracks
   renderGroundDust(ctx, bodyWidth, bodyHeight, wheelRadius);
 
-  // Draw Panther-style track assembly (extends beyond hull to sprocket and idler)
-  const trackExtension = wheelRadius * 1.5; // Track extends past hull to wheels
+  // Track assembly - positioned BELOW the hull
+  const trackYOffset = bodyHeight / 2 + wheelRadius * 0.5; // Tracks sit below hull
   const trackGradient = ctx.createLinearGradient(
-    -bodyWidth / 2 - trackExtension, bodyHeight / 2 - wheelRadius,
-    -bodyWidth / 2 - trackExtension, bodyHeight / 2 + wheelRadius * 0.6
+    -bodyWidth / 2, trackYOffset - wheelRadius,
+    -bodyWidth / 2, trackYOffset + wheelRadius
   );
   trackGradient.addColorStop(0, '#1a1a1a');
   trackGradient.addColorStop(0.5, '#2a2a2a');
   trackGradient.addColorStop(1, '#1a1a1a');
   ctx.fillStyle = trackGradient;
 
-  // Upper track run (visible above wheels)
+  // Track base (single rounded rectangle for tracks)
   ctx.beginPath();
   ctx.roundRect(
-    -bodyWidth / 2 - trackExtension,
-    bodyHeight / 2 - wheelRadius * 1.1,
-    bodyWidth + trackExtension * 2,
-    wheelRadius * 0.35,
-    2
+    -bodyWidth / 2 - 2,
+    trackYOffset - wheelRadius * 0.7,
+    bodyWidth + 4,
+    wheelRadius * 1.4,
+    3
   );
   ctx.fill();
 
-  // Lower track run (below wheels)
-  ctx.beginPath();
-  ctx.roundRect(
-    -bodyWidth / 2 - trackExtension,
-    bodyHeight / 2 + wheelRadius * 0.55,
-    bodyWidth + trackExtension * 2,
-    wheelRadius * 0.35,
-    2
-  );
-  ctx.fill();
-
-  // Draw track link segments on lower track
+  // Draw track link segments
   ctx.strokeStyle = '#3a3a3a';
   ctx.lineWidth = 1;
-  const trackStart = -bodyWidth / 2 - trackExtension;
-  const trackEnd = bodyWidth / 2 + trackExtension;
-  for (let i = trackStart; i < trackEnd; i += 3) {
+  for (let i = -bodyWidth / 2; i < bodyWidth / 2; i += 4) {
     ctx.beginPath();
-    ctx.moveTo(i, bodyHeight / 2 + wheelRadius * 0.55);
-    ctx.lineTo(i, bodyHeight / 2 + wheelRadius * 0.9);
+    ctx.moveTo(i, trackYOffset - wheelRadius * 0.6);
+    ctx.lineTo(i, trackYOffset + wheelRadius * 0.6);
     ctx.stroke();
   }
 
-  // Track guide teeth (center guides)
-  ctx.fillStyle = '#222';
-  for (let i = trackStart + 2; i < trackEnd; i += 6) {
-    ctx.fillRect(i, bodyHeight / 2 + wheelRadius * 0.6, 2, wheelRadius * 0.15);
-  }
-
-  // Draw Panther-style interleaved road wheels (8 wheels total)
+  // Draw road wheels (6 wheels evenly spaced)
   const wheelColor = '#555';
-  const numWheels = 8;
+  const numWheels = 6;
   const wheelSpacing = (bodyWidth - wheelRadius * 2) / (numWheels - 1);
   const startX = -bodyWidth / 2 + wheelRadius;
 
-  // Draw wheels in two rows (interleaved pattern)
-  // Back row first (slightly higher, partially hidden)
-  for (let i = 0; i < numWheels; i += 2) {
+  for (let i = 0; i < numWheels; i++) {
     const wheelX = startX + i * wheelSpacing;
-    const wheelY = bodyHeight / 2 - wheelRadius * 0.15; // Slightly higher
+    const wheelY = trackYOffset;
 
-    // Wheel rubber tire
-    const wheelGradient = createDomeGradient(ctx, wheelX, wheelY, wheelRadius * 0.85, '#3a3a3a');
+    // Wheel body
+    const wheelGradient = createDomeGradient(ctx, wheelX, wheelY, wheelRadius * 0.85, wheelColor);
     ctx.fillStyle = wheelGradient;
     ctx.beginPath();
-    ctx.arc(wheelX, wheelY, wheelRadius * 0.8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Wheel rim
-    const rimGradient = createDomeGradient(ctx, wheelX, wheelY, wheelRadius * 0.6, wheelColor);
-    ctx.fillStyle = rimGradient;
-    ctx.beginPath();
-    ctx.arc(wheelX, wheelY, wheelRadius * 0.55, 0, Math.PI * 2);
+    ctx.arc(wheelX, wheelY, wheelRadius * 0.75, 0, Math.PI * 2);
     ctx.fill();
 
     // Hub cap
-    ctx.fillStyle = '#444';
+    ctx.fillStyle = '#333';
     ctx.beginPath();
-    ctx.arc(wheelX, wheelY, wheelRadius * 0.2, 0, Math.PI * 2);
+    ctx.arc(wheelX, wheelY, wheelRadius * 0.25, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Front row (slightly lower, overlapping)
-  for (let i = 1; i < numWheels; i += 2) {
-    const wheelX = startX + i * wheelSpacing;
-    const wheelY = bodyHeight / 2 + wheelRadius * 0.1; // Slightly lower
-
-    // Wheel rubber tire
-    const wheelGradient = createDomeGradient(ctx, wheelX, wheelY, wheelRadius * 0.85, '#3a3a3a');
-    ctx.fillStyle = wheelGradient;
-    ctx.beginPath();
-    ctx.arc(wheelX, wheelY, wheelRadius * 0.8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Wheel rim
-    const rimGradient = createDomeGradient(ctx, wheelX, wheelY, wheelRadius * 0.6, wheelColor);
-    ctx.fillStyle = rimGradient;
-    ctx.beginPath();
-    ctx.arc(wheelX, wheelY, wheelRadius * 0.55, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Hub cap
-    ctx.fillStyle = '#444';
-    ctx.beginPath();
-    ctx.arc(wheelX, wheelY, wheelRadius * 0.2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Drive sprocket (front) - larger toothed wheel
-  const sprocketX = -bodyWidth / 2 - wheelRadius * 0.3;
-  const sprocketRadius = wheelRadius * 0.9;
-  ctx.fillStyle = '#444';
-  ctx.beginPath();
-  ctx.arc(sprocketX, bodyHeight / 2, sprocketRadius, 0, Math.PI * 2);
-  ctx.fill();
-  // Sprocket teeth
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i < 8; i++) {
-    const toothAngle = (i / 8) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(
-      sprocketX + Math.cos(toothAngle) * sprocketRadius * 0.7,
-      bodyHeight / 2 + Math.sin(toothAngle) * sprocketRadius * 0.7
-    );
-    ctx.lineTo(
-      sprocketX + Math.cos(toothAngle) * sprocketRadius * 1.1,
-      bodyHeight / 2 + Math.sin(toothAngle) * sprocketRadius * 1.1
-    );
-    ctx.stroke();
-  }
-
-  // Idler wheel (rear) - guides track
-  const idlerX = bodyWidth / 2 + wheelRadius * 0.3;
-  ctx.fillStyle = '#444';
-  ctx.beginPath();
-  ctx.arc(idlerX, bodyHeight / 2, wheelRadius * 0.7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#333';
-  ctx.beginPath();
-  ctx.arc(idlerX, bodyHeight / 2, wheelRadius * 0.25, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Draw Panther-style tank body with sloped armor
+  // Draw Panther-style tank body - rectangular with slight front slope
   const bodyGradient = createMetallicGradient(
     ctx,
     -bodyWidth / 2, -bodyHeight / 2,
@@ -280,53 +191,22 @@ export function renderTank(
   );
   ctx.fillStyle = bodyGradient;
 
-  // Panther-style hull with sloped front and rear armor
-  const slopeAngle = 8; // How much the front/rear slopes inward
+  // Hull shape - mostly rectangular with small angled front
+  const frontSlope = 4; // Small slope on front only
   ctx.beginPath();
-  // Start at front bottom
-  ctx.moveTo(-bodyWidth / 2, bodyHeight / 2);
-  // Sloped front armor (angled upward)
-  ctx.lineTo(-bodyWidth / 2 + slopeAngle, -bodyHeight / 2);
-  // Flat top deck
-  ctx.lineTo(bodyWidth / 2 - slopeAngle, -bodyHeight / 2);
-  // Sloped rear armor
-  ctx.lineTo(bodyWidth / 2, bodyHeight / 2);
-  // Bottom
+  ctx.moveTo(-bodyWidth / 2, bodyHeight / 2);           // Front bottom
+  ctx.lineTo(-bodyWidth / 2 + frontSlope, -bodyHeight / 2); // Front top (slight slope)
+  ctx.lineTo(bodyWidth / 2, -bodyHeight / 2);           // Rear top
+  ctx.lineTo(bodyWidth / 2, bodyHeight / 2);            // Rear bottom
   ctx.closePath();
   ctx.fill();
 
-  // Upper hull superstructure (fighting compartment)
-  const superstructureHeight = bodyHeight * 0.35;
-  const superstructureWidth = bodyWidth * 0.6;
-  const superstructureX = -bodyWidth * 0.1; // Offset toward rear
-  const superGradient = createMetallicGradient(
-    ctx,
-    superstructureX - superstructureWidth / 2, -bodyHeight / 2 - superstructureHeight,
-    superstructureWidth, superstructureHeight,
-    tankColor
-  );
-  ctx.fillStyle = superGradient;
-  ctx.beginPath();
-  // Sloped front of superstructure
-  ctx.moveTo(superstructureX - superstructureWidth / 2, -bodyHeight / 2);
-  ctx.lineTo(superstructureX - superstructureWidth / 2 + 4, -bodyHeight / 2 - superstructureHeight);
-  ctx.lineTo(superstructureX + superstructureWidth / 2 - 2, -bodyHeight / 2 - superstructureHeight);
-  ctx.lineTo(superstructureX + superstructureWidth / 2, -bodyHeight / 2);
-  ctx.closePath();
-  ctx.fill();
-
-  // Body edge highlight (top edge gleam) - follows slope
+  // Body edge highlight (top edge)
   ctx.strokeStyle = lightenColor(tankColor, 0.5);
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(-bodyWidth / 2 + slopeAngle + 2, -bodyHeight / 2 + 1);
-  ctx.lineTo(bodyWidth / 2 - slopeAngle - 2, -bodyHeight / 2 + 1);
-  ctx.stroke();
-
-  // Superstructure top highlight
-  ctx.beginPath();
-  ctx.moveTo(superstructureX - superstructureWidth / 2 + 6, -bodyHeight / 2 - superstructureHeight + 1);
-  ctx.lineTo(superstructureX + superstructureWidth / 2 - 4, -bodyHeight / 2 - superstructureHeight + 1);
+  ctx.moveTo(-bodyWidth / 2 + frontSlope + 2, -bodyHeight / 2 + 1);
+  ctx.lineTo(bodyWidth / 2 - 2, -bodyHeight / 2 + 1);
   ctx.stroke();
 
   // Body bottom edge shadow
@@ -336,43 +216,35 @@ export function renderTank(
   ctx.lineTo(bodyWidth / 2 - 4, bodyHeight / 2 - 1);
   ctx.stroke();
 
-  // Panther-style armor panel lines (horizontal weld lines)
+  // Panel line details
   ctx.strokeStyle = darkenColor(tankColor, 0.4);
   ctx.lineWidth = 0.5;
-  // Horizontal panel line on hull side
+  // Horizontal panel line
   ctx.beginPath();
-  ctx.moveTo(-bodyWidth / 2 + slopeAngle - 2, 0);
-  ctx.lineTo(bodyWidth / 2 - slopeAngle + 2, 0);
+  ctx.moveTo(-bodyWidth / 2 + frontSlope, 0);
+  ctx.lineTo(bodyWidth / 2, 0);
   ctx.stroke();
-
-  // Vertical seam lines
+  // Vertical panel lines
   ctx.beginPath();
   ctx.moveTo(-bodyWidth / 4, -bodyHeight / 2 + 2);
   ctx.lineTo(-bodyWidth / 4, bodyHeight / 2 - 2);
   ctx.stroke();
-
-  // Exhaust pipes on rear (Panther had twin exhausts)
-  ctx.fillStyle = '#333';
   ctx.beginPath();
-  ctx.roundRect(bodyWidth / 2 - 3, -bodyHeight / 4, 4, 3, 1);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.roundRect(bodyWidth / 2 - 3, bodyHeight / 4 - 3, 4, 3, 1);
-  ctx.fill();
+  ctx.moveTo(bodyWidth / 4, -bodyHeight / 2 + 2);
+  ctx.lineTo(bodyWidth / 4, bodyHeight / 2 - 2);
+  ctx.stroke();
 
-  // Rivet/bolt details along armor seams
+  // Rivet details
   ctx.fillStyle = darkenColor(tankColor, 0.3);
   const rivetPositions: Array<[number, number]> = [
-    [-bodyWidth / 2 + slopeAngle, -bodyHeight / 2 + 3],
-    [bodyWidth / 2 - slopeAngle, -bodyHeight / 2 + 3],
-    [-bodyWidth / 2 + 3, bodyHeight / 2 - 3],
-    [bodyWidth / 2 - 3, bodyHeight / 2 - 3],
-    [superstructureX - superstructureWidth / 2 + 6, -bodyHeight / 2 - superstructureHeight + 3],
-    [superstructureX + superstructureWidth / 2 - 4, -bodyHeight / 2 - superstructureHeight + 3],
+    [-bodyWidth / 2 + frontSlope + 2, -bodyHeight / 2 + 3],
+    [bodyWidth / 2 - 4, -bodyHeight / 2 + 3],
+    [-bodyWidth / 2 + 4, bodyHeight / 2 - 3],
+    [bodyWidth / 2 - 4, bodyHeight / 2 - 3],
   ];
   for (const [rx, ry] of rivetPositions) {
     ctx.beginPath();
-    ctx.arc(rx, ry, 1.2, 0, Math.PI * 2);
+    ctx.arc(rx, ry, 1.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -384,73 +256,51 @@ export function renderTank(
     renderStars(ctx, starCount);
   }
 
-  // Panther turret position - offset toward rear of hull
-  const turretOffsetX = bodyWidth * 0.08; // Slight offset towards rear (positive X is rear)
-  const turretY = -bodyHeight / 2 - superstructureHeight;
+  // Turret - CENTERED on tank
+  const turretY = -bodyHeight / 4;
 
-  // Draw turret barrel FIRST (behind turret body)
+  // Draw turret barrel FIRST (behind dome)
   ctx.save();
-  // Move to turret center before rotating
-  ctx.translate(turretOffsetX, turretY);
+  ctx.translate(0, turretY); // Centered
   // Angle is measured from vertical: 0 = straight up, positive = left, negative = right
-  // Range: -120 to +120 degrees
-  // Convert to canvas rotation: add 90° to shift from vertical to horizontal reference
   const turretAngle = -(90 + angle) * (Math.PI / 180);
   ctx.rotate(turretAngle);
 
-  // Draw impressive cannon with detailed barrel
+  // Draw cannon
   renderCannon(ctx, turretLength, turretWidth, darkerColor);
 
   ctx.restore();
 
-  // Draw Panther-style angular turret (hexagonal shape)
-  const turretWidth2 = bodyWidth * 0.32;
-  const turretHeight = bodyHeight * 0.45;
-  const turretGradient = createMetallicGradient(
-    ctx,
-    turretOffsetX - turretWidth2 / 2, turretY - turretHeight / 2,
-    turretWidth2, turretHeight,
-    darkerColor
-  );
-  ctx.fillStyle = turretGradient;
-
-  // Panther turret - angular hexagonal shape with sloped front
+  // Draw turret dome - CENTERED
+  const domeRadius = bodyWidth / 4;
+  const domeGradient = createDomeGradient(ctx, 0, turretY, domeRadius, darkerColor);
+  ctx.fillStyle = domeGradient;
   ctx.beginPath();
-  // Start at front-bottom of turret
-  ctx.moveTo(turretOffsetX - turretWidth2 / 2, turretY);
-  // Sloped front face
-  ctx.lineTo(turretOffsetX - turretWidth2 / 2 + 3, turretY - turretHeight);
-  // Top face
-  ctx.lineTo(turretOffsetX + turretWidth2 / 2 - 2, turretY - turretHeight);
-  // Sloped rear face
-  ctx.lineTo(turretOffsetX + turretWidth2 / 2, turretY);
-  ctx.closePath();
+  ctx.arc(0, turretY, domeRadius, Math.PI, 0);
   ctx.fill();
 
-  // Turret top highlight
-  ctx.strokeStyle = lightenColor(darkerColor, 0.4);
+  // Dome rim highlight
+  ctx.strokeStyle = lightenColor(darkerColor, 0.3);
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(turretOffsetX - turretWidth2 / 2 + 4, turretY - turretHeight + 1);
-  ctx.lineTo(turretOffsetX + turretWidth2 / 2 - 3, turretY - turretHeight + 1);
+  ctx.arc(0, turretY, domeRadius - 1, Math.PI + 0.2, -0.2);
   ctx.stroke();
 
-  // Commander's cupola (small dome on top)
-  const cupolaRadius = 4;
-  const cupolaX = turretOffsetX + turretWidth2 * 0.2;
-  const cupolaY = turretY - turretHeight;
-  const cupolaGradient = createDomeGradient(ctx, cupolaX, cupolaY, cupolaRadius, darkerColor);
+  // Commander's cupola (small dome on top, centered)
+  const cupolaRadius = 3;
+  const cupolaY = turretY - domeRadius + 2;
+  const cupolaGradient = createDomeGradient(ctx, 0, cupolaY, cupolaRadius, darkerColor);
   ctx.fillStyle = cupolaGradient;
   ctx.beginPath();
-  ctx.arc(cupolaX, cupolaY, cupolaRadius, Math.PI, 0);
+  ctx.arc(0, cupolaY, cupolaRadius, Math.PI, 0);
   ctx.fill();
 
-  // Draw health bar if not at full health (positioned above cupola)
+  // Draw health bar if not at full health (positioned above tank)
   if (health < 100) {
     const healthBarWidth = bodyWidth;
     const healthBarHeight = 4;
-    // Position above the cupola (turret + cupola + padding)
-    const healthBarY = turretY - turretHeight - cupolaRadius - 8;
+    // Position above the dome
+    const healthBarY = turretY - domeRadius - 8;
 
     // Background
     ctx.fillStyle = '#333';
