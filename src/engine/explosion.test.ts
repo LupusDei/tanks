@@ -9,8 +9,10 @@ import {
   renderExplosion,
   isPointInExplosion,
   getDistanceToExplosion,
+  checkTankHit,
   type ExplosionState,
 } from './explosion';
+import type { TankState } from '../types/game';
 
 describe('EXPLOSION_RADIUS constant', () => {
   it('equals 20 pixels (50% of tank width)', () => {
@@ -296,5 +298,97 @@ describe('getDistanceToExplosion', () => {
 
     // 3-4-5 triangle: distance should be 5
     expect(getDistanceToExplosion(explosion, { x: 103, y: 104 })).toBe(5);
+  });
+});
+
+describe('checkTankHit', () => {
+  // Canvas height for coordinate conversion
+  const CANVAS_HEIGHT = 600;
+
+  // Helper to create a tank at a specific world position
+  function createTank(worldX: number, worldY: number): TankState {
+    return {
+      id: 'test-tank',
+      position: { x: worldX, y: worldY },
+      health: 100,
+      angle: 0,
+      power: 50,
+      color: 'red',
+      isActive: true,
+    };
+  }
+
+  it('returns true when explosion is at tank center', () => {
+    // Tank at world position (400, 100)
+    const tank = createTank(400, 100);
+    // Tank screen Y = 600 - 100 = 500
+    // Explosion at same screen position
+    const explosionScreenPos = { x: 400, y: 500 };
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('returns true when explosion touches tank edge', () => {
+    const tank = createTank(400, 100);
+    // Tank screen Y = 500, extends from 490 (top) to 516 (bottom)
+    // Tank extends from 380 (left) to 420 (right)
+    // Explosion just touching right edge (radius 20)
+    const explosionScreenPos = { x: 440, y: 500 }; // 20 pixels right of tank edge
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('returns false when explosion is far from tank', () => {
+    const tank = createTank(400, 100);
+    // Explosion far away
+    const explosionScreenPos = { x: 100, y: 100 };
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(false);
+  });
+
+  it('returns false when explosion is just outside tank hitbox', () => {
+    const tank = createTank(400, 100);
+    // Tank right edge at 420 (400 + 20)
+    // Explosion at 441 is 21 pixels from tank edge, just outside radius 20
+    const explosionScreenPos = { x: 441, y: 500 };
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(false);
+  });
+
+  it('detects hit on tank top (screen coordinates)', () => {
+    const tank = createTank(400, 100);
+    // Tank screen Y = 500
+    // Tank top at screenY - bodyHeight/2 = 500 - 10 = 490
+    // Explosion at y=470 is 20 pixels above tank top (exactly at radius)
+    const explosionScreenPos = { x: 400, y: 470 };
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('detects hit on tank bottom with wheels', () => {
+    const tank = createTank(400, 100);
+    // Tank screen Y = 500
+    // Tank bottom at screenY + bodyHeight/2 + wheelRadius = 500 + 10 + 6 = 516
+    // Explosion at y=536 is 20 pixels below tank bottom (exactly at radius)
+    const explosionScreenPos = { x: 400, y: 536 };
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('handles diagonal hit detection correctly', () => {
+    const tank = createTank(400, 100);
+    // Tank corner at (420, 516) in screen coords
+    // Diagonal from corner at distance ~14.14 should hit (within radius 20)
+    const explosionScreenPos = { x: 430, y: 526 }; // ~14.14 from corner
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(true);
+  });
+
+  it('handles diagonal miss correctly', () => {
+    const tank = createTank(400, 100);
+    // Diagonal from corner at distance > 20 should miss
+    const explosionScreenPos = { x: 445, y: 541 }; // ~35.36 from corner
+
+    expect(checkTankHit(explosionScreenPos, tank, CANVAS_HEIGHT)).toBe(false);
   });
 });

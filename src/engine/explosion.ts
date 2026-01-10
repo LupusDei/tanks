@@ -1,4 +1,4 @@
-import type { Position } from '../types/game';
+import type { Position, TankState } from '../types/game';
 
 /**
  * Explosion radius in pixels.
@@ -266,4 +266,54 @@ export function getDistanceToExplosion(explosion: ExplosionState, point: Positio
   const dx = point.x - explosion.position.x;
   const dy = point.y - explosion.position.y;
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * Tank dimensions for hit detection (must match tank.ts).
+ */
+const TANK_BODY_WIDTH = 40;
+const TANK_BODY_HEIGHT = 20;
+const TANK_WHEEL_RADIUS = 6;
+
+/**
+ * Check if an explosion hits a tank using circle-rectangle collision.
+ * Explosion position is in screen coordinates, tank position is in world coordinates.
+ *
+ * @param explosionScreenPos - Explosion position in screen coordinates
+ * @param tank - Tank state with position in world coordinates
+ * @param canvasHeight - Canvas height for coordinate conversion
+ * @returns true if the explosion overlaps with the tank hitbox
+ */
+export function checkTankHit(
+  explosionScreenPos: Position,
+  tank: TankState,
+  canvasHeight: number
+): boolean {
+  // Convert tank position from world to screen coordinates
+  const tankScreenX = tank.position.x;
+  const tankScreenY = canvasHeight - tank.position.y;
+
+  // Tank hitbox rectangle bounds (in screen coordinates)
+  // The tank extends from body center down to wheels
+  const halfWidth = TANK_BODY_WIDTH / 2;
+  const topOffset = TANK_BODY_HEIGHT / 2; // Body extends up from center
+  const bottomOffset = TANK_BODY_HEIGHT / 2 + TANK_WHEEL_RADIUS; // Body + wheels extend down
+
+  const rectLeft = tankScreenX - halfWidth;
+  const rectRight = tankScreenX + halfWidth;
+  const rectTop = tankScreenY - topOffset;
+  const rectBottom = tankScreenY + bottomOffset;
+
+  // Circle-rectangle collision detection
+  // Find the closest point on the rectangle to the circle center
+  const closestX = Math.max(rectLeft, Math.min(explosionScreenPos.x, rectRight));
+  const closestY = Math.max(rectTop, Math.min(explosionScreenPos.y, rectBottom));
+
+  // Calculate distance from circle center to closest point
+  const dx = explosionScreenPos.x - closestX;
+  const dy = explosionScreenPos.y - closestY;
+  const distanceSquared = dx * dx + dy * dy;
+
+  // Check if distance is less than or equal to explosion radius
+  return distanceSquared <= EXPLOSION_RADIUS * EXPLOSION_RADIUS;
 }
