@@ -24,8 +24,8 @@ interface Particle {
 // Button dimensions for border calculations
 const BUTTON_HALF_WIDTH = 110
 const BUTTON_HALF_HEIGHT = 32
-const MIN_BUFFER = 11 // Minimum distance outside button edge when orbiting (+20%)
-const HOVER_OUTSET = 3 // Distance outside button edge when hovering (-20%)
+const MIN_BUFFER = 11 // Minimum distance outside button edge when orbiting
+const HOVER_INSET = 8 // Distance inside button edge when hovering
 
 // Get distance from center to button edge at a given angle
 function getEdgeDistance(angleDeg: number): number {
@@ -45,10 +45,10 @@ function getEdgeDistance(angleDeg: number): number {
   }
 }
 
-// Get point just outside button border for hover state
+// Get point just inside button border for hover state
 function getBorderPoint(angleDeg: number): { x: number; y: number } {
   const angleRad = (angleDeg * Math.PI) / 180
-  const distance = getEdgeDistance(angleDeg) + HOVER_OUTSET
+  const distance = getEdgeDistance(angleDeg) - HOVER_INSET
   return {
     x: Math.cos(angleRad) * distance,
     y: Math.sin(angleRad) * distance,
@@ -89,7 +89,7 @@ export function MagnetizeButton({
       startAngle: (i / particleCount) * 360 + Math.random() * 15,
       wobbleAmount: 3 + Math.random() * 6, // Smaller wobble (3-9px)
       wobbleSpeed: 0.2 + Math.random() * 0.3,
-      size: 1.5 + Math.random() * 1.5, // Tiny particles (1.5-3px, -50%)
+      size: 0.75 + Math.random() * 0.75, // Tiny particles (0.75-1.5px)
       hue: 120 + Math.random() * 60,
       glowIntensity: 0.5 + Math.random() * 0.5,
     }))
@@ -137,7 +137,7 @@ export function MagnetizeButton({
               borderRadius: '50%',
               pointerEvents: 'none',
               transform: `translate(${x - particle.size/2}px, ${y - particle.size/2}px) scale(${scale})`,
-              transition: isHovering ? 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
+              transition: isHovering ? 'transform 0.8s ease-in-out' : 'none',
               background: `radial-gradient(circle at 30% 30%, hsl(${particle.hue}, 100%, 85%), hsl(${particle.hue}, 100%, 55%))`,
               boxShadow: `0 0 ${6 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 60%, 0.9), 0 0 ${10 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 50%, 0.5)`,
             }}
