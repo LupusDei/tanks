@@ -1,7 +1,7 @@
-import type { WeaponType } from '../engine/weapons';
+import type { WeaponType, DestructionCategory } from '../engine/weapons';
 
-// Re-export WeaponType for convenience
-export type { WeaponType };
+// Re-export WeaponType and DestructionCategory for convenience
+export type { WeaponType, DestructionCategory };
 
 export type GamePhase = 'loading' | 'playerName' | 'config' | 'weaponShop' | 'playing' | 'gameover';
 
@@ -68,6 +68,8 @@ export interface TankState {
   queuedShot: QueuedShot | null;
   /** Whether this tank has locked in their shot and is ready to fire */
   isReady: boolean;
+  /** Weapon type that killed this tank (set when health reaches 0) */
+  killedByWeapon: WeaponType | null;
 }
 
 export interface TerrainData {
@@ -100,7 +102,7 @@ export interface GameActions {
   incrementTurn: () => void;
   updateTank: (tankId: string, updates: Partial<TankState>) => void;
   setTerrain: (terrain: TerrainData) => void;
-  damageTank: (tankId: string, damage: number) => void;
+  damageTank: (tankId: string, damage: number, weaponType?: WeaponType) => void;
   setWinner: (tankId: string) => void;
   resetGame: () => void;
   setPlayerColor: (color: TankColor) => void;

@@ -406,6 +406,7 @@ export function createInitialTanks(
     isActive: true,
     queuedShot: null,
     isReady: false,
+    killedByWeapon: null,
   });
 
   // Get colors for enemies
@@ -440,6 +441,7 @@ export function createInitialTanks(
       isActive: false,
       queuedShot: null,
       isReady: false,
+      killedByWeapon: null,
     });
   }
 

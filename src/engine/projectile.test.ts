@@ -30,6 +30,7 @@ const createMockTank = (overrides: Partial<TankState> = {}): TankState => ({
   isActive: true,
   queuedShot: null,
   isReady: false,
+  killedByWeapon: null,
   ...overrides,
 });
 

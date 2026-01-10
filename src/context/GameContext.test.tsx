@@ -53,6 +53,7 @@ describe('GameContext', () => {
       isActive: true,
       queuedShot: null,
       isReady: false,
+      killedByWeapon: null,
     };
 
     // Initially there are no tanks
@@ -83,6 +84,7 @@ describe('GameContext', () => {
       isActive: true,
       queuedShot: null,
       isReady: false,
+      killedByWeapon: null,
     };
 
     const tank2 = {
@@ -95,6 +97,7 @@ describe('GameContext', () => {
       isActive: true,
       queuedShot: null,
       isReady: false,
+      killedByWeapon: null,
     };
 
     act(() => {
@@ -107,6 +110,95 @@ describe('GameContext', () => {
 
     expect(result.current.state.phase).toBe('gameover');
     expect(result.current.state.winner).toBe('tank2');
+  });
+
+  it('tracks killedByWeapon when tank is destroyed', () => {
+    const { result } = renderHook(() => useGame(), {
+      wrapper: GameProvider,
+    });
+
+    const tank1 = {
+      id: 'tank1',
+      position: { x: 100, y: 200 },
+      health: 100,
+      angle: 45,
+      power: 50,
+      color: '#ff0000',
+      isActive: true,
+      queuedShot: null,
+      isReady: false,
+      killedByWeapon: null,
+    };
+
+    const tank2 = {
+      id: 'tank2',
+      position: { x: 300, y: 200 },
+      health: 100,
+      angle: 45,
+      power: 50,
+      color: '#0000ff',
+      isActive: true,
+      queuedShot: null,
+      isReady: false,
+      killedByWeapon: null,
+    };
+
+    act(() => {
+      result.current.actions.initializeTanks([tank1, tank2]);
+    });
+
+    // Damage with napalm weapon (should track killing weapon)
+    act(() => {
+      result.current.actions.damageTank('tank1', 100, 'napalm');
+    });
+
+    const killedTank = result.current.state.tanks.find((t) => t.id === 'tank1');
+    expect(killedTank?.killedByWeapon).toBe('napalm');
+  });
+
+  it('does not set killedByWeapon for non-lethal damage', () => {
+    const { result } = renderHook(() => useGame(), {
+      wrapper: GameProvider,
+    });
+
+    const tank1 = {
+      id: 'tank1',
+      position: { x: 100, y: 200 },
+      health: 100,
+      angle: 45,
+      power: 50,
+      color: '#ff0000',
+      isActive: true,
+      queuedShot: null,
+      isReady: false,
+      killedByWeapon: null,
+    };
+
+    const tank2 = {
+      id: 'tank2',
+      position: { x: 300, y: 200 },
+      health: 100,
+      angle: 45,
+      power: 50,
+      color: '#0000ff',
+      isActive: true,
+      queuedShot: null,
+      isReady: false,
+      killedByWeapon: null,
+    };
+
+    act(() => {
+      result.current.actions.initializeTanks([tank1, tank2]);
+    });
+
+    // Non-lethal damage with heavy artillery
+    act(() => {
+      result.current.actions.damageTank('tank1', 50, 'heavy_artillery');
+    });
+
+    const damagedTank = result.current.state.tanks.find((t) => t.id === 'tank1');
+    expect(damagedTank?.health).toBe(50);
+    expect(damagedTank?.killedByWeapon).toBeNull();
   });
 
   it('advances to next turn', () => {
@@ -124,6 +216,7 @@ describe('GameContext', () => {
       isActive: true,
       queuedShot: null,
       isReady: false,
+      killedByWeapon: null,
     };
 
     const tank2 = {
@@ -136,6 +229,7 @@ describe('GameContext', () => {
       isActive: true,
       queuedShot: null,
       isReady: false,
+      killedByWeapon: null,
     };
 
     act(() => {
