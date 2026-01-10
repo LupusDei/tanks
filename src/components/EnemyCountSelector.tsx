@@ -5,6 +5,36 @@ interface EnemyCountSelectorProps {
 }
 
 export function EnemyCountSelector({ onCountSelect }: EnemyCountSelectorProps) {
+  const renderTankIcons = (count: number) => {
+    if (count <= 5) {
+      return (
+        <div className="enemy-count-selector__preview-row">
+          {Array.from({ length: count }, (_, i) => (
+            <div key={i} className="enemy-count-selector__tank-icon" />
+          ))}
+        </div>
+      )
+    }
+
+    // For counts > 5, split into 2 rows
+    const topRow = Math.ceil(count / 2)
+    const bottomRow = count - topRow
+    return (
+      <>
+        <div className="enemy-count-selector__preview-row">
+          {Array.from({ length: topRow }, (_, i) => (
+            <div key={`top-${i}`} className="enemy-count-selector__tank-icon" />
+          ))}
+        </div>
+        <div className="enemy-count-selector__preview-row">
+          {Array.from({ length: bottomRow }, (_, i) => (
+            <div key={`bottom-${i}`} className="enemy-count-selector__tank-icon" />
+          ))}
+        </div>
+      </>
+    )
+  }
+
   return (
     <div className="enemy-count-selector" data-testid="enemy-count-selector">
       <h1 className="enemy-count-selector__title">Select Enemy Count</h1>
@@ -18,9 +48,7 @@ export function EnemyCountSelector({ onCountSelect }: EnemyCountSelectorProps) {
             aria-label={`Select ${count} ${count === 1 ? 'enemy' : 'enemies'}`}
           >
             <div className="enemy-count-selector__preview">
-              {Array.from({ length: count }, (_, i) => (
-                <div key={i} className="enemy-count-selector__tank-icon" />
-              ))}
+              {renderTankIcons(count)}
             </div>
             <span className="enemy-count-selector__label">
               {count} {count === 1 ? 'Enemy' : 'Enemies'}
