@@ -46,7 +46,8 @@
       "Bash(bd version:*)",
       "Bash(bd daemon status:*)",
       "Bash(git rebase:*)",
-      "Bash(bd dep remove:*)"
+      "Bash(bd dep remove:*)",
+      "Bash(npx vite build)"
     ]
   }
 }

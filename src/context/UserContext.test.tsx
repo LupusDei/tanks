@@ -48,7 +48,7 @@ describe('UserContext', () => {
     consoleSpy.mockRestore();
   });
 
-  it('creates a new user', () => {
+  it('creates a new user with starting balance', () => {
     const { result } = renderHook(() => useUser(), {
       wrapper: UserProvider,
     });
@@ -66,6 +66,7 @@ describe('UserContext', () => {
       gamesLost: 0,
       totalKills: 0,
       winRate: 0,
+      balance: 500, // STARTING_MONEY
     });
   });
 

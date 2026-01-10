@@ -7,6 +7,7 @@ import type {
   AIDifficulty,
   TankColor,
 } from '../types/game';
+import { STARTING_MONEY, calculateGameEarnings } from '../engine/weapons';
 
 const STORAGE_KEY = 'tanks_user_data';
 const MAX_RECENT_GAMES = 50;
@@ -22,6 +23,7 @@ function createDefaultStats(): UserStats {
     gamesLost: 0,
     totalKills: 0,
     winRate: 0,
+    balance: STARTING_MONEY,
   };
 }
 
@@ -89,6 +91,18 @@ export function recordGameEnd(params: GameEndParams): UserData | null {
   const userData = loadUserData();
   if (!userData) return null;
 
+  // Migrate balance if missing (for existing users)
+  if (userData.stats.balance === undefined) {
+    userData.stats.balance = STARTING_MONEY;
+  }
+
+  // Calculate money earned from this game
+  const moneyEarned = calculateGameEarnings(
+    params.isVictory,
+    params.enemiesKilled,
+    params.aiDifficulty
+  );
+
   const gameRecord: GameRecord = {
     id: generateId(),
     playedAt: Date.now(),
@@ -99,6 +113,7 @@ export function recordGameEnd(params: GameEndParams): UserData | null {
     aiDifficulty: params.aiDifficulty,
     turnsPlayed: params.turnsPlayed,
     playerColor: params.playerColor,
+    moneyEarned,
   };
 
   // Update stats
@@ -113,6 +128,7 @@ export function recordGameEnd(params: GameEndParams): UserData | null {
     userData.stats.gamesWon,
     userData.stats.gamesPlayed
   );
+  userData.stats.balance += moneyEarned;
 
   // Add to recent games (keep last N games)
   userData.recentGames.unshift(gameRecord);
@@ -134,4 +150,60 @@ export function clearUserData(): void {
 
 export function hasExistingUser(): boolean {
   return loadUserData() !== null;
+}
+
+/**
+ * Get the current user balance, with migration for existing users.
+ */
+export function getUserBalance(): number {
+  const userData = loadUserData();
+  if (!userData) return 0;
+
+  // Migrate balance if missing (for existing users)
+  if (userData.stats.balance === undefined) {
+    userData.stats.balance = STARTING_MONEY;
+    saveUserData(userData);
+  }
+
+  return userData.stats.balance;
+}
+
+/**
+ * Spend money from the user's balance.
+ * Returns the new balance, or null if insufficient funds or no user.
+ */
+export function spendMoney(amount: number): number | null {
+  const userData = loadUserData();
+  if (!userData) return null;
+
+  // Migrate balance if missing (for existing users)
+  if (userData.stats.balance === undefined) {
+    userData.stats.balance = STARTING_MONEY;
+  }
+
+  if (userData.stats.balance < amount) {
+    return null; // Insufficient funds
+  }
+
+  userData.stats.balance -= amount;
+  saveUserData(userData);
+  return userData.stats.balance;
+}
+
+/**
+ * Add money to the user's balance (e.g., for bonuses or refunds).
+ * Returns the new balance, or null if no user.
+ */
+export function addMoney(amount: number): number | null {
+  const userData = loadUserData();
+  if (!userData) return null;
+
+  // Migrate balance if missing (for existing users)
+  if (userData.stats.balance === undefined) {
+    userData.stats.balance = STARTING_MONEY;
+  }
+
+  userData.stats.balance += amount;
+  saveUserData(userData);
+  return userData.stats.balance;
 }
