@@ -9,13 +9,118 @@ interface WeaponSelectionPanelProps {
   enabled?: boolean
 }
 
-/** Short abbreviations for weapon names */
-const WEAPON_ABBREVS: Record<WeaponType, string> = {
-  standard: 'STD',
-  heavy_artillery: 'HVY',
-  precision: 'PRC',
-  cluster_bomb: 'CLU',
-  napalm: 'NAP',
+/** Projectile icon component - renders SVG representation of each weapon's projectile */
+function ProjectileIcon({ weaponType }: { weaponType: WeaponType }) {
+  const size = 24
+  const cx = size / 2
+  const cy = size / 2
+
+  switch (weaponType) {
+    case 'standard':
+      // Yellow circle with white glow
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-std" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <circle cx={cx} cy={cy} r={6} fill="#ffff00" filter="url(#glow-std)" />
+          <circle cx={cx} cy={cy} r={3} fill="#ffffff" />
+        </svg>
+      )
+
+    case 'heavy_artillery':
+      // Large dark oval with red glow
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-hvy" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feFlood floodColor="#ff3300" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <ellipse cx={cx} cy={cy} rx={5} ry={8} fill="#2a2a2a" filter="url(#glow-hvy)" />
+          <ellipse cx={cx - 1} cy={cy - 2} rx={2} ry={3} fill="#444444" />
+        </svg>
+      )
+
+    case 'precision':
+      // Cyan pointed projectile
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-prc" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feFlood floodColor="#66ffff" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <polygon points={`${cx},${cy - 8} ${cx + 4},${cy + 5} ${cx - 4},${cy + 5}`} fill="#00ddff" filter="url(#glow-prc)" />
+          <circle cx={cx} cy={cy} r={2} fill="#ffffff" />
+        </svg>
+      )
+
+    case 'cluster_bomb':
+      // Orange sphere with smaller spheres
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-clu" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feFlood floodColor="#ff9933" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <circle cx={cx} cy={cy} r={5} fill="#cc6600" filter="url(#glow-clu)" />
+          <circle cx={cx - 3} cy={cy - 3} r={2} fill="#553300" />
+          <circle cx={cx + 3} cy={cy - 2} r={2} fill="#553300" />
+          <circle cx={cx} cy={cy + 3} r={2} fill="#553300" />
+        </svg>
+      )
+
+    case 'napalm':
+      // Orange/red flame-like
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-nap" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feFlood floodColor="#ffaa00" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <ellipse cx={cx} cy={cy} rx={5} ry={6} fill="#ff4400" filter="url(#glow-nap)" />
+          <ellipse cx={cx - 2} cy={cy - 4} rx={2} ry={3} fill="#ffcc00" />
+          <ellipse cx={cx + 2} cy={cy - 3} rx={2} ry={3} fill="#ff8800" />
+          <ellipse cx={cx} cy={cy + 2} rx={2} ry={2} fill="#ff6600" />
+        </svg>
+      )
+
+    default:
+      return null
+  }
 }
 
 export function WeaponSelectionPanel({
@@ -101,11 +206,11 @@ export function WeaponSelectionPanel({
               <span className="weapon-selection-panel__slot-number">
                 {slot.slotNumber}
               </span>
-              <span className="weapon-selection-panel__slot-abbrev">
-                {WEAPON_ABBREVS[slot.weapon]}
-              </span>
-              <span className="weapon-selection-panel__slot-ammo">
+              <span className="weapon-selection-panel__slot-ammo-badge">
                 {ammoDisplay}
+              </span>
+              <span className="weapon-selection-panel__slot-icon">
+                <ProjectileIcon weaponType={slot.weapon} />
               </span>
               <span className="weapon-selection-panel__slot-name">
                 {weapon.name}
