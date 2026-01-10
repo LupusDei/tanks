@@ -14,6 +14,7 @@ import {
   WEAPON_NAPALM,
   WEAPON_EMP,
   WEAPON_BOUNCING_BETTY,
+  WEAPON_BUNKER_BUSTER,
   WEAPONS,
   WEAPON_TYPES,
   // Utility functions
@@ -91,6 +92,7 @@ describe('Weapon configurations', () => {
       WEAPON_NAPALM,
       WEAPON_EMP,
       WEAPON_BOUNCING_BETTY,
+      WEAPON_BUNKER_BUSTER,
     ];
     for (const weapon of otherWeapons) {
       expect(weapon.damage).toBeLessThan(100);
@@ -132,6 +134,12 @@ describe('Weapon configurations', () => {
     expect(WEAPON_BOUNCING_BETTY.maxBounces).toBe(2);
   });
 
+  it('WEAPON_BUNKER_BUSTER creates craters', () => {
+    expect(WEAPON_BUNKER_BUSTER.damage).toBeLessThan(100);
+    expect(WEAPON_BUNKER_BUSTER.cost).toBeGreaterThan(0);
+    expect(WEAPON_BUNKER_BUSTER.craterRadius).toBe(40);
+  });
+
   it('all weapons have required properties', () => {
     const allWeapons = [
       WEAPON_STANDARD,
@@ -141,6 +149,7 @@ describe('Weapon configurations', () => {
       WEAPON_NAPALM,
       WEAPON_EMP,
       WEAPON_BOUNCING_BETTY,
+      WEAPON_BUNKER_BUSTER,
     ];
 
     for (const weapon of allWeapons) {
@@ -160,7 +169,7 @@ describe('Weapon configurations', () => {
 
 describe('WEAPONS registry', () => {
   it('contains all weapon types', () => {
-    expect(Object.keys(WEAPONS)).toHaveLength(7);
+    expect(Object.keys(WEAPONS)).toHaveLength(8);
     expect(WEAPONS).toHaveProperty('standard');
     expect(WEAPONS).toHaveProperty('heavy_artillery');
     expect(WEAPONS).toHaveProperty('precision');
@@ -168,6 +177,7 @@ describe('WEAPONS registry', () => {
     expect(WEAPONS).toHaveProperty('napalm');
     expect(WEAPONS).toHaveProperty('emp');
     expect(WEAPONS).toHaveProperty('bouncing_betty');
+    expect(WEAPONS).toHaveProperty('bunker_buster');
   });
 
   it('maps to correct weapon configs', () => {
@@ -178,12 +188,13 @@ describe('WEAPONS registry', () => {
     expect(WEAPONS['napalm']).toBe(WEAPON_NAPALM);
     expect(WEAPONS['emp']).toBe(WEAPON_EMP);
     expect(WEAPONS['bouncing_betty']).toBe(WEAPON_BOUNCING_BETTY);
+    expect(WEAPONS['bunker_buster']).toBe(WEAPON_BUNKER_BUSTER);
   });
 });
 
 describe('WEAPON_TYPES array', () => {
   it('contains all weapon types in order', () => {
-    expect(WEAPON_TYPES).toHaveLength(7);
+    expect(WEAPON_TYPES).toHaveLength(8);
     expect(WEAPON_TYPES[0]).toBe('standard');
     expect(WEAPON_TYPES).toContain('heavy_artillery');
     expect(WEAPON_TYPES).toContain('precision');
@@ -191,6 +202,7 @@ describe('WEAPON_TYPES array', () => {
     expect(WEAPON_TYPES).toContain('napalm');
     expect(WEAPON_TYPES).toContain('emp');
     expect(WEAPON_TYPES).toContain('bouncing_betty');
+    expect(WEAPON_TYPES).toContain('bunker_buster');
   });
 });
 
@@ -203,6 +215,7 @@ describe('getWeaponConfig', () => {
     expect(getWeaponConfig('napalm')).toBe(WEAPON_NAPALM);
     expect(getWeaponConfig('emp')).toBe(WEAPON_EMP);
     expect(getWeaponConfig('bouncing_betty')).toBe(WEAPON_BOUNCING_BETTY);
+    expect(getWeaponConfig('bunker_buster')).toBe(WEAPON_BUNKER_BUSTER);
   });
 });
 
@@ -210,7 +223,7 @@ describe('getPurchasableWeapons', () => {
   it('returns only weapons with cost > 0', () => {
     const purchasable = getPurchasableWeapons();
 
-    expect(purchasable).toHaveLength(6);
+    expect(purchasable).toHaveLength(7);
     expect(purchasable).not.toContain(WEAPON_STANDARD);
     expect(purchasable).toContain(WEAPON_HEAVY_ARTILLERY);
     expect(purchasable).toContain(WEAPON_PRECISION);
@@ -218,6 +231,7 @@ describe('getPurchasableWeapons', () => {
     expect(purchasable).toContain(WEAPON_NAPALM);
     expect(purchasable).toContain(WEAPON_EMP);
     expect(purchasable).toContain(WEAPON_BOUNCING_BETTY);
+    expect(purchasable).toContain(WEAPON_BUNKER_BUSTER);
 
     for (const weapon of purchasable) {
       expect(weapon.cost).toBeGreaterThan(0);
@@ -377,10 +391,11 @@ describe('getDestructionCategory', () => {
     expect(getDestructionCategory('precision')).toBe('ballistic');
   });
 
-  it('returns explosive for heavy artillery, cluster bomb, and bouncing betty', () => {
+  it('returns explosive for heavy artillery, cluster bomb, bouncing betty, and bunker buster', () => {
     expect(getDestructionCategory('heavy_artillery')).toBe('explosive');
     expect(getDestructionCategory('cluster_bomb')).toBe('explosive');
     expect(getDestructionCategory('bouncing_betty')).toBe('explosive');
+    expect(getDestructionCategory('bunker_buster')).toBe('explosive');
   });
 
   it('returns fire for napalm', () => {

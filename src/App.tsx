@@ -42,6 +42,7 @@ import {
   renderClusterSubProjectiles,
   checkTerrainCollision,
   handleProjectileBounce,
+  createCrater,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -472,6 +473,12 @@ function App() {
       const newExplosion = createExplosion(landingPos, currentTime, blastRadius, explosionType)
       explosionsRef.current = [...explosionsRef.current, newExplosion]
       setIsExplosionActive(true)
+
+      // Apply crater for Bunker Buster weapon
+      if (weaponConfig.craterRadius && terrain) {
+        const newTerrain = createCrater(terrain, landingPos.x, weaponConfig.craterRadius)
+        actions.setTerrain(newTerrain)
+      }
 
       // Check for tank hits and apply weapon damage
       const damage = proj.isSubProjectile ? weaponConfig.damage * 0.6 : weaponConfig.damage

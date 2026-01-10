@@ -223,6 +223,8 @@ export function getProjectileVisual(weaponType: WeaponType): ProjectileVisual {
       return { color: '#0066ff', glowColor: '#00ccff', radius: 6, trailColor: '#0088ff' };
     case 'bouncing_betty':
       return { color: '#888888', glowColor: '#ffcc00', radius: 5, trailColor: '#666666' };
+    case 'bunker_buster':
+      return { color: '#333333', glowColor: '#ff6600', radius: 6, trailColor: '#555555' };
     case 'standard':
     default:
       return { color: '#ffff00', glowColor: '#ffffff', radius: 5 };
@@ -523,6 +525,79 @@ function renderBouncingBetty(
 }
 
 /**
+ * Render Bunker Buster - pointed drill/missile shape.
+ */
+function renderBunkerBuster(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  visual: ProjectileVisual,
+  angle: number,
+  currentTime: number
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(degreesToRadians(angle - 90));
+
+  // Orange glow
+  ctx.shadowColor = visual.glowColor;
+  ctx.shadowBlur = 10;
+
+  // Main body - dark elongated shape
+  ctx.fillStyle = visual.color;
+  ctx.beginPath();
+  ctx.moveTo(0, -visual.radius * 2); // Tip
+  ctx.lineTo(visual.radius * 0.8, visual.radius);
+  ctx.lineTo(visual.radius * 0.5, visual.radius * 1.2);
+  ctx.lineTo(-visual.radius * 0.5, visual.radius * 1.2);
+  ctx.lineTo(-visual.radius * 0.8, visual.radius);
+  ctx.closePath();
+  ctx.fill();
+
+  // Drill tip highlight
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#666666';
+  ctx.beginPath();
+  ctx.moveTo(0, -visual.radius * 2);
+  ctx.lineTo(visual.radius * 0.3, -visual.radius * 0.5);
+  ctx.lineTo(-visual.radius * 0.3, -visual.radius * 0.5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Spinning drill lines (animated)
+  ctx.strokeStyle = '#ff6600';
+  ctx.lineWidth = 1;
+  const spinOffset = (currentTime * 0.02) % (Math.PI * 2);
+  for (let i = 0; i < 3; i++) {
+    const lineAngle = spinOffset + (i * Math.PI * 2) / 3;
+    ctx.beginPath();
+    ctx.moveTo(0, -visual.radius * 1.5);
+    ctx.lineTo(
+      Math.cos(lineAngle) * visual.radius * 0.4,
+      -visual.radius * 0.5
+    );
+    ctx.stroke();
+  }
+
+  // Fins at back
+  ctx.fillStyle = '#555555';
+  ctx.beginPath();
+  ctx.moveTo(visual.radius * 0.5, visual.radius);
+  ctx.lineTo(visual.radius * 1.2, visual.radius * 1.5);
+  ctx.lineTo(visual.radius * 0.5, visual.radius * 1.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-visual.radius * 0.5, visual.radius);
+  ctx.lineTo(-visual.radius * 1.2, visual.radius * 1.5);
+  ctx.lineTo(-visual.radius * 0.5, visual.radius * 1.2);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
  * Render the projectile and its dotted trace line on canvas.
  * All positions in projectile state are already in screen coordinates.
  * The trail color matches the tank that fired the projectile.
@@ -581,6 +656,9 @@ export function renderProjectile(
       break;
     case 'bouncing_betty':
       renderBouncingBetty(ctx, canvasX, canvasY, visual, currentTime, projectile.bounceCount ?? 0);
+      break;
+    case 'bunker_buster':
+      renderBunkerBuster(ctx, canvasX, canvasY, visual, projectile.launchConfig.angle, currentTime);
       break;
     case 'standard':
     default:

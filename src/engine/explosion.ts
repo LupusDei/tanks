@@ -137,6 +137,17 @@ function getExplosionConfig(weaponType: WeaponType): ExplosionConfig {
         fireColorInner: 'rgba(255, 200, 50, 1)',
         fireColorOuter: 'rgba(150, 100, 0, 0)',
       };
+    case 'bunker_buster':
+      return {
+        colors: ['#ff6600', '#cc4400', '#884422', '#663311', '#442200', '#221100'],
+        durationMultiplier: 1.3,
+        particleMultiplier: 1.5,
+        speedMultiplier: 0.6,
+        flashColorInner: 'rgba(255, 150, 100, 1)',
+        flashColorOuter: 'rgba(200, 80, 40, 0)',
+        fireColorInner: 'rgba(255, 100, 50, 1)',
+        fireColorOuter: 'rgba(100, 40, 20, 0)',
+      };
     case 'standard':
     default:
       return {

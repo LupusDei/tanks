@@ -167,6 +167,31 @@ function ProjectileIcon({ weaponType }: { weaponType: WeaponType }) {
         </svg>
       )
 
+    case 'bunker_buster':
+      // Pointed drill missile
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <defs>
+            <filter id="glow-bkb" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feFlood floodColor="#ff6600" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          {/* Main body */}
+          <polygon points={`${cx},${cy - 8} ${cx + 5},${cy + 4} ${cx + 3},${cy + 6} ${cx - 3},${cy + 6} ${cx - 5},${cy + 4}`} fill="#333333" filter="url(#glow-bkb)" />
+          {/* Drill tip */}
+          <polygon points={`${cx},${cy - 8} ${cx + 2},${cy - 2} ${cx - 2},${cy - 2}`} fill="#666666" />
+          {/* Fins */}
+          <polygon points={`${cx + 3},${cy + 4} ${cx + 6},${cy + 8} ${cx + 3},${cy + 6}`} fill="#555555" />
+          <polygon points={`${cx - 3},${cy + 4} ${cx - 6},${cy + 8} ${cx - 3},${cy + 6}`} fill="#555555" />
+        </svg>
+      )
+
     default:
       return null
   }

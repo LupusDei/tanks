@@ -176,3 +176,57 @@ export function smoothTerrain(terrain: TerrainData, iterations: number = 1): Ter
     points,
   };
 }
+
+/**
+ * Create a crater in the terrain at the specified position.
+ * Lowers terrain height in a circular area around the impact point.
+ *
+ * @param terrain - Current terrain data
+ * @param worldX - X position of impact in world coordinates
+ * @param radius - Radius of the crater in pixels
+ * @param depth - Depth of the crater (how much to lower terrain)
+ * @returns New terrain data with crater applied
+ */
+export function createCrater(
+  terrain: TerrainData,
+  worldX: number,
+  radius: number,
+  depth: number = radius * 0.5
+): TerrainData {
+  const points = [...terrain.points];
+  const startX = Math.max(0, Math.floor(worldX - radius));
+  const endX = Math.min(terrain.width - 1, Math.ceil(worldX + radius));
+
+  for (let x = startX; x <= endX; x++) {
+    // Calculate distance from impact center
+    const dx = x - worldX;
+    const distanceRatio = Math.abs(dx) / radius;
+
+    if (distanceRatio <= 1) {
+      // Use smooth curve for crater shape (inverted parabola)
+      // At center (distanceRatio=0): full depth
+      // At edge (distanceRatio=1): no depth
+      const craterDepth = depth * (1 - distanceRatio * distanceRatio);
+
+      // Lower the terrain
+      const currentHeight = points[x]!;
+      const newHeight = Math.max(10, currentHeight - craterDepth); // Don't go below 10
+      points[x] = newHeight;
+    }
+  }
+
+  // Smooth the edges slightly to avoid jagged transitions
+  for (let pass = 0; pass < 2; pass++) {
+    for (let x = startX + 1; x < endX; x++) {
+      const prev = points[x - 1]!;
+      const current = points[x]!;
+      const next = points[x + 1]!;
+      points[x] = current * 0.6 + prev * 0.2 + next * 0.2;
+    }
+  }
+
+  return {
+    ...terrain,
+    points,
+  };
+}

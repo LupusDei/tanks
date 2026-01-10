@@ -4,6 +4,7 @@ export {
   getInterpolatedHeightAt,
   smoothTerrain,
   createSeededRandom,
+  createCrater,
   type TerrainConfig,
 } from './terrain';
 
@@ -104,6 +105,7 @@ export {
   WEAPON_NAPALM,
   WEAPON_EMP,
   WEAPON_BOUNCING_BETTY,
+  WEAPON_BUNKER_BUSTER,
   WEAPONS,
   WEAPON_TYPES,
   // Utility functions

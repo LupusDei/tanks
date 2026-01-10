@@ -24,7 +24,8 @@ export type WeaponType =
   | 'cluster_bomb'
   | 'napalm'
   | 'emp'
-  | 'bouncing_betty';
+  | 'bouncing_betty'
+  | 'bunker_buster';
 
 /**
  * Destruction animation category.
@@ -46,6 +47,7 @@ export function getDestructionCategory(weaponType: WeaponType): DestructionCateg
     case 'heavy_artillery':
     case 'cluster_bomb':
     case 'bouncing_betty':
+    case 'bunker_buster':
       return 'explosive';
     case 'emp':
       return 'electric';
@@ -78,6 +80,8 @@ export interface WeaponConfig {
   stunTurns?: number;
   /** Number of times projectile bounces off terrain before exploding (Bouncing Betty) */
   maxBounces?: number;
+  /** Radius of terrain destruction crater (Bunker Buster) */
+  craterRadius?: number;
 }
 
 // ============================================================================
@@ -230,6 +234,22 @@ export const WEAPON_BOUNCING_BETTY: WeaponConfig = {
   maxBounces: 2,
 };
 
+/**
+ * Bunker Buster - terrain penetrating weapon.
+ * Creates a crater in the terrain, damaging tanks behind cover.
+ * Lower blast radius but destroys defensive positions.
+ */
+export const WEAPON_BUNKER_BUSTER: WeaponConfig = {
+  id: 'bunker_buster',
+  name: 'Bunker Buster',
+  description: 'Creates a 40px crater in terrain. Destroys cover and bunkers.',
+  cost: 300,
+  damage: 55,
+  blastRadius: 15,
+  projectileSpeedMultiplier: 0.9,
+  craterRadius: 40,
+};
+
 // ============================================================================
 // WEAPON REGISTRY
 // ============================================================================
@@ -246,6 +266,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   napalm: WEAPON_NAPALM,
   emp: WEAPON_EMP,
   bouncing_betty: WEAPON_BOUNCING_BETTY,
+  bunker_buster: WEAPON_BUNKER_BUSTER,
 };
 
 /**
@@ -260,6 +281,7 @@ export const WEAPON_TYPES: WeaponType[] = [
   'napalm',
   'emp',
   'bouncing_betty',
+  'bunker_buster',
 ];
 
 /**
