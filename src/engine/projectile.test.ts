@@ -12,6 +12,9 @@ import {
   uiAngleToPhysicsAngle,
   getProjectileVisual,
   renderProjectile,
+  handleProjectileBounce,
+  findNearestTarget,
+  updateHomingTracking,
 } from './projectile';
 import type { TankState, TerrainData } from '../types/game';
 
@@ -616,5 +619,186 @@ describe('renderProjectile weapon-specific rendering', () => {
     for (let time = 0; time < 1000; time += 100) {
       expect(() => renderProjectile(ctx, state, time)).not.toThrow();
     }
+  });
+});
+
+describe('handleProjectileBounce', () => {
+  it('returns null for non-bouncing weapons', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'standard');
+    const collisionPoint = { x: 100, y: 300 };
+
+    const result = handleProjectileBounce(projectile, collisionPoint, 1000);
+    expect(result).toBeNull();
+  });
+
+  it('returns null when all bounces are used', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'bouncing_betty');
+    // Use up all bounces
+    const maxedProjectile = { ...projectile, bounceCount: projectile.maxBounces };
+    const collisionPoint = { x: 100, y: 300 };
+
+    const result = handleProjectileBounce(maxedProjectile, collisionPoint, 1000);
+    expect(result).toBeNull();
+  });
+
+  it('returns new projectile state with incremented bounce count', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'bouncing_betty');
+    const collisionPoint = { x: 100, y: 300 };
+
+    const result = handleProjectileBounce(projectile, collisionPoint, 1000);
+    expect(result).not.toBeNull();
+    expect(result!.bounceCount).toBe(1);
+  });
+
+  it('updates start time and position after bounce', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'bouncing_betty');
+    const collisionPoint = { x: 150, y: 350 };
+
+    const result = handleProjectileBounce(projectile, collisionPoint, 2000);
+    expect(result).not.toBeNull();
+    expect(result!.startTime).toBe(2000);
+    expect(result!.launchConfig.position).toEqual(collisionPoint);
+  });
+
+  it('adds collision point to trace', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'bouncing_betty');
+    const collisionPoint = { x: 150, y: 350 };
+
+    const result = handleProjectileBounce(projectile, collisionPoint, 2000);
+    expect(result).not.toBeNull();
+    expect(result!.tracePoints).toContainEqual(collisionPoint);
+  });
+
+  it('allows multiple bounces up to max', () => {
+    const tank = createMockTank();
+    let projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'bouncing_betty');
+    const collisionPoint = { x: 150, y: 350 };
+    let time = 1000;
+
+    // First bounce
+    projectile = handleProjectileBounce(projectile, collisionPoint, time)!;
+    expect(projectile.bounceCount).toBe(1);
+
+    // Second bounce
+    time += 500;
+    projectile = handleProjectileBounce(projectile, collisionPoint, time)!;
+    expect(projectile.bounceCount).toBe(2);
+
+    // Third bounce should fail (max bounces = 2)
+    time += 500;
+    const result = handleProjectileBounce(projectile, collisionPoint, time);
+    expect(result).toBeNull();
+  });
+});
+
+describe('findNearestTarget', () => {
+  const createMockTanks = (): TankState[] => [
+    createMockTank({ id: 'player', position: { x: 100, y: 200 }, health: 100 }),
+    createMockTank({ id: 'enemy1', position: { x: 300, y: 200 }, health: 100 }),
+    createMockTank({ id: 'enemy2', position: { x: 500, y: 200 }, health: 100 }),
+  ];
+
+  it('returns null when all enemies are destroyed', () => {
+    const tanks = createMockTanks().map(t =>
+      t.id === 'player' ? t : { ...t, health: 0 }
+    );
+    const projectilePos = { x: 200, y: 400 }; // Screen coords
+
+    const result = findNearestTarget(projectilePos, tanks, 'player', CANVAS_HEIGHT);
+    expect(result).toBeNull();
+  });
+
+  it('excludes the firing tank from targets', () => {
+    const tanks = createMockTanks();
+    const projectilePos = { x: 100, y: 400 }; // Very close to player in screen coords
+
+    const result = findNearestTarget(projectilePos, tanks, 'player', CANVAS_HEIGHT);
+    expect(result).not.toBeNull();
+    // Should not return player position
+    expect(result!.x).not.toBe(100);
+  });
+
+  it('returns nearest enemy tank position', () => {
+    const tanks = createMockTanks();
+    // Projectile at x=250 (closer to enemy1 at x=300 than enemy2 at x=500)
+    const projectilePos = { x: 250, y: 400 };
+
+    const result = findNearestTarget(projectilePos, tanks, 'player', CANVAS_HEIGHT);
+    expect(result).not.toBeNull();
+    expect(result!.x).toBe(300); // enemy1's x position
+  });
+
+  it('skips destroyed tanks when finding nearest', () => {
+    const tanks = createMockTanks();
+    // Destroy enemy1 (the closest)
+    tanks[1] = { ...tanks[1]!, health: 0 };
+    const projectilePos = { x: 250, y: 400 };
+
+    const result = findNearestTarget(projectilePos, tanks, 'player', CANVAS_HEIGHT);
+    expect(result).not.toBeNull();
+    expect(result!.x).toBe(500); // enemy2's x position (since enemy1 is destroyed)
+  });
+});
+
+describe('updateHomingTracking', () => {
+  it('returns unchanged projectile for non-homing weapons', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'standard');
+    const targetPos = { x: 500, y: 300 };
+
+    const result = updateHomingTracking(projectile, targetPos, 1000);
+    expect(result).toEqual(projectile);
+  });
+
+  it('returns unchanged projectile when no target', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+
+    const result = updateHomingTracking(projectile, null, 1000);
+    expect(result.launchConfig.angle).toBe(projectile.launchConfig.angle);
+  });
+
+  it('adjusts angle toward target', () => {
+    const tank = createMockTank({ angle: 0 }); // Pointing up
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    // Target to the right of projectile path
+    const targetPos = { x: 300, y: 300 };
+
+    const result = updateHomingTracking(projectile, targetPos, 100);
+    // Angle should have changed
+    expect(result.currentAngle).toBeDefined();
+  });
+
+  it('preserves tracking strength property', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    const targetPos = { x: 500, y: 300 };
+
+    const result = updateHomingTracking(projectile, targetPos, 1000);
+    expect(result.trackingStrength).toBe(projectile.trackingStrength);
+  });
+
+  it('updates target position', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    const targetPos = { x: 500, y: 300 };
+
+    const result = updateHomingTracking(projectile, targetPos, 1000);
+    expect(result.targetPosition).toEqual(targetPos);
+  });
+
+  it('creates new projectile state with updated time', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    const targetPos = { x: 500, y: 300 };
+    const newTime = 2000;
+
+    const result = updateHomingTracking(projectile, targetPos, newTime);
+    expect(result.startTime).toBe(newTime);
   });
 });

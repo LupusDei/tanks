@@ -5,6 +5,7 @@ import {
   getInterpolatedHeightAt,
   smoothTerrain,
   createSeededRandom,
+  createCrater,
   type TerrainConfig,
 } from './terrain';
 
@@ -272,5 +273,97 @@ describe('smoothTerrain', () => {
 
   it('throws error for negative iterations', () => {
     expect(() => smoothTerrain(baseTerrain, -1)).toThrow('Iterations must be non-negative');
+  });
+});
+
+describe('createCrater', () => {
+  // Create a flat terrain for easier testing
+  const flatTerrain = {
+    width: 100,
+    height: 400,
+    points: new Array(100).fill(200), // All points at height 200
+  };
+
+  it('returns new terrain data without modifying original', () => {
+    const originalPoints = [...flatTerrain.points];
+    createCrater(flatTerrain, 50, 20);
+    expect(flatTerrain.points).toEqual(originalPoints);
+  });
+
+  it('preserves terrain dimensions', () => {
+    const cratered = createCrater(flatTerrain, 50, 20);
+    expect(cratered.width).toBe(flatTerrain.width);
+    expect(cratered.height).toBe(flatTerrain.height);
+    expect(cratered.points).toHaveLength(flatTerrain.points.length);
+  });
+
+  it('lowers terrain at impact center', () => {
+    const cratered = createCrater(flatTerrain, 50, 20);
+    // Center should be lowered
+    expect(cratered.points[50]).toBeLessThan(flatTerrain.points[50]!);
+  });
+
+  it('creates deeper crater at center than edges', () => {
+    const cratered = createCrater(flatTerrain, 50, 20);
+    const centerHeight = cratered.points[50]!;
+    const edgeHeight = cratered.points[50 + 18]!; // Near edge of 20px radius
+
+    // Center should be lower (more depressed) than edge
+    expect(centerHeight).toBeLessThan(edgeHeight);
+  });
+
+  it('does not affect terrain outside crater radius', () => {
+    const cratered = createCrater(flatTerrain, 50, 10);
+    // Points well outside crater should be unchanged (or nearly so due to smoothing)
+    expect(cratered.points[0]).toBeCloseTo(flatTerrain.points[0]!, 1);
+    expect(cratered.points[99]).toBeCloseTo(flatTerrain.points[99]!, 1);
+  });
+
+  it('respects minimum terrain height', () => {
+    // Create terrain at low height
+    const lowTerrain = {
+      width: 100,
+      height: 400,
+      points: new Array(100).fill(20),
+    };
+    const cratered = createCrater(lowTerrain, 50, 30, 50);
+
+    // Should not go below minimum (10)
+    for (const height of cratered.points) {
+      expect(height).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it('handles crater at terrain edge', () => {
+    // Crater at left edge
+    const crateredLeft = createCrater(flatTerrain, 5, 20);
+    expect(crateredLeft.points[5]).toBeLessThan(flatTerrain.points[5]!);
+
+    // Crater at right edge
+    const crateredRight = createCrater(flatTerrain, 95, 20);
+    expect(crateredRight.points[95]).toBeLessThan(flatTerrain.points[95]!);
+  });
+
+  it('uses default depth when not specified', () => {
+    const craterRadius = 20;
+    const cratered = createCrater(flatTerrain, 50, craterRadius);
+    // Default depth is radius * 0.5 = 10
+    // Center should be lowered by approximately this amount
+    const expectedMaxDepth = craterRadius * 0.5;
+    const actualDepth = flatTerrain.points[50]! - cratered.points[50]!;
+    expect(actualDepth).toBeCloseTo(expectedMaxDepth, 0); // Allow some variation due to smoothing
+  });
+
+  it('creates larger crater with larger radius', () => {
+    const smallCrater = createCrater(flatTerrain, 50, 10);
+    const largeCrater = createCrater(flatTerrain, 50, 30);
+
+    // Count affected points (where height changed)
+    const countAffected = (points: number[]) =>
+      points.filter((h, i) => h < flatTerrain.points[i]!).length;
+
+    expect(countAffected(largeCrater.points)).toBeGreaterThan(
+      countAffected(smallCrater.points)
+    );
   });
 });
