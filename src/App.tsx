@@ -53,7 +53,7 @@ const TANK_WHEEL_RADIUS = 6
 
 function App() {
   const { state, actions } = useGame()
-  const { userData, createNewUser, recordGame } = useUser()
+  const { userData, createNewUser, recordGame, weaponInventory } = useUser()
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
   // Array of active explosions for simultaneous impacts
@@ -296,6 +296,12 @@ function App() {
   }
 
   const handleWeaponConfirm = (weapon: WeaponType) => {
+    // Copy user's weapon inventory to game state for this session
+    // Standard always has infinite ammo
+    actions.setWeaponAmmo({
+      ...weaponInventory,
+      standard: Infinity,
+    })
     actions.setSelectedWeapon(weapon)
     actions.setPhase('playing')
   }
