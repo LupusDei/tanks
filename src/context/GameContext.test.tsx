@@ -333,4 +333,119 @@ describe('GameContext', () => {
     });
     expect(result.current.state.terrainSize).toBe('huge');
   });
+
+  describe('weapon ammo management', () => {
+    it('sets weapon ammo', () => {
+      const { result } = renderHook(() => useGame(), {
+        wrapper: GameProvider,
+      });
+
+      act(() => {
+        result.current.actions.setWeaponAmmo({
+          standard: Infinity,
+          heavy_artillery: 3,
+          precision: 2,
+        });
+      });
+
+      expect(result.current.state.weaponAmmo).toEqual({
+        standard: Infinity,
+        heavy_artillery: 3,
+        precision: 2,
+      });
+    });
+
+    it('decrements ammo for non-standard weapon', () => {
+      const { result } = renderHook(() => useGame(), {
+        wrapper: GameProvider,
+      });
+
+      act(() => {
+        result.current.actions.setWeaponAmmo({
+          standard: Infinity,
+          heavy_artillery: 3,
+        });
+      });
+
+      act(() => {
+        result.current.actions.decrementAmmo('heavy_artillery');
+      });
+
+      expect(result.current.state.weaponAmmo.heavy_artillery).toBe(2);
+    });
+
+    it('does not decrement standard weapon (infinite ammo)', () => {
+      const { result } = renderHook(() => useGame(), {
+        wrapper: GameProvider,
+      });
+
+      act(() => {
+        result.current.actions.setWeaponAmmo({
+          standard: Infinity,
+        });
+      });
+
+      act(() => {
+        result.current.actions.decrementAmmo('standard');
+      });
+
+      expect(result.current.state.weaponAmmo.standard).toBe(Infinity);
+    });
+
+    it('does not decrement when ammo is already zero', () => {
+      const { result } = renderHook(() => useGame(), {
+        wrapper: GameProvider,
+      });
+
+      act(() => {
+        result.current.actions.setWeaponAmmo({
+          standard: Infinity,
+          heavy_artillery: 0,
+        });
+      });
+
+      act(() => {
+        result.current.actions.decrementAmmo('heavy_artillery');
+      });
+
+      expect(result.current.state.weaponAmmo.heavy_artillery).toBe(0);
+    });
+
+    it('does not decrement when ammo is undefined', () => {
+      const { result } = renderHook(() => useGame(), {
+        wrapper: GameProvider,
+      });
+
+      act(() => {
+        result.current.actions.setWeaponAmmo({
+          standard: Infinity,
+        });
+      });
+
+      act(() => {
+        result.current.actions.decrementAmmo('heavy_artillery');
+      });
+
+      expect(result.current.state.weaponAmmo.heavy_artillery).toBeUndefined();
+    });
+
+    it('decrements ammo to zero', () => {
+      const { result } = renderHook(() => useGame(), {
+        wrapper: GameProvider,
+      });
+
+      act(() => {
+        result.current.actions.setWeaponAmmo({
+          standard: Infinity,
+          precision: 1,
+        });
+      });
+
+      act(() => {
+        result.current.actions.decrementAmmo('precision');
+      });
+
+      expect(result.current.state.weaponAmmo.precision).toBe(0);
+    });
+  });
 });

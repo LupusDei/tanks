@@ -239,6 +239,17 @@ function App() {
 
       const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, canvasWidth, weaponType)
       newProjectiles.push(projectile)
+
+      // Decrement ammo when player fires a non-standard weapon
+      if (tank.id === 'player' && weaponType !== 'standard') {
+        const currentAmmo = currentState.weaponAmmo[weaponType] ?? 0
+        actions.decrementAmmo(weaponType)
+
+        // Auto-switch to standard when weapon is depleted
+        if (currentAmmo <= 1) {
+          actions.setSelectedWeapon('standard')
+        }
+      }
     }
 
     // Add all projectiles at once
