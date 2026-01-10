@@ -279,7 +279,7 @@ describe('WeaponShop', () => {
       fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
 
       const confirmButton = screen.getByTestId('weapon-shop-confirm');
-      expect(confirmButton).toHaveTextContent(`Confirm Purchases ($${heavyCost})`);
+      expect(confirmButton).toHaveTextContent(`Buy ($${heavyCost})`);
     });
 
     it('calls onConfirm after purchasing weapons', () => {

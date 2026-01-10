@@ -96,116 +96,122 @@ export function WeaponShop({ onConfirm, onCancel }: WeaponShopProps) {
 
   return (
     <div className="weapon-shop" data-testid="weapon-shop">
-      <h2 className="weapon-shop__title">Weapon Shop</h2>
+      {/* Main content area with title and scrollable weapons */}
+      <div className="weapon-shop__main">
+        <h2 className="weapon-shop__title">Weapon Shop</h2>
 
-      <div className="weapon-shop__balance" data-testid="weapon-shop-balance">
-        <span className="weapon-shop__balance-label">Balance:</span>
-        <span className="weapon-shop__balance-amount">${balance}</span>
+        <div className="weapon-shop__weapons">
+          {WEAPON_TYPES.map((weaponType) => {
+            const weapon = WEAPONS[weaponType];
+            const isFree = weapon.cost === 0;
+            const ownedCount = getWeaponCount(weaponType);
+            const purchaseQty = getPurchaseQty(weaponType);
+            const canIncrease = canAffordOne(weaponType) && !isFree;
+            const canDecrease = purchaseQty > 0;
+            const isBeingPurchased = purchaseQty > 0;
+            const cantAffordAny = !isFree && balance < weapon.cost && purchaseQty === 0;
+
+            return (
+              <div
+                key={weaponType}
+                className={`weapon-shop__weapon ${isBeingPurchased ? 'weapon-shop__weapon--purchasing' : ''} ${cantAffordAny ? 'weapon-shop__weapon--unaffordable' : ''}`}
+                data-testid={`weapon-${weaponType}`}
+              >
+                <div className="weapon-shop__weapon-header">
+                  <span className="weapon-shop__weapon-name">{weapon.name}</span>
+                  <span className={`weapon-shop__weapon-cost ${isFree ? 'weapon-shop__weapon-cost--free' : ''}`}>
+                    {isFree ? 'FREE' : `$${weapon.cost}`}
+                  </span>
+                </div>
+                <p className="weapon-shop__weapon-description">{weapon.description}</p>
+                <div className="weapon-shop__weapon-stats">
+                  <WeaponStat label="Damage" value={weapon.damage} unit="%" />
+                  <WeaponStat label="Blast" value={weapon.blastRadius} unit="px" />
+                  <WeaponStat label="Speed" value={weapon.projectileSpeedMultiplier} unit="x" isMultiplier />
+                </div>
+
+                <div className="weapon-shop__weapon-inventory">
+                  <span className="weapon-shop__owned" data-testid={`owned-${weaponType}`}>
+                    Owned: {ownedCount === Infinity ? '∞' : ownedCount}
+                  </span>
+
+                  {!isFree && (
+                    <div className="weapon-shop__quantity-controls">
+                      <button
+                        className="weapon-shop__qty-btn weapon-shop__qty-btn--minus"
+                        onClick={() => handleDecrement(weaponType)}
+                        disabled={!canDecrease}
+                        data-testid={`qty-minus-${weaponType}`}
+                        aria-label={`Decrease ${weapon.name} quantity`}
+                      >
+                        −
+                      </button>
+                      <span className="weapon-shop__qty-value" data-testid={`qty-${weaponType}`}>
+                        {purchaseQty}
+                      </span>
+                      <button
+                        className="weapon-shop__qty-btn weapon-shop__qty-btn--plus"
+                        onClick={() => handleIncrement(weaponType)}
+                        disabled={!canIncrease}
+                        data-testid={`qty-plus-${weaponType}`}
+                        aria-label={`Increase ${weapon.name} quantity`}
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="weapon-shop__weapons">
-        {WEAPON_TYPES.map((weaponType) => {
-          const weapon = WEAPONS[weaponType];
-          const isFree = weapon.cost === 0;
-          const ownedCount = getWeaponCount(weaponType);
-          const purchaseQty = getPurchaseQty(weaponType);
-          const canIncrease = canAffordOne(weaponType) && !isFree;
-          const canDecrease = purchaseQty > 0;
-          const isBeingPurchased = purchaseQty > 0;
-          const cantAffordAny = !isFree && balance < weapon.cost && purchaseQty === 0;
+      {/* Cart sidebar - fixed position with balance, summary, and actions */}
+      <div className="weapon-shop__cart" data-testid="weapon-shop-cart">
+        <div className="weapon-shop__balance" data-testid="weapon-shop-balance">
+          <span className="weapon-shop__balance-label">Balance:</span>
+          <span className="weapon-shop__balance-amount">${balance}</span>
+        </div>
 
-          return (
-            <div
-              key={weaponType}
-              className={`weapon-shop__weapon ${isBeingPurchased ? 'weapon-shop__weapon--purchasing' : ''} ${cantAffordAny ? 'weapon-shop__weapon--unaffordable' : ''}`}
-              data-testid={`weapon-${weaponType}`}
+        {/* Summary Section */}
+        <div className="weapon-shop__summary" data-testid="weapon-shop-summary">
+          <div className="weapon-shop__summary-row">
+            <span>Total Cost:</span>
+            <span className="weapon-shop__summary-cost" data-testid="total-cost">
+              ${totalCost}
+            </span>
+          </div>
+          <div className="weapon-shop__summary-row">
+            <span>After:</span>
+            <span
+              className={`weapon-shop__summary-after ${balanceAfter < 0 ? 'weapon-shop__summary-after--negative' : ''}`}
+              data-testid="balance-after"
             >
-              <div className="weapon-shop__weapon-header">
-                <span className="weapon-shop__weapon-name">{weapon.name}</span>
-                <span className={`weapon-shop__weapon-cost ${isFree ? 'weapon-shop__weapon-cost--free' : ''}`}>
-                  {isFree ? 'FREE' : `$${weapon.cost}`}
-                </span>
-              </div>
-              <p className="weapon-shop__weapon-description">{weapon.description}</p>
-              <div className="weapon-shop__weapon-stats">
-                <WeaponStat label="Damage" value={weapon.damage} unit="%" />
-                <WeaponStat label="Blast" value={weapon.blastRadius} unit="px" />
-                <WeaponStat label="Speed" value={weapon.projectileSpeedMultiplier} unit="x" isMultiplier />
-              </div>
-
-              <div className="weapon-shop__weapon-inventory">
-                <span className="weapon-shop__owned" data-testid={`owned-${weaponType}`}>
-                  Owned: {ownedCount === Infinity ? '∞' : ownedCount}
-                </span>
-
-                {!isFree && (
-                  <div className="weapon-shop__quantity-controls">
-                    <button
-                      className="weapon-shop__qty-btn weapon-shop__qty-btn--minus"
-                      onClick={() => handleDecrement(weaponType)}
-                      disabled={!canDecrease}
-                      data-testid={`qty-minus-${weaponType}`}
-                      aria-label={`Decrease ${weapon.name} quantity`}
-                    >
-                      −
-                    </button>
-                    <span className="weapon-shop__qty-value" data-testid={`qty-${weaponType}`}>
-                      {purchaseQty}
-                    </span>
-                    <button
-                      className="weapon-shop__qty-btn weapon-shop__qty-btn--plus"
-                      onClick={() => handleIncrement(weaponType)}
-                      disabled={!canIncrease}
-                      data-testid={`qty-plus-${weaponType}`}
-                      aria-label={`Increase ${weapon.name} quantity`}
-                    >
-                      +
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Summary Section */}
-      <div className="weapon-shop__summary" data-testid="weapon-shop-summary">
-        <div className="weapon-shop__summary-row">
-          <span>Total Cost:</span>
-          <span className="weapon-shop__summary-cost" data-testid="total-cost">
-            ${totalCost}
-          </span>
+              ${balanceAfter}
+            </span>
+          </div>
         </div>
-        <div className="weapon-shop__summary-row">
-          <span>Balance After:</span>
-          <span
-            className={`weapon-shop__summary-after ${balanceAfter < 0 ? 'weapon-shop__summary-after--negative' : ''}`}
-            data-testid="balance-after"
-          >
-            ${balanceAfter}
-          </span>
-        </div>
-      </div>
 
-      <div className="weapon-shop__actions">
-        {onCancel && (
+        <div className="weapon-shop__actions">
+          {onCancel && (
+            <button
+              className="weapon-shop__button weapon-shop__button--cancel"
+              onClick={onCancel}
+              data-testid="weapon-shop-cancel"
+            >
+              Cancel
+            </button>
+          )}
           <button
-            className="weapon-shop__button weapon-shop__button--cancel"
-            onClick={onCancel}
-            data-testid="weapon-shop-cancel"
+            className="weapon-shop__button weapon-shop__button--confirm"
+            onClick={handleConfirm}
+            disabled={!hasWeaponInInventory}
+            data-testid="weapon-shop-confirm"
           >
-            Cancel
+            {hasPendingPurchases ? `Buy ($${totalCost})` : 'Continue'}
           </button>
-        )}
-        <button
-          className="weapon-shop__button weapon-shop__button--confirm"
-          onClick={handleConfirm}
-          disabled={!hasWeaponInInventory}
-          data-testid="weapon-shop-confirm"
-        >
-          {hasPendingPurchases ? `Confirm Purchases ($${totalCost})` : 'Continue'}
-        </button>
+        </div>
       </div>
     </div>
   );
