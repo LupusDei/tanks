@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useState, useCallback } from 'react';
-import { GameState, GameActions, GamePhase, TankState, TerrainData, TankColor, AIDifficulty, TerrainSize } from '../types/game';
+import { GameState, GameActions, GamePhase, TankState, TerrainData, TankColor, AIDifficulty, TerrainSize, EnemyCount } from '../types/game';
 
 export interface GameContextValue {
   state: GameState;
@@ -18,6 +18,7 @@ const initialState: GameState = {
   playerColor: null,
   aiDifficulty: 'veteran',
   terrainSize: 'medium',
+  enemyCount: 1,
 };
 
 interface GameProviderProps {
@@ -119,6 +120,10 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, terrainSize: size }));
   }, []);
 
+  const setEnemyCount = useCallback((count: EnemyCount) => {
+    setState((prev) => ({ ...prev, enemyCount: count }));
+  }, []);
+
   const actions: GameActions = {
     setPhase,
     initializeTanks,
@@ -131,6 +136,7 @@ export function GameProvider({ children }: GameProviderProps) {
     setPlayerColor,
     setAIDifficulty,
     setTerrainSize,
+    setEnemyCount,
   };
 
   return (

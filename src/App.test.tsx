@@ -71,7 +71,7 @@ describe('App', () => {
     expect(screen.getByText('Select Terrain Size')).toBeInTheDocument()
   })
 
-  it('transitions to color selection when terrain size is selected', () => {
+  it('transitions to enemy count selection when terrain size is selected', () => {
     renderWithProvider(<App />)
 
     // Go through loading screen
@@ -82,6 +82,24 @@ describe('App', () => {
     fireEvent.click(screen.getByTestId('terrain-size-medium'))
 
     expect(screen.queryByTestId('terrain-size-selector')).not.toBeInTheDocument()
+    expect(screen.getByTestId('enemy-count-selector')).toBeInTheDocument()
+    expect(screen.getByText('Select Enemy Count')).toBeInTheDocument()
+  })
+
+  it('transitions to color selection when enemy count is selected', () => {
+    renderWithProvider(<App />)
+
+    // Go through loading screen
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Select terrain size
+    fireEvent.click(screen.getByTestId('terrain-size-medium'))
+
+    // Select enemy count
+    fireEvent.click(screen.getByTestId('enemy-count-1'))
+
+    expect(screen.queryByTestId('enemy-count-selector')).not.toBeInTheDocument()
     expect(screen.getByTestId('color-selection-screen')).toBeInTheDocument()
     expect(screen.getByText('Choose Your Tank')).toBeInTheDocument()
   })
@@ -95,6 +113,9 @@ describe('App', () => {
 
     // Select terrain size
     fireEvent.click(screen.getByTestId('terrain-size-medium'))
+
+    // Select enemy count
+    fireEvent.click(screen.getByTestId('enemy-count-1'))
 
     // Select a color
     fireEvent.click(screen.getByTestId('color-button-red'))
@@ -113,6 +134,9 @@ describe('App', () => {
 
     // Select terrain size
     fireEvent.click(screen.getByTestId('terrain-size-medium'))
+
+    // Select enemy count
+    fireEvent.click(screen.getByTestId('enemy-count-1'))
 
     // Select a color
     fireEvent.click(screen.getByTestId('color-button-blue'))

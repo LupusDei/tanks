@@ -1,4 +1,4 @@
-import type { TankState, TerrainData, Position, TankColor } from '../types/game';
+import type { TankState, TerrainData, Position, TankColor, EnemyCount } from '../types/game';
 import { getTerrainHeightAt } from './terrain';
 
 export interface TankDimensions {
@@ -322,40 +322,79 @@ export function calculateTankPosition(
 }
 
 /**
- * Create initial tank states for two players.
- * Places tanks at left and right sides of the terrain.
+ * Get enemy colors that contrast with the player color.
+ * Returns an array of colors for multiple enemies.
+ */
+function getEnemyColors(playerColor: TankColor, count: EnemyCount): TankColor[] {
+  const allColors: TankColor[] = ['red', 'blue', 'green', 'yellow'];
+  // Remove player's color and return remaining colors (cycling if needed)
+  const availableColors = allColors.filter(c => c !== playerColor);
+  const colors: TankColor[] = [];
+  for (let i = 0; i < count; i++) {
+    colors.push(availableColors[i % availableColors.length]!);
+  }
+  return colors;
+}
+
+/**
+ * Create initial tank states for player and enemies.
+ * Places player at left, enemies distributed across the right portion of terrain.
  */
 export function createInitialTanks(
   terrain: TerrainData,
   playerColor: TankColor,
-  opponentColor: TankColor
+  enemyCount: EnemyCount
 ): TankState[] {
-  const leftX = Math.floor(terrain.width * 0.15);
-  const rightX = Math.floor(terrain.width * 0.85);
+  const tanks: TankState[] = [];
 
-  const leftPosition = calculateTankPosition(terrain, leftX);
-  const rightPosition = calculateTankPosition(terrain, rightX);
+  // Place player at the left side (15% from left edge)
+  const playerX = Math.floor(terrain.width * 0.15);
+  const playerPosition = calculateTankPosition(terrain, playerX);
 
-  return [
-    {
-      id: 'player',
-      position: leftPosition,
-      health: 100,
-      angle: -45, // Aiming right (toward opponent)
-      power: 50,
-      color: playerColor,
-      isActive: true,
-    },
-    {
-      id: 'opponent',
-      position: rightPosition,
+  tanks.push({
+    id: 'player',
+    position: playerPosition,
+    health: 100,
+    angle: -45, // Aiming right (toward enemies)
+    power: 50,
+    color: playerColor,
+    isActive: true,
+  });
+
+  // Get colors for enemies
+  const enemyColors = getEnemyColors(playerColor, enemyCount);
+
+  // Distribute enemies across the right portion of the terrain (35% to 90%)
+  const enemyStartX = 0.35;
+  const enemyEndX = 0.90;
+  const enemySpread = enemyEndX - enemyStartX;
+
+  for (let i = 0; i < enemyCount; i++) {
+    // Calculate position for this enemy
+    // For 1 enemy: place at 85% (middle-right)
+    // For multiple: distribute evenly across the range
+    let xPercent: number;
+    if (enemyCount === 1) {
+      xPercent = 0.85;
+    } else {
+      xPercent = enemyStartX + (enemySpread * i) / (enemyCount - 1);
+    }
+
+    const enemyX = Math.floor(terrain.width * xPercent);
+    const enemyPosition = calculateTankPosition(terrain, enemyX);
+
+    tanks.push({
+      id: `enemy-${i + 1}`,
+      position: enemyPosition,
       health: 100,
       angle: 45, // Aiming left (toward player)
       power: 50,
-      color: opponentColor,
+      color: enemyColors[i]!,
       isActive: false,
-    },
-  ];
+    });
+  }
+
+  return tanks;
 }
 
 /**

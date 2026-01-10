@@ -7,7 +7,7 @@ export function GameOverScreen({ winner, onPlayAgain }: GameOverScreenProps) {
   const isPlayerWinner = winner === 'player'
   const title = isPlayerWinner ? 'Victory!' : 'Defeat!'
   const message = isPlayerWinner
-    ? 'You destroyed the enemy tank!'
+    ? 'You destroyed all enemies!'
     : 'Your tank was destroyed!'
 
   return (

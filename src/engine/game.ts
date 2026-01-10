@@ -1,11 +1,12 @@
-import type { TankColor, TankState, TerrainData } from '../types/game';
+import type { TankColor, TankState, TerrainData, EnemyCount } from '../types/game';
 import { generateTerrain } from './terrain';
-import { createInitialTanks, getOpponentColor } from './tank';
+import { createInitialTanks } from './tank';
 
 export interface GameInitConfig {
   canvasWidth: number;
   canvasHeight: number;
   playerColor: TankColor;
+  enemyCount: EnemyCount;
   terrainSeed?: number;
 }
 
@@ -19,7 +20,7 @@ export interface GameInitResult {
  * This is the main entry point for starting a new game after color selection.
  */
 export function initializeGame(config: GameInitConfig): GameInitResult {
-  const { canvasWidth, canvasHeight, playerColor, terrainSeed } = config;
+  const { canvasWidth, canvasHeight, playerColor, enemyCount, terrainSeed } = config;
 
   // Generate random terrain
   const terrain = generateTerrain({
@@ -29,11 +30,8 @@ export function initializeGame(config: GameInitConfig): GameInitResult {
     seed: terrainSeed,
   });
 
-  // Get contrasting color for opponent
-  const opponentColor = getOpponentColor(playerColor);
-
-  // Create tanks at left and right positions
-  const tanks = createInitialTanks(terrain, playerColor, opponentColor);
+  // Create tanks distributed across the terrain
+  const tanks = createInitialTanks(terrain, playerColor, enemyCount);
 
   return { terrain, tanks };
 }
