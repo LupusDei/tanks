@@ -475,7 +475,8 @@ function App() {
       <Canvas width={terrainConfig.width} height={terrainConfig.height} onRender={handleRender} onClick={handleCanvasClick} />
       <TurnIndicator
         turnNumber={state.currentTurn}
-        isPlayerTurn={playerIsAlive ?? false}
+        playerAlive={playerIsAlive ?? false}
+        isFiring={isProjectileActive || isExplosionActive}
       />
       {playerTank && playerIsAlive && (
         <>
