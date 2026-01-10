@@ -1,4 +1,3 @@
-import { motion } from "framer-motion"
 import { useEffect, useState, useMemo } from "react"
 
 interface MagnetizeButtonProps {
@@ -12,13 +11,11 @@ interface MagnetizeButtonProps {
 
 interface Particle {
   id: number
-  // Orbital parameters
-  orbitRadius: number // Base distance from center
-  orbitSpeed: number // Angular velocity (seconds per full rotation)
-  startAngle: number // Starting angle in degrees
-  wobbleAmount: number // How much the radius varies
-  wobbleSpeed: number // Wobble frequency
-  // Visual properties
+  orbitRadius: number
+  orbitSpeed: number
+  startAngle: number
+  wobbleAmount: number
+  wobbleSpeed: number
   size: number
   hue: number
   glowIntensity: number
@@ -27,30 +24,24 @@ interface Particle {
 // Button dimensions for border calculations
 const BUTTON_HALF_WIDTH = 110
 const BUTTON_HALF_HEIGHT = 32
-const BORDER_OUTSET = 12 // Distance outside button edge
+const BORDER_OUTSET = 15
 
-// Calculate the point just OUTSIDE the button border for a given angle
 function getBorderPoint(angleDeg: number): { x: number; y: number } {
   const angleRad = (angleDeg * Math.PI) / 180
   const cos = Math.cos(angleRad)
   const sin = Math.sin(angleRad)
 
-  // Find where ray intersects rectangle, then push outward
-  let x: number, y: number
-
-  // Determine which edge the ray hits first
   const tanAngle = Math.abs(sin / (cos || 0.0001))
   const aspectRatio = BUTTON_HALF_HEIGHT / BUTTON_HALF_WIDTH
 
+  let x: number, y: number
+
   if (tanAngle < aspectRatio) {
-    // Hits left or right edge
     x = cos > 0 ? BUTTON_HALF_WIDTH + BORDER_OUTSET : -(BUTTON_HALF_WIDTH + BORDER_OUTSET)
-    y = sin * (BUTTON_HALF_WIDTH + BORDER_OUTSET)
+    y = sin * Math.abs(x)
   } else {
-    // Hits top or bottom edge
     y = sin > 0 ? BUTTON_HALF_HEIGHT + BORDER_OUTSET : -(BUTTON_HALF_HEIGHT + BORDER_OUTSET)
-    x = cos * (BUTTON_HALF_HEIGHT + BORDER_OUTSET) / (Math.abs(sin) || 0.0001)
-    // Clamp x to not exceed the corners
+    x = cos * Math.abs(y) / (Math.abs(sin) || 0.0001)
     const maxX = BUTTON_HALF_WIDTH + BORDER_OUTSET
     x = Math.max(-maxX, Math.min(maxX, x))
   }
@@ -69,7 +60,6 @@ export function MagnetizeButton({
   const [isHovering, setIsHovering] = useState(false)
   const [time, setTime] = useState(0)
 
-  // Animation loop for orbital motion
   useEffect(() => {
     let animationId: number
     let lastTime = performance.now()
@@ -85,18 +75,17 @@ export function MagnetizeButton({
     return () => cancelAnimationFrame(animationId)
   }, [])
 
-  // Generate particles once
   const particles = useMemo<Particle[]>(() => {
     return Array.from({ length: particleCount }, (_, i) => ({
       id: i,
-      orbitRadius: 90 + Math.random() * 50, // 90-140px from center
-      orbitSpeed: 15 + Math.random() * 10, // 15-25 seconds per rotation
-      startAngle: (i / particleCount) * 360 + Math.random() * 20, // Spread around + jitter
-      wobbleAmount: 8 + Math.random() * 12, // 8-20px wobble
-      wobbleSpeed: 0.5 + Math.random() * 0.5, // Wobble frequency
-      size: 5 + Math.random() * 5, // 5-10px
-      hue: 120 + Math.random() * 60, // Green-cyan spectrum
-      glowIntensity: 0.6 + Math.random() * 0.8,
+      orbitRadius: 100 + Math.random() * 60,
+      orbitSpeed: 20 + Math.random() * 15,
+      startAngle: (i / particleCount) * 360 + Math.random() * 20,
+      wobbleAmount: 10 + Math.random() * 15,
+      wobbleSpeed: 0.3 + Math.random() * 0.4,
+      size: 6 + Math.random() * 6,
+      hue: 120 + Math.random() * 60,
+      glowIntensity: 0.7 + Math.random() * 0.6,
     }))
   }, [particleCount])
 
@@ -110,47 +99,38 @@ export function MagnetizeButton({
       onTouchEnd={() => !disabled && setIsHovering(false)}
       disabled={disabled}
       data-testid={testId}
-      style={{ overflow: 'visible' }}
     >
       {particles.map((particle) => {
-        // Calculate current orbital position
         const currentAngle = particle.startAngle + (time / particle.orbitSpeed) * 360
         const wobble = Math.sin(time * particle.wobbleSpeed * Math.PI * 2) * particle.wobbleAmount
         const currentRadius = particle.orbitRadius + wobble
 
-        // Convert to cartesian for orbital position
         const angleRad = (currentAngle * Math.PI) / 180
         const orbitX = Math.cos(angleRad) * currentRadius
         const orbitY = Math.sin(angleRad) * currentRadius
 
-        // Get border position for attraction
         const borderPos = getBorderPoint(currentAngle)
 
-        // Choose position based on hover state
-        const targetX = isHovering ? borderPos.x : orbitX
-        const targetY = isHovering ? borderPos.y : orbitY
+        const x = isHovering ? borderPos.x : orbitX
+        const y = isHovering ? borderPos.y : orbitY
+        const scale = isHovering ? 1.5 : 1
 
         return (
-          <motion.div
+          <div
             key={particle.id}
-            animate={{
-              x: targetX,
-              y: targetY,
-              scale: isHovering ? 1.4 : 1,
-            }}
-            transition={
-              isHovering
-                ? { type: "spring", stiffness: 120, damping: 14 }
-                : { type: "tween", duration: 0.05, ease: "linear" }
-            }
             className={`magnetize-button__particle ${isHovering ? "magnetize-button__particle--attracting" : ""}`}
             style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
               width: `${particle.size}px`,
               height: `${particle.size}px`,
-              marginLeft: `${-particle.size / 2}px`,
-              marginTop: `${-particle.size / 2}px`,
-              background: `radial-gradient(circle at 30% 30%, hsl(${particle.hue}, 100%, 80%), hsl(${particle.hue}, 100%, 50%))`,
-              boxShadow: `0 0 ${6 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 60%, 0.8), 0 0 ${12 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 50%, 0.5)`,
+              borderRadius: '50%',
+              pointerEvents: 'none',
+              transform: `translate(${x - particle.size/2}px, ${y - particle.size/2}px) scale(${scale})`,
+              transition: isHovering ? 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
+              background: `radial-gradient(circle at 30% 30%, hsl(${particle.hue}, 100%, 85%), hsl(${particle.hue}, 100%, 55%))`,
+              boxShadow: `0 0 ${8 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 60%, 0.9), 0 0 ${16 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 50%, 0.6)`,
             }}
           />
         )
