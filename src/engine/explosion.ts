@@ -33,41 +33,52 @@ export interface ExplosionState {
   startTime: number;
   particles: ExplosionParticle[];
   isActive: boolean;
+  /** Explosion radius in pixels (for rendering and hit detection) */
+  radius: number;
 }
 
 /**
  * Create a new explosion at the given position.
+ * @param position - Center position of the explosion
+ * @param startTime - Start time for animation (defaults to now)
+ * @param radius - Explosion radius in pixels (defaults to EXPLOSION_RADIUS)
  */
 export function createExplosion(
   position: Position,
-  startTime: number = performance.now()
+  startTime: number = performance.now(),
+  radius: number = EXPLOSION_RADIUS
 ): ExplosionState {
   return {
     position: { ...position },
     startTime,
-    particles: generateParticles(position),
+    particles: generateParticles(position, radius),
     isActive: true,
+    radius,
   };
 }
 
 /**
  * Generate random particles for the explosion effect.
+ * Particle count and speed scale with explosion radius.
  */
-function generateParticles(center: Position): ExplosionParticle[] {
+function generateParticles(center: Position, explosionRadius: number): ExplosionParticle[] {
   const particles: ExplosionParticle[] = [];
-  const particleCount = 20;
+  // Scale particle count with radius (min 15, max 40)
+  const radiusScale = explosionRadius / EXPLOSION_RADIUS;
+  const particleCount = Math.floor(Math.min(40, Math.max(15, 20 * radiusScale)));
 
   for (let i = 0; i < particleCount; i++) {
-    // Random angle and speed
+    // Random angle and speed (scale speed with radius)
     const angle = Math.random() * Math.PI * 2;
-    const speed = 30 + Math.random() * 60; // 30-90 pixels per second
+    const baseSpeed = 30 + Math.random() * 60; // 30-90 pixels per second
+    const speed = baseSpeed * Math.sqrt(radiusScale); // Larger explosions have faster particles
 
     particles.push({
       x: center.x,
       y: center.y,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 20, // Slight upward bias
-      radius: 2 + Math.random() * 4,
+      vy: Math.sin(angle) * speed - 20 * radiusScale, // Slight upward bias
+      radius: (2 + Math.random() * 4) * Math.sqrt(radiusScale), // Scale particle size
       color: getParticleColor(),
       life: 1,
     });
@@ -152,14 +163,14 @@ export function renderExplosion(
   if (!explosion.isActive) return;
 
   const progress = getExplosionProgress(explosion, currentTime);
-  const { position } = explosion;
+  const { position, radius } = explosion;
 
   ctx.save();
 
   // Phase 1: Initial flash (0-15%)
   if (progress < 0.15) {
     const flashProgress = progress / 0.15;
-    const flashRadius = EXPLOSION_RADIUS * (0.5 + flashProgress * 1.5);
+    const flashRadius = radius * (0.5 + flashProgress * 1.5);
     const flashAlpha = 1 - flashProgress * 0.5;
 
     // Bright white/yellow flash
@@ -180,12 +191,12 @@ export function renderExplosion(
   // Phase 2: Fireball (5-60%)
   if (progress >= 0.05 && progress < 0.6) {
     const fireProgress = (progress - 0.05) / 0.55;
-    const fireRadius = EXPLOSION_RADIUS * (0.3 + fireProgress * 0.9);
+    const fireRadius = radius * (0.3 + fireProgress * 0.9);
     const fireAlpha = 1 - fireProgress * 0.7;
 
-    // Outer glow
+    // Outer glow (scale blur with radius)
     ctx.shadowColor = '#ff4400';
-    ctx.shadowBlur = 20 * (1 - fireProgress);
+    ctx.shadowBlur = 20 * (1 - fireProgress) * (radius / EXPLOSION_RADIUS);
 
     // Fireball gradient (orange/red)
     const fireGradient = ctx.createRadialGradient(
@@ -228,7 +239,7 @@ export function renderExplosion(
   // Phase 4: Smoke ring (40-100%)
   if (progress >= 0.4) {
     const smokeProgress = (progress - 0.4) / 0.6;
-    const smokeRadius = EXPLOSION_RADIUS * (0.8 + smokeProgress * 0.8);
+    const smokeRadius = radius * (0.8 + smokeProgress * 0.8);
     const smokeAlpha = 0.4 * (1 - smokeProgress);
 
     const smokeGradient = ctx.createRadialGradient(
@@ -250,13 +261,13 @@ export function renderExplosion(
 
 /**
  * Check if a point is within the explosion radius.
- * Used for hit detection.
+ * Uses the explosion's stored radius for hit detection.
  */
 export function isPointInExplosion(explosion: ExplosionState, point: Position): boolean {
   const dx = point.x - explosion.position.x;
   const dy = point.y - explosion.position.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
-  return distance <= EXPLOSION_RADIUS;
+  return distance <= explosion.radius;
 }
 
 /**
@@ -282,12 +293,14 @@ const TANK_WHEEL_RADIUS = 6;
  * @param explosionScreenPos - Explosion position in screen coordinates
  * @param tank - Tank state with position in world coordinates
  * @param canvasHeight - Canvas height for coordinate conversion
+ * @param explosionRadius - Explosion radius in pixels (defaults to EXPLOSION_RADIUS)
  * @returns true if the explosion overlaps with the tank hitbox
  */
 export function checkTankHit(
   explosionScreenPos: Position,
   tank: TankState,
-  canvasHeight: number
+  canvasHeight: number,
+  explosionRadius: number = EXPLOSION_RADIUS
 ): boolean {
   // Convert tank position from world to screen coordinates
   const tankScreenX = tank.position.x;
@@ -315,5 +328,5 @@ export function checkTankHit(
   const distanceSquared = dx * dx + dy * dy;
 
   // Check if distance is less than or equal to explosion radius
-  return distanceSquared <= EXPLOSION_RADIUS * EXPLOSION_RADIUS;
+  return distanceSquared <= explosionRadius * explosionRadius;
 }
