@@ -36,6 +36,7 @@ import {
   renderExplosion,
   isExplosionComplete,
   checkTankHit,
+  checkProjectileTankCollision,
   getWeaponConfig,
   createTankDestruction,
   updateTankDestruction,
@@ -50,6 +51,7 @@ import {
   updateHomingTracking,
   generateInitialWind,
   generateNextWind,
+  getProjectileVisual,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -587,6 +589,27 @@ function App() {
         // Get current position
         const position = getProjectilePosition(updatedProjectile, currentTime, state.wind)
 
+        // Check for in-flight tank collision (direct hit)
+        const projectileVisual = getProjectileVisual(updatedProjectile.weaponType as WeaponType)
+        let inFlightHit = false
+        for (const tank of tanks) {
+          // Skip the tank that fired (no self-damage from direct hit during flight)
+          if (tank.id === updatedProjectile.tankId) continue
+
+          if (checkProjectileTankCollision(position, tank, ctx.canvas.height, projectileVisual.radius)) {
+            // Direct hit! Trigger landing at projectile position
+            currentProjectile = { ...updatedProjectile, isActive: false }
+            handleProjectileLanding(currentProjectile, position)
+            inFlightHit = true
+            break
+          }
+        }
+
+        if (inFlightHit) {
+          updatedProjectiles.push(currentProjectile)
+          continue // Skip to next projectile
+        }
+
         // Check for terrain collision first (for bouncing weapons)
         const terrainCollision = terrain ? checkTerrainCollision(position, terrain, ctx.canvas.height) : { hit: false, point: null, worldPoint: null }
 
@@ -634,6 +657,26 @@ function App() {
           // Update trace points for sub-projectile
           const updatedSub = updateProjectileTrace(sub, currentTime, state.wind)
           const subPosition = getProjectilePosition(updatedSub, currentTime, state.wind)
+
+          // Check for in-flight tank collision (direct hit) for sub-projectile
+          let subInFlightHit = false
+          const subProjectileRadius = 4 // Smaller radius for cluster sub-projectiles
+          for (const tank of tanks) {
+            // Skip the tank that fired (no self-damage)
+            if (tank.id === updatedSub.tankId) continue
+
+            if (checkProjectileTankCollision(subPosition, tank, ctx.canvas.height, subProjectileRadius)) {
+              // Direct hit!
+              updatedSubProjectiles.push({ ...updatedSub, isActive: false })
+              handleProjectileLanding(updatedSub, subPosition)
+              subInFlightHit = true
+              break
+            }
+          }
+
+          if (subInFlightHit) {
+            continue // Skip to next sub-projectile
+          }
 
           // Check if sub-projectile has landed
           const subTerrainHeight = terrain ? getInterpolatedHeightAt(terrain, subPosition.x) ?? 0 : 0
