@@ -1,6 +1,7 @@
 import type { Position, TankState, TerrainData } from '../types/game';
 import { calculatePosition, degreesToRadians, type LaunchConfig } from './physics';
 import { getInterpolatedHeightAt } from './terrain';
+import { type WeaponType, getWeaponConfig } from './weapons';
 
 /**
  * Tank turret dimensions for calculating barrel tip position.
@@ -31,6 +32,10 @@ export interface ProjectileState {
   tankId: string;
   /** Color of the tank that fired this projectile (for trail rendering) */
   tankColor: string;
+  /** Weapon type used for this shot (determines damage and blast radius) */
+  weaponType: WeaponType;
+  /** Animation speed multiplier from weapon config */
+  speedMultiplier: number;
 }
 
 /**
@@ -90,13 +95,19 @@ export function createLaunchConfig(tank: TankState, canvasHeight: number): Launc
 
 /**
  * Create initial projectile state when firing.
+ * @param tank - Tank that fired the projectile
+ * @param startTime - Animation start time
+ * @param canvasHeight - Canvas height for coordinate conversion
+ * @param weaponType - Type of weapon used (defaults to 'standard')
  */
 export function createProjectileState(
   tank: TankState,
   startTime: number,
-  canvasHeight: number
+  canvasHeight: number,
+  weaponType: WeaponType = 'standard'
 ): ProjectileState {
   const launchConfig = createLaunchConfig(tank, canvasHeight);
+  const weaponConfig = getWeaponConfig(weaponType);
   return {
     isActive: true,
     launchConfig,
@@ -105,16 +116,19 @@ export function createProjectileState(
     canvasHeight,
     tankId: tank.id,
     tankColor: tank.color,
+    weaponType,
+    speedMultiplier: weaponConfig.projectileSpeedMultiplier,
   };
 }
 
 /**
  * Get current projectile position based on elapsed time.
- * Applies ANIMATION_SPEED_MULTIPLIER to make projectiles animate faster
- * while maintaining the same trajectory shape and distance.
+ * Applies ANIMATION_SPEED_MULTIPLIER and weapon speedMultiplier to make projectiles
+ * animate faster or slower based on weapon type while maintaining trajectory shape.
  */
 export function getProjectilePosition(projectile: ProjectileState, currentTime: number): Position {
-  const elapsedSeconds = ((currentTime - projectile.startTime) / 1000) * ANIMATION_SPEED_MULTIPLIER;
+  const weaponSpeedMultiplier = projectile.speedMultiplier;
+  const elapsedSeconds = ((currentTime - projectile.startTime) / 1000) * ANIMATION_SPEED_MULTIPLIER * weaponSpeedMultiplier;
   return calculatePosition(projectile.launchConfig, elapsedSeconds);
 }
 
