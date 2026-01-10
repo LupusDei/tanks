@@ -46,25 +46,25 @@ export function ControlPanel({
         case 'w':
         case 'W':
           event.preventDefault()
-          onAngleChange(clampAngle(angle + (shiftHeld ? ANGLE_STEP_FAST : ANGLE_STEP)))
+          onPowerChange(clampPower(power + (shiftHeld ? POWER_STEP_FAST : POWER_STEP)))
           break
         case 'ArrowDown':
         case 's':
         case 'S':
           event.preventDefault()
-          onAngleChange(clampAngle(angle - (shiftHeld ? ANGLE_STEP_FAST : ANGLE_STEP)))
+          onPowerChange(clampPower(power - (shiftHeld ? POWER_STEP_FAST : POWER_STEP)))
           break
         case 'ArrowRight':
         case 'd':
         case 'D':
           event.preventDefault()
-          onPowerChange(clampPower(power + (shiftHeld ? POWER_STEP_FAST : POWER_STEP)))
+          onAngleChange(clampAngle(angle - (shiftHeld ? ANGLE_STEP_FAST : ANGLE_STEP)))
           break
         case 'ArrowLeft':
         case 'a':
         case 'A':
           event.preventDefault()
-          onPowerChange(clampPower(power - (shiftHeld ? POWER_STEP_FAST : POWER_STEP)))
+          onAngleChange(clampAngle(angle + (shiftHeld ? ANGLE_STEP_FAST : ANGLE_STEP)))
           break
         case ' ':
         case 'Enter':
@@ -103,7 +103,7 @@ export function ControlPanel({
           </div>
         </div>
         <div className="control-panel__keys">
-          <kbd>↑</kbd><kbd>↓</kbd> <kbd>W</kbd><kbd>S</kbd>
+          <kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd>
         </div>
       </div>
 
@@ -121,7 +121,7 @@ export function ControlPanel({
           </div>
         </div>
         <div className="control-panel__keys">
-          <kbd>←</kbd><kbd>→</kbd> <kbd>A</kbd><kbd>D</kbd>
+          <kbd>↑</kbd><kbd>↓</kbd> <kbd>W</kbd><kbd>S</kbd>
         </div>
       </div>
 

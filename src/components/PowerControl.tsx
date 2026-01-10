@@ -33,15 +33,15 @@ export function PowerControl({
       const stepAmount = event.shiftKey ? POWER_STEP_FAST : step
 
       switch (event.key) {
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
           event.preventDefault()
           onPowerChange(clampPower(power + stepAmount))
           break
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
+        case 'ArrowDown':
+        case 's':
+        case 'S':
           event.preventDefault()
           onPowerChange(clampPower(power - stepAmount))
           break
@@ -72,7 +72,7 @@ export function PowerControl({
         </div>
       </div>
       <div className="power-control__hint">
-        <kbd>←</kbd>/<kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> to adjust
+        <kbd>↑</kbd>/<kbd>↓</kbd> or <kbd>W</kbd>/<kbd>S</kbd> to adjust
         <span className="power-control__hint-secondary">
           Hold <kbd>Shift</kbd> for faster
         </span>

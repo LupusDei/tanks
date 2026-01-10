@@ -33,15 +33,15 @@ export function AngleControl({
       const stepAmount = event.shiftKey ? ANGLE_STEP_FAST : step
 
       switch (event.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
           event.preventDefault()
           onAngleChange(clampAngle(angle + stepAmount))
           break
-        case 'ArrowDown':
-        case 's':
-        case 'S':
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
           event.preventDefault()
           onAngleChange(clampAngle(angle - stepAmount))
           break
@@ -72,7 +72,7 @@ export function AngleControl({
         </div>
       </div>
       <div className="angle-control__hint">
-        <kbd>↑</kbd>/<kbd>↓</kbd> or <kbd>W</kbd>/<kbd>S</kbd> to adjust
+        <kbd>←</kbd>/<kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> to adjust
         <span className="angle-control__hint-secondary">
           Hold <kbd>Shift</kbd> for faster
         </span>

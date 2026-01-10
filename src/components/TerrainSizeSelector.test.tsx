@@ -34,10 +34,10 @@ describe('TerrainSizeSelector', () => {
   it('renders dimension labels', () => {
     render(<TerrainSizeSelector onSizeSelect={vi.fn()} />)
 
-    expect(screen.getByText('640 x 480')).toBeInTheDocument()
     expect(screen.getByText('800 x 600')).toBeInTheDocument()
     expect(screen.getByText('1024 x 768')).toBeInTheDocument()
     expect(screen.getByText('1280 x 960')).toBeInTheDocument()
+    expect(screen.getByText('1600 x 1200')).toBeInTheDocument()
   })
 
   it('calls onSizeSelect with small when small button is clicked', () => {

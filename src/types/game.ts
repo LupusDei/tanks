@@ -11,10 +11,10 @@ export interface TerrainSizeConfig {
 }
 
 export const TERRAIN_SIZES: Record<TerrainSize, TerrainSizeConfig> = {
-  small: { width: 640, height: 480, label: 'Small' },
-  medium: { width: 800, height: 600, label: 'Medium' },
-  large: { width: 1024, height: 768, label: 'Large' },
-  huge: { width: 1280, height: 960, label: 'Huge' },
+  small: { width: 800, height: 600, label: 'Small' },
+  medium: { width: 1024, height: 768, label: 'Medium' },
+  large: { width: 1280, height: 960, label: 'Large' },
+  huge: { width: 1600, height: 1200, label: 'Huge' },
 };
 
 export type AIDifficulty =

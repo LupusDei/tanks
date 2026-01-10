@@ -31,38 +31,38 @@ describe('AngleControl', () => {
     expect(screen.getByTestId('angle-value')).toHaveTextContent('60°')
   })
 
-  it('calls onAngleChange when ArrowUp is pressed', () => {
+  it('calls onAngleChange when ArrowLeft is pressed', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={45} onAngleChange={handleAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
 
     expect(handleAngleChange).toHaveBeenCalledWith(46)
   })
 
-  it('calls onAngleChange when ArrowDown is pressed', () => {
+  it('calls onAngleChange when ArrowRight is pressed', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={45} onAngleChange={handleAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
 
     expect(handleAngleChange).toHaveBeenCalledWith(44)
   })
 
-  it('calls onAngleChange when W is pressed', () => {
+  it('calls onAngleChange when A is pressed', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={45} onAngleChange={handleAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))
 
     expect(handleAngleChange).toHaveBeenCalledWith(46)
   })
 
-  it('calls onAngleChange when S is pressed', () => {
+  it('calls onAngleChange when D is pressed', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={45} onAngleChange={handleAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }))
 
     expect(handleAngleChange).toHaveBeenCalledWith(44)
   })
@@ -71,7 +71,7 @@ describe('AngleControl', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={45} onAngleChange={handleAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true }))
 
     expect(handleAngleChange).toHaveBeenCalledWith(50)
   })
@@ -80,7 +80,7 @@ describe('AngleControl', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={118} onAngleChange={handleAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true }))
 
     expect(handleAngleChange).toHaveBeenCalledWith(120)
   })
@@ -89,7 +89,7 @@ describe('AngleControl', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={-118} onAngleChange={handleAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true }))
 
     expect(handleAngleChange).toHaveBeenCalledWith(-120)
   })
@@ -105,7 +105,7 @@ describe('AngleControl', () => {
       />
     )
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
 
     expect(handleAngleChange).toHaveBeenCalledWith(30)
   })
@@ -114,7 +114,7 @@ describe('AngleControl', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={45} onAngleChange={handleAngleChange} enabled={false} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
 
     expect(handleAngleChange).not.toHaveBeenCalled()
   })
@@ -123,7 +123,7 @@ describe('AngleControl', () => {
     const handleAngleChange = vi.fn()
     render(<AngleControl angle={45} onAngleChange={handleAngleChange} />)
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'w' }))
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
 
