@@ -313,3 +313,48 @@ export function getNextDifficulty(current: AIDifficulty): AIDifficulty {
   const nextIndex = (currentIndex + 1) % AI_DIFFICULTY_ORDER.length;
   return AI_DIFFICULTY_ORDER[nextIndex]!;
 }
+
+/**
+ * Select a target for an AI tank in free-for-all mode.
+ * Picks a random alive tank that isn't itself.
+ * Weights selection towards closer tanks and lower health tanks.
+ */
+export function selectTarget(
+  shooter: TankState,
+  aliveTanks: TankState[]
+): TankState | null {
+  // Filter out self
+  const potentialTargets = aliveTanks.filter((t) => t.id !== shooter.id);
+
+  if (potentialTargets.length === 0) {
+    return null;
+  }
+
+  // Calculate weights for each target based on distance and health
+  const weights = potentialTargets.map((target) => {
+    const distance = Math.abs(target.position.x - shooter.position.x);
+    // Closer targets get higher weight (inverse distance)
+    const distanceWeight = 1 / (1 + distance / 100);
+    // Lower health targets get higher weight
+    const healthWeight = 1 / (1 + target.health / 25);
+    // Combined weight
+    return distanceWeight + healthWeight;
+  });
+
+  // Normalize weights to probabilities
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  const probabilities = weights.map((w) => w / totalWeight);
+
+  // Random selection based on probabilities
+  const random = Math.random();
+  let cumulative = 0;
+  for (let i = 0; i < potentialTargets.length; i++) {
+    cumulative += probabilities[i]!;
+    if (random <= cumulative) {
+      return potentialTargets[i]!;
+    }
+  }
+
+  // Fallback to first target
+  return potentialTargets[0]!;
+}

@@ -20,6 +20,7 @@ import {
   isProjectileOutOfBounds,
   getInterpolatedHeightAt,
   calculateAIShot,
+  selectTarget,
   getChevronCount,
   getStarCount,
   getNextDifficulty,
@@ -106,7 +107,15 @@ function App() {
   // Check if player has queued their shot and AI should respond
   const playerTank = state.tanks.find((t) => t.id === 'player')
   const playerIsReady = playerTank?.isReady ?? false
-  const shouldAIQueue = state.phase === 'playing' && playerIsReady && !isProjectileActive && !isExplosionActive
+  const playerIsAlive = playerTank && playerTank.health > 0
+
+  // AI should queue when:
+  // 1. Player is alive and has queued their shot, OR
+  // 2. Player is dead (AI-only battle mode)
+  const shouldAIQueue = state.phase === 'playing' &&
+    (playerIsReady || !playerIsAlive) &&
+    !isProjectileActive &&
+    !isExplosionActive
 
   // Reset AI processing flag when player is no longer ready
   useEffect(() => {
@@ -115,19 +124,20 @@ function App() {
     }
   }, [shouldAIQueue])
 
-  // AI queueing effect - triggers when player queues their shot
+  // AI queueing effect - triggers when player queues their shot or player is dead
   useEffect(() => {
-    // Only process when player has queued and we haven't started processing
+    // Only process when conditions met and we haven't started processing
     if (!shouldAIQueue || aiProcessingRef.current) {
       return
     }
 
     // Use refs to get current state to avoid re-running effect when tank state changes
     const currentState = stateRef.current
-    const player = currentState.tanks.find((t) => t.id === 'player')
+    const aliveTanks = currentState.tanks.filter((t) => t.health > 0)
     const aiTanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady)
 
-    if (!player || aiTanks.length === 0) {
+    // Need at least 2 alive tanks for combat to continue
+    if (aliveTanks.length < 2 || aiTanks.length === 0) {
       return
     }
 
@@ -136,10 +146,14 @@ function App() {
 
     // Calculate and queue shots for all AI tanks simultaneously
     for (const aiTank of aiTanks) {
-      // Calculate AI shot (targeting the player)
+      // Select target from all alive tanks (free-for-all mode)
+      const target = selectTarget(aiTank, aliveTanks)
+      if (!target) continue
+
+      // Calculate AI shot targeting the selected tank
       const aiDecision = calculateAIShot(
         aiTank,
-        player,
+        target,
         currentState.terrain,
         currentState.aiDifficulty
       )
@@ -323,9 +337,6 @@ function App() {
       }
     }
   }, [state.phase, state.tanks, state.aiDifficulty, state.terrainSize, isProjectileActive, isExplosionActive, actions])
-
-  // In simultaneous mode, player always controls their own tank (playerTank defined above)
-  const playerIsAlive = playerTank && playerTank.health > 0
 
   const handleRender = (ctx: CanvasRenderingContext2D) => {
     const { terrain, tanks } = state

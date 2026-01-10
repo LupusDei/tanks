@@ -58,6 +58,7 @@ export {
   getChevronCount,
   getStarCount,
   getNextDifficulty,
+  selectTarget,
   AI_DIFFICULTY_CONFIGS,
   AI_DIFFICULTY_ORDER,
   type AIDecision,
