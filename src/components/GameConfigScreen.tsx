@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, ENEMY_COUNT_OPTIONS } from '../types/game'
 import { PlayerStatsDisplay } from './PlayerStatsDisplay'
+import { loadGameConfig, saveGameConfig } from '../services/userDatabase'
 
 interface GameConfigScreenProps {
   onStartGame: (config: { terrainSize: TerrainSize; enemyCount: EnemyCount; playerColor: TankColor }) => void
@@ -31,11 +32,23 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
   const [enemyCount, setEnemyCount] = useState<EnemyCount>(DEFAULT_ENEMY_COUNT)
   const [playerColor, setPlayerColor] = useState<TankColor>(DEFAULT_PLAYER_COLOR)
 
+  // Load saved config on mount
+  useEffect(() => {
+    const savedConfig = loadGameConfig()
+    if (savedConfig) {
+      setTerrainSize(savedConfig.terrainSize)
+      setEnemyCount(savedConfig.enemyCount)
+      setPlayerColor(savedConfig.playerColor)
+    }
+  }, [])
+
   // All selections now have defaults, so they're always valid
   const allSelected = true
 
   const handleEngage = () => {
     if (allSelected) {
+      // Save config before starting game
+      saveGameConfig({ terrainSize, enemyCount, playerColor })
       onStartGame({ terrainSize, enemyCount, playerColor })
     }
   }

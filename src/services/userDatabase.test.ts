@@ -20,6 +20,9 @@ import {
   setCurrentPlayer,
   playerExists,
   getAllPlayerNames,
+  saveGameConfig,
+  loadGameConfig,
+  type GameConfig,
 } from './userDatabase';
 import type { UserData } from '../types/game';
 import { STARTING_MONEY, calculateGameEarnings } from '../engine/weapons';
@@ -673,6 +676,64 @@ describe('userDatabase', () => {
       // For this test, we'll just verify that the new createUser function
       // doesn't overwrite migrated data
       // In real scenario, the migration happens on module load
+    });
+  });
+
+  // ============================================================================
+  // GAME CONFIG PERSISTENCE TESTS
+  // ============================================================================
+
+  describe('game config persistence', () => {
+    it('saves and loads game config', () => {
+      const config: GameConfig = {
+        terrainSize: 'large',
+        enemyCount: 5,
+        playerColor: 'orange',
+      };
+
+      saveGameConfig(config);
+      const loaded = loadGameConfig();
+
+      expect(loaded).toEqual(config);
+    });
+
+    it('returns null when no config saved', () => {
+      const loaded = loadGameConfig();
+      expect(loaded).toBeNull();
+    });
+
+    it('persists different config values', () => {
+      const config: GameConfig = {
+        terrainSize: 'epic',
+        enemyCount: 10,
+        playerColor: 'blue',
+      };
+
+      saveGameConfig(config);
+      const loaded = loadGameConfig();
+
+      expect(loaded?.terrainSize).toBe('epic');
+      expect(loaded?.enemyCount).toBe(10);
+      expect(loaded?.playerColor).toBe('blue');
+    });
+
+    it('overwrites previous config when saving new one', () => {
+      const config1: GameConfig = {
+        terrainSize: 'small',
+        enemyCount: 1,
+        playerColor: 'red',
+      };
+      const config2: GameConfig = {
+        terrainSize: 'huge',
+        enemyCount: 8,
+        playerColor: 'cyan',
+      };
+
+      saveGameConfig(config1);
+      saveGameConfig(config2);
+      const loaded = loadGameConfig();
+
+      expect(loaded).toEqual(config2);
     });
   });
 });
