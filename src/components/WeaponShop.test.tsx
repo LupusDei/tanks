@@ -26,7 +26,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
 // Helper to render with UserProvider
 function renderWithUser(ui: React.ReactElement, initialBalance = STARTING_MONEY) {
-  // Set up user data in localStorage
+  // Set up user data in localStorage using new multi-player format
   const userData = {
     profile: { id: 'test-id', username: 'TestUser', createdAt: Date.now() },
     stats: {
@@ -38,8 +38,12 @@ function renderWithUser(ui: React.ReactElement, initialBalance = STARTING_MONEY)
       balance: initialBalance,
     },
     recentGames: [],
+    weaponInventory: { standard: null }, // null becomes Infinity after JSON parse
   };
-  localStorageMock.setItem('tanks_user_data', JSON.stringify(userData));
+  // Store in multi-player database format
+  const playersDb = { 'TestUser': userData };
+  localStorageMock.setItem('tanks_players_db', JSON.stringify(playersDb));
+  localStorageMock.setItem('tanks_current_player', 'TestUser');
 
   return render(<UserProvider>{ui}</UserProvider>);
 }
@@ -50,136 +54,309 @@ describe('WeaponShop', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the weapon shop with title and balance', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+  describe('Basic Rendering', () => {
+    it('renders the weapon shop with title and balance', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
-    expect(screen.getByTestId('weapon-shop')).toBeInTheDocument();
-    expect(screen.getByText('Weapon Shop')).toBeInTheDocument();
-    expect(screen.getByTestId('weapon-shop-balance')).toBeInTheDocument();
-    expect(screen.getByText(`$${STARTING_MONEY}`)).toBeInTheDocument();
+      expect(screen.getByTestId('weapon-shop')).toBeInTheDocument();
+      expect(screen.getByText('Weapon Shop')).toBeInTheDocument();
+      expect(screen.getByTestId('weapon-shop-balance')).toBeInTheDocument();
+      // Balance appears in both balance display and "balance after" summary
+      const balanceElements = screen.getAllByText(`$${STARTING_MONEY}`);
+      expect(balanceElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('displays all weapon types', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      for (const weaponType of WEAPON_TYPES) {
+        expect(screen.getByTestId(`weapon-${weaponType}`)).toBeInTheDocument();
+        expect(screen.getByText(WEAPONS[weaponType].name)).toBeInTheDocument();
+      }
+    });
+
+    it('shows weapon stats for each weapon', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      const damageLabels = screen.getAllByText('Damage');
+      expect(damageLabels.length).toBe(WEAPON_TYPES.length);
+    });
+
+    it('shows FREE for standard weapon and costs for others', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      expect(screen.getByText('FREE')).toBeInTheDocument();
+      expect(screen.getByText(`$${WEAPONS.heavy_artillery.cost}`)).toBeInTheDocument();
+      expect(screen.getByText(`$${WEAPONS.precision.cost}`)).toBeInTheDocument();
+    });
+
+    it('shows owned count for each weapon', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      // Standard shows infinity symbol
+      expect(screen.getByTestId('owned-standard')).toHaveTextContent('Owned: ∞');
+
+      // Other weapons show 0
+      expect(screen.getByTestId('owned-heavy_artillery')).toHaveTextContent('Owned: 0');
+    });
+
+    it('shows summary section with totals', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      expect(screen.getByTestId('weapon-shop-summary')).toBeInTheDocument();
+      expect(screen.getByTestId('total-cost')).toHaveTextContent('$0');
+      expect(screen.getByTestId('balance-after')).toHaveTextContent(`$${STARTING_MONEY}`);
+    });
   });
 
-  it('displays all weapon types', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+  describe('Quantity Controls', () => {
+    it('shows quantity controls for non-free weapons', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
-    for (const weaponType of WEAPON_TYPES) {
-      expect(screen.getByTestId(`weapon-${weaponType}`)).toBeInTheDocument();
-      expect(screen.getByText(WEAPONS[weaponType].name)).toBeInTheDocument();
-    }
+      // Heavy artillery should have +/- buttons
+      expect(screen.getByTestId('qty-plus-heavy_artillery')).toBeInTheDocument();
+      expect(screen.getByTestId('qty-minus-heavy_artillery')).toBeInTheDocument();
+      expect(screen.getByTestId('qty-heavy_artillery')).toHaveTextContent('0');
+
+      // Standard should NOT have quantity controls (it's free)
+      expect(screen.queryByTestId('qty-plus-standard')).not.toBeInTheDocument();
+    });
+
+    it('increments quantity when + is clicked', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      const plusBtn = screen.getByTestId('qty-plus-heavy_artillery');
+      fireEvent.click(plusBtn);
+
+      expect(screen.getByTestId('qty-heavy_artillery')).toHaveTextContent('1');
+    });
+
+    it('decrements quantity when - is clicked', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      // First increment
+      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
+      expect(screen.getByTestId('qty-heavy_artillery')).toHaveTextContent('1');
+
+      // Then decrement
+      fireEvent.click(screen.getByTestId('qty-minus-heavy_artillery'));
+      expect(screen.getByTestId('qty-heavy_artillery')).toHaveTextContent('0');
+    });
+
+    it('disables minus button when quantity is 0', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      const minusBtn = screen.getByTestId('qty-minus-heavy_artillery');
+      expect(minusBtn).toBeDisabled();
+    });
+
+    it('disables plus button when insufficient funds', () => {
+      const onConfirm = vi.fn();
+      // Set balance to 100, less than heavy artillery cost (200)
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />, 100);
+
+      const plusBtn = screen.getByTestId('qty-plus-heavy_artillery');
+      expect(plusBtn).toBeDisabled();
+    });
+
+    it('enables minus button after incrementing', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      const plusBtn = screen.getByTestId('qty-plus-heavy_artillery');
+      const minusBtn = screen.getByTestId('qty-minus-heavy_artillery');
+
+      expect(minusBtn).toBeDisabled();
+      fireEvent.click(plusBtn);
+      expect(minusBtn).not.toBeDisabled();
+    });
   });
 
-  it('shows weapon stats for each weapon', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+  describe('Cost Calculation', () => {
+    it('updates total cost when quantity changes', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
-    // Check that damage stat labels exist
-    const damageLabels = screen.getAllByText('Damage');
-    expect(damageLabels.length).toBe(WEAPON_TYPES.length);
+      expect(screen.getByTestId('total-cost')).toHaveTextContent('$0');
+
+      // Add 1 heavy artillery ($200)
+      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
+      expect(screen.getByTestId('total-cost')).toHaveTextContent('$200');
+
+      // Add another ($400 total)
+      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
+      expect(screen.getByTestId('total-cost')).toHaveTextContent('$400');
+    });
+
+    it('updates balance after when quantity changes', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      expect(screen.getByTestId('balance-after')).toHaveTextContent(`$${STARTING_MONEY}`);
+
+      // Add 1 heavy artillery ($200)
+      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
+      expect(screen.getByTestId('balance-after')).toHaveTextContent(`$${STARTING_MONEY - 200}`);
+    });
+
+    it('calculates cost correctly for multiple weapon types', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />, 1000);
+
+      // Add 1 heavy artillery ($200)
+      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
+      // Add 1 precision ($150)
+      fireEvent.click(screen.getByTestId('qty-plus-precision'));
+
+      expect(screen.getByTestId('total-cost')).toHaveTextContent('$350');
+      expect(screen.getByTestId('balance-after')).toHaveTextContent('$650');
+    });
   });
 
-  it('shows FREE for standard weapon and costs for others', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+  describe('Insufficient Funds', () => {
+    it('disables plus when pending purchases exhaust funds', () => {
+      const onConfirm = vi.fn();
+      // Balance is 500, heavy artillery is 200 each
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
-    expect(screen.getByText('FREE')).toBeInTheDocument();
-    expect(screen.getByText(`$${WEAPONS.heavy_artillery.cost}`)).toBeInTheDocument();
-    expect(screen.getByText(`$${WEAPONS.precision.cost}`)).toBeInTheDocument();
+      const plusBtn = screen.getByTestId('qty-plus-heavy_artillery');
+
+      // Can add 2 (400 total, 100 remaining)
+      fireEvent.click(plusBtn);
+      fireEvent.click(plusBtn);
+      expect(screen.getByTestId('qty-heavy_artillery')).toHaveTextContent('2');
+
+      // Now can't afford another (would need 200, only have 100)
+      expect(plusBtn).toBeDisabled();
+    });
+
+    it('marks weapons as unaffordable when balance is too low', () => {
+      const onConfirm = vi.fn();
+      // Set balance to 100, less than any non-free weapon
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />, 100);
+
+      const heavyWeapon = screen.getByTestId('weapon-heavy_artillery');
+      expect(heavyWeapon).toHaveClass('weapon-shop__weapon--unaffordable');
+
+      const standardWeapon = screen.getByTestId('weapon-standard');
+      expect(standardWeapon).not.toHaveClass('weapon-shop__weapon--unaffordable');
+    });
   });
 
-  it('starts with standard weapon selected', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+  describe('Confirm and Cancel', () => {
+    it('calls onConfirm with standard weapon when continuing without purchases', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
-    const standardButton = screen.getByTestId('weapon-standard');
-    expect(standardButton).toHaveAttribute('aria-pressed', 'true');
+      const confirmButton = screen.getByTestId('weapon-shop-confirm');
+      expect(confirmButton).toHaveTextContent('Continue');
+
+      fireEvent.click(confirmButton);
+      expect(onConfirm).toHaveBeenCalledWith('standard');
+    });
+
+    it('shows purchase total in confirm button when items selected', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      // Add 1 heavy artillery
+      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
+
+      const confirmButton = screen.getByTestId('weapon-shop-confirm');
+      expect(confirmButton).toHaveTextContent('Confirm Purchases ($200)');
+    });
+
+    it('calls onConfirm after purchasing weapons', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      // Add 1 precision
+      fireEvent.click(screen.getByTestId('qty-plus-precision'));
+      fireEvent.click(screen.getByTestId('weapon-shop-confirm'));
+
+      expect(onConfirm).toHaveBeenCalledWith('standard');
+    });
+
+    it('shows cancel button when onCancel is provided', () => {
+      const onConfirm = vi.fn();
+      const onCancel = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} onCancel={onCancel} />);
+
+      const cancelButton = screen.getByTestId('weapon-shop-cancel');
+      expect(cancelButton).toBeInTheDocument();
+
+      fireEvent.click(cancelButton);
+      expect(onCancel).toHaveBeenCalled();
+    });
+
+    it('does not show cancel button when onCancel is not provided', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      expect(screen.queryByTestId('weapon-shop-cancel')).not.toBeInTheDocument();
+    });
   });
 
-  it('allows selecting a different weapon', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+  describe('Standard Weapon', () => {
+    it('standard weapon is always available and free', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />, 0); // Zero balance
 
-    const heavyButton = screen.getByTestId('weapon-heavy_artillery');
-    fireEvent.click(heavyButton);
+      const standardWeapon = screen.getByTestId('weapon-standard');
+      expect(standardWeapon).not.toHaveClass('weapon-shop__weapon--unaffordable');
+      expect(screen.getByText('FREE')).toBeInTheDocument();
+    });
 
-    expect(heavyButton).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('weapon-standard')).toHaveAttribute('aria-pressed', 'false');
+    it('standard weapon shows infinite owned', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      expect(screen.getByTestId('owned-standard')).toHaveTextContent('Owned: ∞');
+    });
+
+    it('standard weapon has no quantity controls', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+
+      expect(screen.queryByTestId('qty-plus-standard')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('qty-minus-standard')).not.toBeInTheDocument();
+    });
   });
 
-  it('disables weapons the player cannot afford', () => {
-    const onConfirm = vi.fn();
-    // Set balance to 100, less than heavy artillery cost (200)
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />, 100);
+  describe('Visual Feedback', () => {
+    it('highlights weapons being purchased', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
-    // Heavy artillery costs 200, should be disabled
-    const heavyButton = screen.getByTestId('weapon-heavy_artillery');
-    expect(heavyButton).toBeDisabled();
+      const heavyWeapon = screen.getByTestId('weapon-heavy_artillery');
+      expect(heavyWeapon).not.toHaveClass('weapon-shop__weapon--purchasing');
 
-    // Standard is free, should not be disabled
-    const standardButton = screen.getByTestId('weapon-standard');
-    expect(standardButton).not.toBeDisabled();
-  });
+      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
+      expect(heavyWeapon).toHaveClass('weapon-shop__weapon--purchasing');
+    });
 
-  it('calls onConfirm with standard weapon without deducting balance', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+    it('removes highlight when quantity goes back to 0', () => {
+      const onConfirm = vi.fn();
+      renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
-    const confirmButton = screen.getByTestId('weapon-shop-confirm');
-    fireEvent.click(confirmButton);
+      const heavyWeapon = screen.getByTestId('weapon-heavy_artillery');
 
-    expect(onConfirm).toHaveBeenCalledWith('standard');
-    // Balance should remain the same (no cost for standard)
-    expect(screen.getByText(`$${STARTING_MONEY}`)).toBeInTheDocument();
-  });
+      // Add and remove
+      fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
+      expect(heavyWeapon).toHaveClass('weapon-shop__weapon--purchasing');
 
-  it('calls onConfirm with selected weapon and deducts cost', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
-
-    // Select precision weapon
-    fireEvent.click(screen.getByTestId('weapon-precision'));
-    fireEvent.click(screen.getByTestId('weapon-shop-confirm'));
-
-    expect(onConfirm).toHaveBeenCalledWith('precision');
-  });
-
-  it('shows cancel button when onCancel is provided', () => {
-    const onConfirm = vi.fn();
-    const onCancel = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} onCancel={onCancel} />);
-
-    const cancelButton = screen.getByTestId('weapon-shop-cancel');
-    expect(cancelButton).toBeInTheDocument();
-
-    fireEvent.click(cancelButton);
-    expect(onCancel).toHaveBeenCalled();
-  });
-
-  it('does not show cancel button when onCancel is not provided', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
-
-    expect(screen.queryByTestId('weapon-shop-cancel')).not.toBeInTheDocument();
-  });
-
-  it('shows cost in confirm button when non-free weapon is selected', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
-
-    // Select heavy artillery
-    fireEvent.click(screen.getByTestId('weapon-heavy_artillery'));
-
-    const confirmButton = screen.getByTestId('weapon-shop-confirm');
-    expect(confirmButton).toHaveTextContent(`($${WEAPONS.heavy_artillery.cost})`);
-  });
-
-  it('does not show cost in confirm button for free weapon', () => {
-    const onConfirm = vi.fn();
-    renderWithUser(<WeaponShop onConfirm={onConfirm} />);
-
-    const confirmButton = screen.getByTestId('weapon-shop-confirm');
-    expect(confirmButton).toHaveTextContent('Confirm');
-    expect(confirmButton).not.toHaveTextContent('$');
+      fireEvent.click(screen.getByTestId('qty-minus-heavy_artillery'));
+      expect(heavyWeapon).not.toHaveClass('weapon-shop__weapon--purchasing');
+    });
   });
 });

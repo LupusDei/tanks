@@ -1102,21 +1102,23 @@ p {
 .weapon-shop {
   background: rgba(26, 26, 26, 0.95);
   border: 2px solid #444;
-  border-radius: 12px;
-  padding: 1.5rem;
-  max-width: 600px;
-  width: 90%;
+  border-radius: 10px;
+  padding: 0.75rem;
+  max-width: 520px;
+  width: 95%;
   margin: 0 auto;
+  max-height: 95vh;
+  overflow-y: auto;
 }
 
 .weapon-shop__title {
   font-family: monospace;
-  font-size: 1.8rem;
+  font-size: 1.2rem;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: #00ff88;
-  margin: 0 0 1rem;
+  margin: 0 0 0.5rem;
   text-align: center;
 }
 
@@ -1124,23 +1126,23 @@ p {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  padding: 0.75rem;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  padding: 0.4rem;
   background: rgba(0, 255, 136, 0.1);
   border: 1px solid rgba(0, 255, 136, 0.3);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .weapon-shop__balance-label {
   font-family: monospace;
-  font-size: 1rem;
+  font-size: 0.8rem;
   color: #888;
 }
 
 .weapon-shop__balance-amount {
   font-family: monospace;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: bold;
   color: #00ff88;
 }
@@ -1148,18 +1150,18 @@ p {
 .weapon-shop__weapons {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
 }
 
 .weapon-shop__weapon {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
+  gap: 0.2rem;
+  padding: 0.5rem 0.6rem;
   background: #2a2a2a;
-  border: 2px solid #444;
-  border-radius: 8px;
+  border: 1px solid #444;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
@@ -1189,14 +1191,14 @@ p {
 
 .weapon-shop__weapon-name {
   font-family: monospace;
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   font-weight: bold;
   color: #fff;
 }
 
 .weapon-shop__weapon-cost {
   font-family: monospace;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: bold;
   color: #ffcc00;
 }
@@ -1207,51 +1209,52 @@ p {
 
 .weapon-shop__weapon-description {
   font-family: monospace;
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   color: #888;
   margin: 0;
+  line-height: 1.2;
 }
 
 .weapon-shop__weapon-stats {
   display: flex;
-  gap: 1rem;
-  margin-top: 0.25rem;
+  gap: 0.75rem;
+  margin-top: 0.1rem;
 }
 
 .weapon-shop__stat {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0;
 }
 
 .weapon-shop__stat-label {
   font-family: monospace;
-  font-size: 0.7rem;
+  font-size: 0.55rem;
   color: #666;
   text-transform: uppercase;
 }
 
 .weapon-shop__stat-value {
   font-family: monospace;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: #aaa;
 }
 
 .weapon-shop__actions {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .weapon-shop__button {
-  padding: 0.75rem 2rem;
+  padding: 0.5rem 1.25rem;
   font-family: monospace;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  border: 2px solid;
-  border-radius: 6px;
+  letter-spacing: 0.08em;
+  border: 1px solid;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1284,6 +1287,139 @@ p {
   box-shadow: 0 2px 8px rgba(0, 255, 136, 0.4);
 }
 
+.weapon-shop__button--confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Weapon Shop - Quantity Selection Styles */
+.weapon-shop__weapon--purchasing {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.15);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+.weapon-shop__weapon--unaffordable {
+  opacity: 0.5;
+}
+
+.weapon-shop__weapon-inventory {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #444;
+}
+
+.weapon-shop__owned {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.weapon-shop__quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.weapon-shop__qty-btn {
+  width: 26px;
+  height: 26px;
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  background: #444;
+  border: 1px solid #666;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weapon-shop__qty-btn:hover:not(:disabled) {
+  background: #555;
+  border-color: #888;
+}
+
+.weapon-shop__qty-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.weapon-shop__qty-btn--plus:not(:disabled) {
+  background: #2a5a3a;
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.weapon-shop__qty-btn--plus:hover:not(:disabled) {
+  background: #3a7a4a;
+}
+
+.weapon-shop__qty-btn--minus:not(:disabled) {
+  background: #5a3a2a;
+  border-color: #ff8844;
+  color: #ff8844;
+}
+
+.weapon-shop__qty-btn--minus:hover:not(:disabled) {
+  background: #7a4a3a;
+}
+
+.weapon-shop__qty-value {
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+/* Weapon Shop Summary Section */
+.weapon-shop__summary {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.weapon-shop__summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #888;
+  padding: 0.15rem 0;
+}
+
+.weapon-shop__summary-row:not(:last-child) {
+  border-bottom: 1px solid #333;
+  margin-bottom: 0.25rem;
+}
+
+.weapon-shop__summary-cost {
+  font-weight: bold;
+  color: #ffcc00;
+}
+
+.weapon-shop__summary-after {
+  font-weight: bold;
+  color: #00ff88;
+}
+
+.weapon-shop__summary-after--negative {
+  color: #ff4444;
+}
+
 /* Weapon Shop Screen */
 .weapon-shop-screen {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -1291,7 +1427,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 0.5rem;
 }
 
 /* Player Name Entry Styles */
@@ -1403,4 +1539,190 @@ p {
 .player-name-entry__button--active:active {
   transform: translateY(0);
   box-shadow: 0 2px 10px rgba(0, 255, 136, 0.4);
+}
+
+/* Weapon Selection Panel Styles */
+.weapon-selection-panel {
+  position: fixed;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-family: monospace;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.weapon-selection-panel__slots {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.weapon-selection-panel__slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid #444;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  min-width: 3.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.weapon-selection-panel__slot:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #666;
+}
+
+.weapon-selection-panel__slot--selected {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.15);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+.weapon-selection-panel__slot--selected:hover:not(:disabled) {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.2);
+}
+
+.weapon-selection-panel__slot--empty {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.weapon-selection-panel__slot:disabled {
+  cursor: not-allowed;
+}
+
+.weapon-selection-panel__slot-number {
+  font-size: 0.55rem;
+  color: #888;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.1rem 0.25rem;
+  border-radius: 3px;
+  min-width: 1rem;
+  text-align: center;
+}
+
+.weapon-selection-panel__slot--selected .weapon-selection-panel__slot-number {
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.2);
+}
+
+.weapon-selection-panel__slot-abbrev {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.weapon-selection-panel__slot--selected .weapon-selection-panel__slot-abbrev {
+  color: #00ff88;
+}
+
+.weapon-selection-panel__slot-ammo {
+  font-size: 0.65rem;
+  color: #ff8800;
+  font-weight: bold;
+}
+
+.weapon-selection-panel__slot--selected .weapon-selection-panel__slot-ammo {
+  color: #ffaa44;
+}
+
+.weapon-selection-panel__slot-name {
+  font-size: 0.45rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 4rem;
+}
+
+.weapon-selection-panel__slot--selected .weapon-selection-panel__slot-name {
+  color: #888;
+}
+
+.weapon-selection-panel__hint {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.5rem;
+  color: #444;
+}
+
+.weapon-selection-panel__hint kbd {
+  display: inline-block;
+  padding: 0.05rem 0.2rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid #333;
+  border-radius: 2px;
+  font-family: monospace;
+  font-size: 0.5rem;
+}
+
+/* Player Stats Display */
+.player-stats-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  background: rgba(0, 255, 136, 0.05);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.player-stats-display__name {
+  font-size: 1.5rem;
+  font-family: monospace;
+  color: #00ff88;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+}
+
+.player-stats-display__stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.player-stats-display__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 70px;
+}
+
+.player-stats-display__stat-value {
+  font-size: 1.25rem;
+  font-family: monospace;
+  color: #fff;
+  font-weight: bold;
+}
+
+.player-stats-display__stat-value--money {
+  color: #ffd700;
+}
+
+.player-stats-display__stat-label {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }

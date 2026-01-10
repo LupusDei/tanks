@@ -8,6 +8,7 @@ import {
   LoadingScreen,
   PlayerNameEntry,
   TurnIndicator,
+  WeaponSelectionPanel,
   WeaponShop,
 } from './components'
 import { useGame } from './context/useGame'
@@ -534,6 +535,12 @@ function App() {
       />
       {playerTank && playerIsAlive && (
         <>
+          <WeaponSelectionPanel
+            selectedWeapon={state.selectedWeapon}
+            weaponAmmo={state.weaponAmmo}
+            onWeaponSelect={actions.setSelectedWeapon}
+            enabled={!isProjectileActive && !isExplosionActive && !playerTank.isReady}
+          />
           <ControlPanel
             angle={playerTank.angle}
             power={playerTank.power}
