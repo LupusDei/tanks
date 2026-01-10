@@ -78,3 +78,30 @@ export {
   type ExplosionState,
   type ExplosionParticle,
 } from './explosion';
+
+export {
+  // Economy constants
+  STARTING_MONEY,
+  KILL_REWARD,
+  WIN_BONUS,
+  LOSS_CONSOLATION,
+  DIFFICULTY_REWARD_MULTIPLIERS,
+  // Weapon configurations
+  WEAPON_STANDARD,
+  WEAPON_HEAVY_ARTILLERY,
+  WEAPON_PRECISION,
+  WEAPON_CLUSTER_BOMB,
+  WEAPON_NAPALM,
+  WEAPONS,
+  WEAPON_TYPES,
+  // Utility functions
+  getWeaponConfig,
+  getPurchasableWeapons,
+  canAffordWeapon,
+  calculateKillReward,
+  calculateWinBonus,
+  calculateGameEarnings,
+  // Types
+  type WeaponType,
+  type WeaponConfig,
+} from './weapons';
