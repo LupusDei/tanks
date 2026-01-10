@@ -29,9 +29,9 @@ interface Particle {
 // Button dimensions for border calculations (half-sizes)
 const BUTTON_HALF_WIDTH = 100 // ~200px wide button / 2
 const BUTTON_HALF_HEIGHT = 28 // ~56px tall button / 2
-const BORDER_PADDING = 4 // Small padding from actual edge
+const BORDER_OUTSET = 8 // How far outside the button edge particles should stop
 
-// Calculate the point on the button border closest to a given angle from center
+// Calculate the point just OUTSIDE the button border for a given angle from center
 function getBorderPoint(angle: number): { x: number; y: number } {
   // Normalize angle to 0-2π
   const normalizedAngle = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
@@ -53,11 +53,11 @@ function getBorderPoint(angle: number): { x: number; y: number } {
   // Use the smaller positive t value
   const t = Math.min(Math.abs(tHorizontal), Math.abs(tVertical))
 
-  // Calculate intersection point with small inward offset
-  const scale = (t - BORDER_PADDING) / t
+  // Calculate intersection point with OUTWARD offset (particles stay outside button)
+  const outwardScale = (t + BORDER_OUTSET) / t
   return {
-    x: cos * t * scale,
-    y: sin * t * scale,
+    x: cos * t * outwardScale,
+    y: sin * t * outwardScale,
   }
 }
 
@@ -178,8 +178,7 @@ export function MagnetizeButton({
       return {
         x: borderPoint.x,
         y: borderPoint.y,
-        opacity: 1,
-        scale: 1.2,
+        scale: 1.3,
         transition: {
           type: "spring",
           stiffness: 80,
@@ -207,7 +206,6 @@ export function MagnetizeButton({
       return {
         x: Math.cos(angle) * currentRadius,
         y: Math.sin(angle) * currentRadius,
-        opacity: 0.6,
         scale: 1,
         transition: {
           type: "spring",
@@ -242,7 +240,7 @@ export function MagnetizeButton({
             initial={{
               x: initialX,
               y: initialY,
-              opacity: 0.6,
+              opacity: 1,
               scale: 1,
             }}
             animate={particlesControl}
