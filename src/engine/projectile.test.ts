@@ -801,4 +801,68 @@ describe('updateHomingTracking', () => {
     const result = updateHomingTracking(projectile, targetPos, newTime);
     expect(result.startTime).toBe(newTime);
   });
+
+  it('tracks previous distance to target', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    const targetPos = { x: 500, y: 300 };
+
+    const result = updateHomingTracking(projectile, targetPos, 1000);
+    expect(result.previousDistanceToTarget).toBeDefined();
+    expect(result.previousDistanceToTarget).toBeGreaterThan(0);
+  });
+
+  it('triggers proximity explosion when missile passes closest approach', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    // Simulate missile that has been tracking and got very close (within 50px)
+    const projectileWithHistory = {
+      ...projectile,
+      previousDistanceToTarget: 30, // Was very close
+    };
+    // Target is now further away (missile has passed)
+    const targetPos = { x: 500, y: 300 }; // Distance will be greater than 30
+
+    const result = updateHomingTracking(projectileWithHistory, targetPos, 1000);
+    expect(result.shouldProximityExplode).toBe(true);
+  });
+
+  it('does not trigger proximity explosion when missile is still approaching', () => {
+    const tank = createMockTank();
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    // Simulate missile that was far away
+    const projectileWithHistory = {
+      ...projectile,
+      previousDistanceToTarget: 500,
+    };
+    const targetPos = { x: 300, y: 300 }; // Distance should be less than 500
+
+    const result = updateHomingTracking(projectileWithHistory, targetPos, 1000);
+    expect(result.shouldProximityExplode).toBeFalsy();
+  });
+});
+
+describe('handleProjectileBounce minimum bounce velocity', () => {
+  it('ensures bounce has minimum upward velocity', () => {
+    const tank = createMockTank({ power: 10 }); // Very low power
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'bouncing_betty');
+    const collisionPoint = { x: 150, y: 350 };
+
+    // Simulate a very short elapsed time to get minimal velocity at impact
+    const result = handleProjectileBounce(projectile, collisionPoint, 100);
+    expect(result).not.toBeNull();
+    // The power should be at least the minimum (15)
+    expect(result!.launchConfig.power).toBeGreaterThanOrEqual(15);
+  });
+
+  it('maintains higher power for strong bounces', () => {
+    const tank = createMockTank({ power: 80 }); // High power
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'bouncing_betty');
+    const collisionPoint = { x: 150, y: 350 };
+
+    const result = handleProjectileBounce(projectile, collisionPoint, 500);
+    expect(result).not.toBeNull();
+    // Should still have decent power after bounce
+    expect(result!.launchConfig.power).toBeGreaterThan(15);
+  });
 });
