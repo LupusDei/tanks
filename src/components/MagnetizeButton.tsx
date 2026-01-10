@@ -11,7 +11,7 @@ interface MagnetizeButtonProps {
 
 interface Particle {
   id: number
-  orbitRadius: number
+  baseOffset: number // How far beyond min safe distance (8-25px)
   orbitSpeed: number
   startAngle: number
   wobbleAmount: number
@@ -24,9 +24,11 @@ interface Particle {
 // Button dimensions for border calculations
 const BUTTON_HALF_WIDTH = 110
 const BUTTON_HALF_HEIGHT = 32
-const BORDER_OUTSET = 15
+const MIN_BUFFER = 8 // Minimum distance outside button edge when orbiting
+const HOVER_OUTSET = 6 // Distance outside button edge when hovering
 
-function getBorderPoint(angleDeg: number): { x: number; y: number } {
+// Get distance from center to button edge at a given angle
+function getEdgeDistance(angleDeg: number): number {
   const angleRad = (angleDeg * Math.PI) / 180
   const cos = Math.cos(angleRad)
   const sin = Math.sin(angleRad)
@@ -34,25 +36,29 @@ function getBorderPoint(angleDeg: number): { x: number; y: number } {
   const tanAngle = Math.abs(sin / (cos || 0.0001))
   const aspectRatio = BUTTON_HALF_HEIGHT / BUTTON_HALF_WIDTH
 
-  let x: number, y: number
-
   if (tanAngle < aspectRatio) {
-    x = cos > 0 ? BUTTON_HALF_WIDTH + BORDER_OUTSET : -(BUTTON_HALF_WIDTH + BORDER_OUTSET)
-    y = sin * Math.abs(x)
+    // Hits left or right edge
+    return Math.abs(BUTTON_HALF_WIDTH / cos)
   } else {
-    y = sin > 0 ? BUTTON_HALF_HEIGHT + BORDER_OUTSET : -(BUTTON_HALF_HEIGHT + BORDER_OUTSET)
-    x = cos * Math.abs(y) / (Math.abs(sin) || 0.0001)
-    const maxX = BUTTON_HALF_WIDTH + BORDER_OUTSET
-    x = Math.max(-maxX, Math.min(maxX, x))
+    // Hits top or bottom edge
+    return Math.abs(BUTTON_HALF_HEIGHT / sin)
   }
+}
 
-  return { x, y }
+// Get point just outside button border for hover state
+function getBorderPoint(angleDeg: number): { x: number; y: number } {
+  const angleRad = (angleDeg * Math.PI) / 180
+  const distance = getEdgeDistance(angleDeg) + HOVER_OUTSET
+  return {
+    x: Math.cos(angleRad) * distance,
+    y: Math.sin(angleRad) * distance,
+  }
 }
 
 export function MagnetizeButton({
   onClick,
   children,
-  particleCount = 16,
+  particleCount = 28,
   disabled = false,
   className = "",
   "data-testid": testId,
@@ -78,14 +84,14 @@ export function MagnetizeButton({
   const particles = useMemo<Particle[]>(() => {
     return Array.from({ length: particleCount }, (_, i) => ({
       id: i,
-      orbitRadius: 100 + Math.random() * 60,
-      orbitSpeed: 20 + Math.random() * 15,
-      startAngle: (i / particleCount) * 360 + Math.random() * 20,
-      wobbleAmount: 10 + Math.random() * 15,
-      wobbleSpeed: 0.3 + Math.random() * 0.4,
-      size: 6 + Math.random() * 6,
+      baseOffset: MIN_BUFFER + Math.random() * 20, // 8-28px beyond button edge
+      orbitSpeed: 25 + Math.random() * 20, // Slower orbit (25-45 sec per rotation)
+      startAngle: (i / particleCount) * 360 + Math.random() * 15,
+      wobbleAmount: 3 + Math.random() * 6, // Smaller wobble (3-9px)
+      wobbleSpeed: 0.2 + Math.random() * 0.3,
+      size: 3 + Math.random() * 3, // Smaller particles (3-6px)
       hue: 120 + Math.random() * 60,
-      glowIntensity: 0.7 + Math.random() * 0.6,
+      glowIntensity: 0.5 + Math.random() * 0.5,
     }))
   }, [particleCount])
 
@@ -103,17 +109,20 @@ export function MagnetizeButton({
       {particles.map((particle) => {
         const currentAngle = particle.startAngle + (time / particle.orbitSpeed) * 360
         const wobble = Math.sin(time * particle.wobbleSpeed * Math.PI * 2) * particle.wobbleAmount
-        const currentRadius = particle.orbitRadius + wobble
+
+        // Calculate orbit radius based on edge distance at current angle
+        const edgeDist = getEdgeDistance(currentAngle)
+        const orbitRadius = edgeDist + particle.baseOffset + wobble
 
         const angleRad = (currentAngle * Math.PI) / 180
-        const orbitX = Math.cos(angleRad) * currentRadius
-        const orbitY = Math.sin(angleRad) * currentRadius
+        const orbitX = Math.cos(angleRad) * orbitRadius
+        const orbitY = Math.sin(angleRad) * orbitRadius
 
         const borderPos = getBorderPoint(currentAngle)
 
         const x = isHovering ? borderPos.x : orbitX
         const y = isHovering ? borderPos.y : orbitY
-        const scale = isHovering ? 1.5 : 1
+        const scale = isHovering ? 1.3 : 1
 
         return (
           <div
@@ -130,7 +139,7 @@ export function MagnetizeButton({
               transform: `translate(${x - particle.size/2}px, ${y - particle.size/2}px) scale(${scale})`,
               transition: isHovering ? 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none',
               background: `radial-gradient(circle at 30% 30%, hsl(${particle.hue}, 100%, 85%), hsl(${particle.hue}, 100%, 55%))`,
-              boxShadow: `0 0 ${8 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 60%, 0.9), 0 0 ${16 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 50%, 0.6)`,
+              boxShadow: `0 0 ${6 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 60%, 0.9), 0 0 ${10 * particle.glowIntensity}px hsla(${particle.hue}, 100%, 50%, 0.5)`,
             }}
           />
         )
