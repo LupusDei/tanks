@@ -50,17 +50,22 @@ function App() {
   const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
-  const aiTimeoutRef = useRef<number | null>(null)
 
-  // AI turn handler - only runs when turn changes to AI (and no active projectile/explosion)
-  const isAITurn = state.phase === 'playing' && state.currentPlayerId !== 'player' && !isProjectileActive && !isExplosionActive
+  // Track whether AI tanks are currently processing their shots
   const aiProcessingRef = useRef(false)
+  // Store timeout IDs for each AI tank's thinking delay
+  const aiTimeoutsRef = useRef<Map<string, number>>(new Map())
 
   // Keep refs to latest state for use in timeouts
   const stateRef = useRef(state)
   const isProjectileActiveRef = useRef(isProjectileActive)
   stateRef.current = state
   isProjectileActiveRef.current = isProjectileActive
+
+  // Check if player has queued their shot and AI should respond
+  const playerTank = state.tanks.find((t) => t.id === 'player')
+  const playerIsReady = playerTank?.isReady ?? false
+  const shouldAIQueue = state.phase === 'playing' && playerIsReady && !isProjectileActive && !isExplosionActive
 
   // Function to fire projectile for a specific tank (uses refs for latest state)
   const fireProjectileForTank = useCallback((tankId: string) => {
@@ -82,60 +87,80 @@ function App() {
     setIsProjectileActive(true)
   }, [])
 
-  // Reset AI processing flag when it's no longer AI's turn
+  // Keep fireProjectileForTank in scope for tanks-9m2 (launch all when ready)
+  void fireProjectileForTank
+
+  // Reset AI processing flag when player is no longer ready
   useEffect(() => {
-    if (!isAITurn) {
+    if (!shouldAIQueue) {
       aiProcessingRef.current = false
     }
-  }, [isAITurn])
+  }, [shouldAIQueue])
 
+  // AI queueing effect - triggers when player queues their shot
   useEffect(() => {
-    // Only process when it's AI's turn and not already processing
-    if (!isAITurn || aiProcessingRef.current) {
+    // Only process when player has queued and we haven't started processing
+    if (!shouldAIQueue || aiProcessingRef.current) {
       return
     }
 
     // Use refs to get current state to avoid re-running effect when tank state changes
     const currentState = stateRef.current
-    const aiTank = currentState.tanks.find((t) => t.id === currentState.currentPlayerId)
-    const playerTank = currentState.tanks.find((t) => t.id === 'player')
+    const player = currentState.tanks.find((t) => t.id === 'player')
+    const aiTanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady)
 
-    if (!aiTank || !playerTank) {
+    if (!player || aiTanks.length === 0) {
       return
     }
 
     // Mark as processing to prevent re-entry
     aiProcessingRef.current = true
 
-    // Calculate AI shot
-    const aiDecision = calculateAIShot(
-      aiTank,
-      playerTank,
-      currentState.terrain,
-      currentState.aiDifficulty
-    )
+    // Calculate and queue shots for all AI tanks simultaneously
+    for (const aiTank of aiTanks) {
+      // Calculate AI shot (targeting the player)
+      const aiDecision = calculateAIShot(
+        aiTank,
+        player,
+        currentState.terrain,
+        currentState.aiDifficulty
+      )
 
-    // Update AI tank's angle and power (rounded to integers)
-    actions.updateTank(aiTank.id, {
-      angle: Math.round(aiDecision.angle),
-      power: Math.round(aiDecision.power),
-    })
+      // Update AI tank's angle and power immediately (rounded to integers)
+      actions.updateTank(aiTank.id, {
+        angle: Math.round(aiDecision.angle),
+        power: Math.round(aiDecision.power),
+      })
 
-    // Fire after thinking delay
-    const tankIdToFire = aiTank.id
-    aiTimeoutRef.current = window.setTimeout(() => {
-      fireProjectileForTank(tankIdToFire)
-    }, aiDecision.thinkingTimeMs)
+      // Queue the shot after thinking delay
+      const tankId = aiTank.id
+      const timeoutId = window.setTimeout(() => {
+        // Get the latest tank state
+        const tank = stateRef.current.tanks.find((t) => t.id === tankId)
+        if (tank && !tank.isReady) {
+          actions.updateTank(tankId, {
+            queuedShot: { angle: tank.angle, power: tank.power },
+            isReady: true,
+          })
+        }
+        aiTimeoutsRef.current.delete(tankId)
+      }, aiDecision.thinkingTimeMs)
 
-    // Cleanup timeout on unmount or when no longer AI's turn
+      aiTimeoutsRef.current.set(tankId, timeoutId)
+    }
+
+    // Copy ref value for cleanup (React best practice)
+    const timeoutsMap = aiTimeoutsRef.current
+
+    // Cleanup timeouts on unmount
     return () => {
-      if (aiTimeoutRef.current !== null) {
-        window.clearTimeout(aiTimeoutRef.current)
-        aiTimeoutRef.current = null
+      for (const timeoutId of timeoutsMap.values()) {
+        window.clearTimeout(timeoutId)
       }
+      timeoutsMap.clear()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAITurn])
+  }, [shouldAIQueue])
 
   const handleStartGame = () => {
     actions.setPhase('terrain_select')
