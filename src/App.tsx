@@ -5,6 +5,7 @@ import {
   ColorSelectionScreen,
   ControlPanel,
   LoadingScreen,
+  TerrainSizeSelector,
   TurnIndicator,
 } from './components'
 import { useGame } from './context/useGame'
@@ -29,10 +30,7 @@ import {
   type ProjectileState,
   type ExplosionState,
 } from './engine'
-import { TankColor } from './types/game'
-
-const CANVAS_WIDTH = 800
-const CANVAS_HEIGHT = 600
+import { TankColor, TerrainSize, TERRAIN_SIZES } from './types/game'
 
 // Tank dimensions for hit detection (must match tank.ts)
 const TANK_BODY_WIDTH = 40
@@ -66,8 +64,11 @@ function App() {
     const tank = stateRef.current.tanks.find((t) => t.id === tankId)
     if (!tank || isProjectileActiveRef.current) return
 
+    // Get canvas height from current terrain size
+    const canvasHeight = TERRAIN_SIZES[stateRef.current.terrainSize].height
+
     // Start projectile animation
-    projectileRef.current = createProjectileState(tank, performance.now(), CANVAS_HEIGHT)
+    projectileRef.current = createProjectileState(tank, performance.now(), canvasHeight)
     setIsProjectileActive(true)
   }, [])
 
@@ -127,14 +128,22 @@ function App() {
   }, [isAITurn])
 
   const handleStartGame = () => {
+    actions.setPhase('terrain_select')
+  }
+
+  const handleTerrainSizeSelect = (size: TerrainSize) => {
+    actions.setTerrainSize(size)
     actions.setPhase('color_select')
   }
 
   const handleColorSelect = (color: TankColor) => {
+    // Get terrain dimensions from selected size
+    const terrainConfig = TERRAIN_SIZES[state.terrainSize]
+
     // Initialize game with terrain and tanks
     const { terrain, tanks } = initializeGame({
-      canvasWidth: CANVAS_WIDTH,
-      canvasHeight: CANVAS_HEIGHT,
+      canvasWidth: terrainConfig.width,
+      canvasHeight: terrainConfig.height,
       playerColor: color,
     })
 
@@ -178,9 +187,12 @@ function App() {
     const opponentTank = state.tanks.find((t) => t.id === 'opponent')
     if (!opponentTank) return
 
+    // Get canvas height from current terrain size
+    const canvasHeight = TERRAIN_SIZES[state.terrainSize].height
+
     // Convert world coordinates to canvas coordinates for hit detection
     const tankCanvasX = opponentTank.position.x
-    const tankCanvasY = CANVAS_HEIGHT - opponentTank.position.y
+    const tankCanvasY = canvasHeight - opponentTank.position.y
 
     // Calculate tank bounding box (approximate)
     const tankLeft = tankCanvasX - TANK_BODY_WIDTH / 2
@@ -199,7 +211,7 @@ function App() {
       const nextDifficulty = getNextDifficulty(state.aiDifficulty)
       actions.setAIDifficulty(nextDifficulty)
     }
-  }, [state.phase, state.tanks, state.aiDifficulty, isProjectileActive, isExplosionActive, actions])
+  }, [state.phase, state.tanks, state.aiDifficulty, state.terrainSize, isProjectileActive, isExplosionActive, actions])
 
   const currentPlayerTank = state.tanks.find((t) => t.id === state.currentPlayerId)
   const isPlayerTurn = state.currentPlayerId === 'player'
@@ -298,13 +310,20 @@ function App() {
     return <LoadingScreen onStart={handleStartGame} />
   }
 
+  if (state.phase === 'terrain_select') {
+    return <TerrainSizeSelector onSizeSelect={handleTerrainSizeSelect} />
+  }
+
   if (state.phase === 'color_select') {
     return <ColorSelectionScreen onColorSelect={handleColorSelect} />
   }
 
+  // Get canvas dimensions from selected terrain size
+  const terrainConfig = TERRAIN_SIZES[state.terrainSize]
+
   return (
     <div className="app">
-      <Canvas width={CANVAS_WIDTH} height={CANVAS_HEIGHT} onRender={handleRender} onClick={handleCanvasClick} />
+      <Canvas width={terrainConfig.width} height={terrainConfig.height} onRender={handleRender} onClick={handleCanvasClick} />
       <TurnIndicator
         turnNumber={state.currentTurn}
         isPlayerTurn={isPlayerTurn}

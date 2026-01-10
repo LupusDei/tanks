@@ -1,6 +1,21 @@
-export type GamePhase = 'loading' | 'color_select' | 'playing' | 'gameover';
+export type GamePhase = 'loading' | 'terrain_select' | 'color_select' | 'playing' | 'gameover';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
+
+export type TerrainSize = 'small' | 'medium' | 'large' | 'huge';
+
+export interface TerrainSizeConfig {
+  width: number;
+  height: number;
+  label: string;
+}
+
+export const TERRAIN_SIZES: Record<TerrainSize, TerrainSizeConfig> = {
+  small: { width: 640, height: 480, label: 'Small' },
+  medium: { width: 800, height: 600, label: 'Medium' },
+  large: { width: 1024, height: 768, label: 'Large' },
+  huge: { width: 1280, height: 960, label: 'Huge' },
+};
 
 export type AIDifficulty =
   | 'blind_fool'
@@ -48,6 +63,7 @@ export interface GameState {
   winner: string | null;
   playerColor: TankColor | null;
   aiDifficulty: AIDifficulty;
+  terrainSize: TerrainSize;
 }
 
 export interface GameActions {
@@ -61,4 +77,5 @@ export interface GameActions {
   resetGame: () => void;
   setPlayerColor: (color: TankColor) => void;
   setAIDifficulty: (difficulty: AIDifficulty) => void;
+  setTerrainSize: (size: TerrainSize) => void;
 }
