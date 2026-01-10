@@ -96,6 +96,8 @@ export interface GameState {
   selectedWeapon: WeaponType;
   /** Remaining shots per weapon type for current game */
   weaponAmmo: Partial<Record<WeaponType, number>>;
+  /** Current wind speed in m/s (negative = left, positive = right) */
+  wind: number;
 }
 
 export interface GameActions {
@@ -118,6 +120,7 @@ export interface GameActions {
   setSelectedWeapon: (weapon: WeaponType) => void;
   setWeaponAmmo: (ammo: Partial<Record<WeaponType, number>>) => void;
   decrementAmmo: (weapon: WeaponType) => void;
+  setWind: (wind: number) => void;
 }
 
 // User and Statistics Types

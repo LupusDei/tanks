@@ -12,6 +12,7 @@ export {
   GRAVITY,
   POWER_SCALE,
   BASE_TERRAIN_WIDTH,
+  WIND_SCALE,
   getTerrainPowerScale,
   powerToVelocity,
   degreesToRadians,
@@ -78,6 +79,7 @@ export {
   AI_DIFFICULTY_CONFIGS,
   AI_DIFFICULTY_ORDER,
   AI_AVAILABLE_WEAPONS,
+  AI_WIND_COMPENSATION,
   type AIDecision,
   type AIDifficultyConfig,
 } from './ai';
@@ -142,3 +144,13 @@ export {
   type DestructionParticle,
   type DebrisType,
 } from './tankDestruction';
+
+export {
+  WIND_STD_DEV,
+  WIND_CHANGE_STD_DEV,
+  MAX_WIND,
+  WIND_REGRESSION,
+  gaussianRandom,
+  generateInitialWind,
+  generateNextWind,
+} from './wind';

@@ -675,6 +675,77 @@ p {
   color: #ff8888;
 }
 
+/* Wind Indicator Styles */
+.wind-indicator {
+  margin: 0.5rem 0;
+  padding: 0.25rem 0;
+}
+
+.wind-indicator__display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  height: 1.25rem;
+  min-width: 120px;
+}
+
+.wind-indicator__center {
+  color: #666;
+  font-size: 0.75rem;
+  width: 12px;
+  text-align: center;
+}
+
+.wind-indicator__arrow {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.wind-indicator__arrow--left {
+  flex-direction: row;
+  justify-content: flex-end;
+  width: 54px;
+}
+
+.wind-indicator__arrow--right {
+  flex-direction: row;
+  justify-content: flex-start;
+  width: 54px;
+}
+
+.wind-indicator__arrow-head {
+  color: #00ccff;
+  font-weight: bold;
+  font-size: 1rem;
+  text-shadow: 0 0 8px #00ccff;
+}
+
+.wind-indicator__arrow-body {
+  height: 3px;
+  background: linear-gradient(90deg, #00ccff 0%, #0088cc 100%);
+  min-width: 2px;
+  max-width: 100%;
+  box-shadow: 0 0 6px #00ccff;
+}
+
+.wind-indicator__arrow--left .wind-indicator__arrow-body {
+  background: linear-gradient(90deg, #0088cc 0%, #00ccff 100%);
+}
+
+.wind-indicator__calm {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+.wind-indicator__speed {
+  font-size: 0.7rem;
+  color: #00ccff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Game Over Screen Styles */
 .game-over-screen {
   position: fixed;

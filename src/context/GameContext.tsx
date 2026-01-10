@@ -21,6 +21,7 @@ const initialState: GameState = {
   enemyCount: 1,
   selectedWeapon: 'standard',
   weaponAmmo: { standard: Infinity },
+  wind: 0,
 };
 
 interface GameProviderProps {
@@ -200,6 +201,10 @@ export function GameProvider({ children }: GameProviderProps) {
     });
   }, []);
 
+  const setWind = useCallback((wind: number) => {
+    setState((prev) => ({ ...prev, wind }));
+  }, []);
+
   const actions: GameActions = {
     setPhase,
     initializeTanks,
@@ -220,6 +225,7 @@ export function GameProvider({ children }: GameProviderProps) {
     setSelectedWeapon,
     setWeaponAmmo,
     decrementAmmo,
+    setWind,
   };
 
   return (

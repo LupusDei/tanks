@@ -197,11 +197,15 @@ function estimateLandingTimeFromLaunch(launchConfig: LaunchConfig, _canvasHeight
  * Get current projectile position based on elapsed time.
  * Applies ANIMATION_SPEED_MULTIPLIER and weapon speedMultiplier to make projectiles
  * animate faster or slower based on weapon type while maintaining trajectory shape.
+ *
+ * @param projectile - Projectile state
+ * @param currentTime - Current animation time
+ * @param wind - Wind speed in m/s (positive = right, negative = left). Default 0.
  */
-export function getProjectilePosition(projectile: ProjectileState, currentTime: number): Position {
+export function getProjectilePosition(projectile: ProjectileState, currentTime: number, wind: number = 0): Position {
   const weaponSpeedMultiplier = projectile.speedMultiplier;
   const elapsedSeconds = ((currentTime - projectile.startTime) / 1000) * ANIMATION_SPEED_MULTIPLIER * weaponSpeedMultiplier;
-  return calculatePosition(projectile.launchConfig, elapsedSeconds);
+  return calculatePosition(projectile.launchConfig, elapsedSeconds, wind);
 }
 
 /**
@@ -710,9 +714,10 @@ function renderHomingMissile(
 export function renderProjectile(
   ctx: CanvasRenderingContext2D,
   projectile: ProjectileState,
-  currentTime: number
+  currentTime: number,
+  wind: number = 0
 ): void {
-  const position = getProjectilePosition(projectile, currentTime);
+  const position = getProjectilePosition(projectile, currentTime, wind);
   const visual = getProjectileVisual(projectile.weaponType);
 
   // Positions are already in screen coordinates
@@ -782,9 +787,10 @@ export function renderProjectile(
  */
 export function updateProjectileTrace(
   projectile: ProjectileState,
-  currentTime: number
+  currentTime: number,
+  wind: number = 0
 ): ProjectileState {
-  const position = getProjectilePosition(projectile, currentTime);
+  const position = getProjectilePosition(projectile, currentTime, wind);
 
   // Add point if enough time has passed since last point
   const lastPoint = projectile.tracePoints[projectile.tracePoints.length - 1];
@@ -925,12 +931,14 @@ const BOUNCE_ENERGY_RETENTION = 0.7;
  * @param projectile - Current projectile state
  * @param collisionPoint - Where the collision occurred (screen coords)
  * @param currentTime - Current animation time
+ * @param wind - Wind speed in m/s (positive = right, negative = left). Default 0.
  * @returns New projectile state if bounced, null if should explode
  */
 export function handleProjectileBounce(
   projectile: ProjectileState,
   collisionPoint: Position,
-  currentTime: number
+  currentTime: number,
+  wind: number = 0
 ): ProjectileState | null {
   // Only bounce if this is a bouncing weapon with bounces remaining
   if (
@@ -941,10 +949,10 @@ export function handleProjectileBounce(
     return null; // Should explode
   }
 
-  // Calculate current velocity at time of impact
+  // Calculate current velocity at time of impact (includes wind effect)
   const elapsedMs = currentTime - projectile.startTime;
   const elapsedPhysicsTime = (elapsedMs / 1000) * ANIMATION_SPEED_MULTIPLIER * projectile.speedMultiplier;
-  const { vx, vy } = calculateVelocity(projectile.launchConfig, elapsedPhysicsTime);
+  const { vx, vy } = calculateVelocity(projectile.launchConfig, elapsedPhysicsTime, wind);
 
   // Simple reflection: reverse vertical velocity, keep horizontal
   // Apply energy loss to make bounces more realistic
@@ -1035,15 +1043,16 @@ export function getTrajectoryProgress(projectile: ProjectileState, currentTime: 
  */
 function createClusterSubProjectiles(
   parentProjectile: ProjectileState,
-  currentTime: number
+  currentTime: number,
+  wind: number = 0
 ): ProjectileState[] {
   const subProjectiles: ProjectileState[] = [];
-  const currentPos = getProjectilePosition(parentProjectile, currentTime);
+  const currentPos = getProjectilePosition(parentProjectile, currentTime, wind);
 
-  // Calculate current velocity to inherit momentum
+  // Calculate current velocity to inherit momentum (includes wind effect)
   const elapsedMs = currentTime - parentProjectile.startTime;
   const elapsedPhysicsTime = (elapsedMs / 1000) * ANIMATION_SPEED_MULTIPLIER * parentProjectile.speedMultiplier;
-  const { vx, vy } = calculateVelocity(parentProjectile.launchConfig, elapsedPhysicsTime);
+  const { vx, vy } = calculateVelocity(parentProjectile.launchConfig, elapsedPhysicsTime, wind);
 
   // Calculate current velocity angle for spread calculations
   const currentAngle = Math.atan2(-vy, vx) * (180 / Math.PI); // Convert to degrees, negate vy for screen coords
@@ -1094,7 +1103,8 @@ function createClusterSubProjectiles(
  */
 export function updateClusterBombSplit(
   projectile: ProjectileState,
-  currentTime: number
+  currentTime: number,
+  wind: number = 0
 ): ProjectileState {
   // Only process cluster bombs that haven't split yet
   if (projectile.weaponType !== 'cluster_bomb' || projectile.hasSplit || projectile.isSubProjectile) {
@@ -1106,7 +1116,7 @@ export function updateClusterBombSplit(
 
   if (progress >= CLUSTER_SPLIT_THRESHOLD) {
     // Time to split!
-    const subProjectiles = createClusterSubProjectiles(projectile, currentTime);
+    const subProjectiles = createClusterSubProjectiles(projectile, currentTime, wind);
 
     return {
       ...projectile,
@@ -1160,14 +1170,15 @@ function renderClusterSubProjectile(
 export function renderClusterSubProjectiles(
   ctx: CanvasRenderingContext2D,
   projectile: ProjectileState,
-  currentTime: number
+  currentTime: number,
+  wind: number = 0
 ): void {
   if (!projectile.subProjectiles) return;
 
   for (const sub of projectile.subProjectiles) {
     if (!sub.isActive) continue;
 
-    const position = getProjectilePosition(sub, currentTime);
+    const position = getProjectilePosition(sub, currentTime, wind);
 
     // Draw trail
     if (sub.tracePoints.length > 0) {
@@ -1244,12 +1255,14 @@ export function findNearestTarget(
  * @param projectile - Current projectile state
  * @param targetPos - Target position in screen coordinates
  * @param currentTime - Current animation time
+ * @param wind - Wind speed in m/s (positive = right, negative = left). Default 0.
  * @returns Updated projectile state with adjusted angle
  */
 export function updateHomingTracking(
   projectile: ProjectileState,
   targetPos: Position | null,
-  currentTime: number
+  currentTime: number,
+  wind: number = 0
 ): ProjectileState {
   // Only process homing missiles with tracking enabled
   if (!projectile.trackingStrength || projectile.weaponType !== 'homing_missile') {
@@ -1261,8 +1274,8 @@ export function updateHomingTracking(
     return projectile;
   }
 
-  // Get current projectile position
-  const currentPos = getProjectilePosition(projectile, currentTime);
+  // Get current projectile position (affected by wind)
+  const currentPos = getProjectilePosition(projectile, currentTime, wind);
 
   // Calculate direction to target
   const dx = targetPos.x - currentPos.x;

@@ -48,6 +48,8 @@ import {
   createCrater,
   findNearestTarget,
   updateHomingTracking,
+  generateInitialWind,
+  generateNextWind,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -175,7 +177,7 @@ function App() {
         target,
         currentState.terrain,
         currentState.aiDifficulty,
-        { consecutiveShots }
+        { consecutiveShots, wind: currentState.wind }
       )
 
       // Record this shot for bracketing system
@@ -355,6 +357,8 @@ function App() {
       standard: Infinity,
     })
     actions.setSelectedWeapon(weapon)
+    // Generate initial wind for the game
+    actions.setWind(generateInitialWind())
     actions.setPhase('playing')
   }
 
@@ -531,7 +535,7 @@ function App() {
       // Check for cluster bomb split (only for active main projectiles)
       let currentProjectile = projectile
       if (projectile.isActive && projectile.weaponType === 'cluster_bomb' && !projectile.hasSplit) {
-        currentProjectile = updateClusterBombSplit(projectile, currentTime)
+        currentProjectile = updateClusterBombSplit(projectile, currentTime, state.wind)
 
         // If split just happened, the main projectile becomes inactive
         // and sub-projectiles are created
@@ -544,17 +548,17 @@ function App() {
       // Handle main projectile if still active
       if (currentProjectile.isActive) {
         // Update trace points
-        let updatedProjectile = updateProjectileTrace(currentProjectile, currentTime)
+        let updatedProjectile = updateProjectileTrace(currentProjectile, currentTime, state.wind)
 
         // Update homing missile tracking
         if (updatedProjectile.weaponType === 'homing_missile' && updatedProjectile.trackingStrength) {
-          const position = getProjectilePosition(updatedProjectile, currentTime)
+          const position = getProjectilePosition(updatedProjectile, currentTime, state.wind)
           const target = findNearestTarget(position, stateRef.current.tanks, updatedProjectile.tankId, ctx.canvas.height)
-          updatedProjectile = updateHomingTracking(updatedProjectile, target, currentTime)
+          updatedProjectile = updateHomingTracking(updatedProjectile, target, currentTime, state.wind)
         }
 
         // Get current position
-        const position = getProjectilePosition(updatedProjectile, currentTime)
+        const position = getProjectilePosition(updatedProjectile, currentTime, state.wind)
 
         // Check for terrain collision first (for bouncing weapons)
         const terrainCollision = terrain ? checkTerrainCollision(position, terrain, ctx.canvas.height) : { hit: false, point: null, worldPoint: null }
@@ -564,7 +568,7 @@ function App() {
         if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight) || terrainCollision.hit) {
           // Try to bounce if this is a bouncing weapon
           const bounceResult = terrainCollision.point
-            ? handleProjectileBounce(updatedProjectile, terrainCollision.point, currentTime)
+            ? handleProjectileBounce(updatedProjectile, terrainCollision.point, currentTime, state.wind)
             : null
 
           if (bounceResult) {
@@ -572,7 +576,7 @@ function App() {
             currentProjectile = bounceResult
             anyProjectileActive = true
             // Render projectile at new position
-            renderProjectile(ctx, bounceResult, currentTime)
+            renderProjectile(ctx, bounceResult, currentTime, state.wind)
           } else {
             // Projectile has landed - mark as inactive
             currentProjectile = { ...updatedProjectile, isActive: false }
@@ -586,7 +590,7 @@ function App() {
           anyProjectileActive = true
 
           // Render projectile
-          renderProjectile(ctx, updatedProjectile, currentTime)
+          renderProjectile(ctx, updatedProjectile, currentTime, state.wind)
         }
       }
 
@@ -601,8 +605,8 @@ function App() {
           }
 
           // Update trace points for sub-projectile
-          const updatedSub = updateProjectileTrace(sub, currentTime)
-          const subPosition = getProjectilePosition(updatedSub, currentTime)
+          const updatedSub = updateProjectileTrace(sub, currentTime, state.wind)
+          const subPosition = getProjectilePosition(updatedSub, currentTime, state.wind)
 
           // Check if sub-projectile has landed
           const subTerrainHeight = terrain ? getInterpolatedHeightAt(terrain, subPosition.x) ?? 0 : 0
@@ -620,7 +624,7 @@ function App() {
         currentProjectile = { ...currentProjectile, subProjectiles: updatedSubProjectiles }
 
         // Render sub-projectiles
-        renderClusterSubProjectiles(ctx, currentProjectile, currentTime)
+        renderClusterSubProjectiles(ctx, currentProjectile, currentTime, state.wind)
       }
 
       updatedProjectiles.push(currentProjectile)
@@ -694,6 +698,8 @@ function App() {
       setIsExplosionActive(false)
       // Increment turn counter for round tracking
       actions.incrementTurn()
+      // Generate new wind for the next turn (based on current wind)
+      actions.setWind(generateNextWind(state.wind))
     }
   }
 
@@ -731,6 +737,7 @@ function App() {
         turnNumber={state.currentTurn}
         playerAlive={playerIsAlive ?? false}
         isFiring={isProjectileActive || isExplosionActive}
+        windSpeed={state.wind}
       />
       {playerTank && playerIsAlive && (
         <>
