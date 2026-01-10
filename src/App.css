@@ -825,10 +825,10 @@ p {
 }
 
 .game-config-screen__title {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-family: monospace;
   color: #00ff88;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
@@ -836,20 +836,20 @@ p {
 .game-config-screen__sections {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   width: 100%;
-  max-width: 900px;
+  max-width: 800px;
 }
 
 .game-config-screen__section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .game-config-screen__section-title {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-family: monospace;
   color: #888;
   text-transform: uppercase;
@@ -860,7 +860,7 @@ p {
 /* Terrain Options */
 .game-config-screen__terrain-options {
   display: flex;
-  gap: 1rem;
+  gap: 0.8rem;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -869,8 +869,8 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1rem 1.25rem;
+  gap: 0.4rem;
+  padding: 0.8rem 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid #444;
   border-radius: 8px;
@@ -890,8 +890,8 @@ p {
 }
 
 .game-config-screen__terrain-preview {
-  width: 80px;
-  height: 60px;
+  width: 70px;
+  height: 52px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   display: flex;
@@ -908,7 +908,7 @@ p {
 
 .game-config-screen__terrain-label {
   font-family: monospace;
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -916,7 +916,7 @@ p {
 
 .game-config-screen__terrain-dimensions {
   font-family: monospace;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: #666;
 }
 
@@ -924,8 +924,9 @@ p {
 .game-config-screen__enemy-options {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
-  width: 450px;
+  gap: 0.5rem;
+  width: 365px;
+  margin: 0 auto;
 }
 
 .game-config-screen__enemy-option {
@@ -933,11 +934,11 @@ p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.6rem;
+  gap: 0.3rem;
+  padding: 0.5rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid #444;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   aspect-ratio: 1;
@@ -957,33 +958,33 @@ p {
 .game-config-screen__enemy-preview {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.1rem;
   justify-content: center;
   align-items: center;
-  min-height: 24px;
+  min-height: 20px;
 }
 
 .game-config-screen__enemy-preview-row {
   display: flex;
-  gap: 0.15rem;
+  gap: 0.1rem;
   justify-content: center;
 }
 
 .game-config-screen__enemy-tank-icon {
-  width: 16px;
-  height: 10px;
+  width: 12px;
+  height: 8px;
   background: #ff4444;
-  border-radius: 3px 3px 2px 2px;
+  border-radius: 2px 2px 1px 1px;
   position: relative;
 }
 
 .game-config-screen__enemy-tank-icon::before {
   content: '';
   position: absolute;
-  top: 3px;
-  right: -5px;
-  width: 6px;
-  height: 3px;
+  top: 2px;
+  right: -4px;
+  width: 5px;
+  height: 2px;
   background: #ff4444;
   border-radius: 0 2px 2px 0;
 }
@@ -991,28 +992,28 @@ p {
 .game-config-screen__enemy-tank-icon::after {
   content: '';
   position: absolute;
-  bottom: -3px;
+  bottom: -2px;
   left: 10%;
   width: 80%;
-  height: 4px;
+  height: 3px;
   background: #333;
-  border-radius: 2px;
+  border-radius: 1px;
 }
 
 .game-config-screen__enemy-label {
   font-family: monospace;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
 }
 
 /* Color Options */
 .game-config-screen__color-options {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 1.5rem;
-  max-width: 650px;
+  gap: 1.2rem;
+  max-width: 580px;
   margin: 0 auto;
 }
 
@@ -1020,8 +1021,8 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1.1rem 0.9rem;
+  gap: 0.4rem;
+  padding: 0.9rem 0.7rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid #444;
   border-radius: 8px;
@@ -1041,38 +1042,38 @@ p {
 }
 
 .game-config-screen__tank-preview {
-  width: 48px;
-  height: 28px;
+  width: 42px;
+  height: 24px;
   background: var(--tank-color);
-  border-radius: 5px 5px 3px 3px;
+  border-radius: 4px 4px 2px 2px;
   position: relative;
 }
 
 .game-config-screen__tank-preview::before {
   content: '';
   position: absolute;
-  top: 9px;
-  right: -12px;
-  width: 14px;
-  height: 5px;
+  top: 8px;
+  right: -10px;
+  width: 12px;
+  height: 4px;
   background: var(--tank-color);
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 2px 2px 0;
 }
 
 .game-config-screen__tank-preview::after {
   content: '';
   position: absolute;
-  bottom: -5px;
+  bottom: -4px;
   left: 10%;
   width: 80%;
-  height: 7px;
+  height: 6px;
   background: #333;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .game-config-screen__color-label {
   font-family: monospace;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--tank-color);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1080,9 +1081,9 @@ p {
 
 /* Engage Button */
 .game-config-screen__engage-button {
-  margin-top: 2rem;
-  padding: 1rem 3rem;
-  font-size: 1.5rem;
+  margin-top: 1.5rem;
+  padding: 0.9rem 2.5rem;
+  font-size: 1.3rem;
   font-family: monospace;
   font-weight: bold;
   text-transform: uppercase;

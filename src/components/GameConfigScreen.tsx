@@ -141,7 +141,7 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
                   {renderEnemyTankIcons(count)}
                 </div>
                 <span className="game-config-screen__enemy-label">
-                  {count}
+                  {count} {count === 1 ? 'foe' : 'foes'}
                 </span>
               </button>
             ))}
