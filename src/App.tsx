@@ -2,12 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
   Canvas,
-  ColorSelectionScreen,
   ControlPanel,
-  EnemyCountSelector,
+  GameConfigScreen,
   GameOverScreen,
   LoadingScreen,
-  TerrainSizeSelector,
   TurnIndicator,
 } from './components'
 import { useGame } from './context/useGame'
@@ -35,6 +33,12 @@ import {
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount } from './types/game'
 
+interface GameConfig {
+  terrainSize: TerrainSize
+  enemyCount: EnemyCount
+  playerColor: TankColor
+}
+
 // Tank dimensions for hit detection (must match tank.ts)
 const TANK_BODY_WIDTH = 40
 const TANK_BODY_HEIGHT = 20
@@ -48,7 +52,8 @@ function App() {
   const { userData, createNewUser, recordGame } = useUser()
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
-  const explosionRef = useRef<ExplosionState | null>(null)
+  // Array of active explosions for simultaneous impacts
+  const explosionsRef = useRef<ExplosionState[]>([])
   const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
@@ -102,29 +107,6 @@ function App() {
   const playerTank = state.tanks.find((t) => t.id === 'player')
   const playerIsReady = playerTank?.isReady ?? false
   const shouldAIQueue = state.phase === 'playing' && playerIsReady && !isProjectileActive && !isExplosionActive
-
-  // Function to fire projectile for a specific tank (uses refs for latest state)
-  const fireProjectileForTank = useCallback((tankId: string) => {
-    const tank = stateRef.current.tanks.find((t) => t.id === tankId)
-    if (!tank) return
-
-    // Check if this tank already has an active projectile
-    const hasExistingProjectile = projectilesRef.current.some(
-      (p) => p.isActive && p.tankId === tankId
-    )
-    if (hasExistingProjectile) return
-
-    // Get canvas height from current terrain size
-    const canvasHeight = TERRAIN_SIZES[stateRef.current.terrainSize].height
-
-    // Add projectile to array
-    const newProjectile = createProjectileState(tank, performance.now(), canvasHeight)
-    projectilesRef.current = [...projectilesRef.current, newProjectile]
-    setIsProjectileActive(true)
-  }, [])
-
-  // Keep fireProjectileForTank in scope for tanks-9m2 (launch all when ready)
-  void fireProjectileForTank
 
   // Reset AI processing flag when player is no longer ready
   useEffect(() => {
@@ -198,34 +180,74 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAIQueue])
 
+  // Check if all alive tanks are ready to fire
+  const aliveTanks = state.tanks.filter((t) => t.health > 0)
+  const allTanksReady = state.phase === 'playing' &&
+    aliveTanks.length > 0 &&
+    aliveTanks.every((t) => t.isReady) &&
+    !isProjectileActive &&
+    !isExplosionActive
+
+  // Launch all projectiles when all tanks are ready
+  useEffect(() => {
+    if (!allTanksReady) return
+
+    const currentState = stateRef.current
+    const readyTanks = currentState.tanks.filter((t) => t.health > 0 && t.isReady && t.queuedShot)
+
+    if (readyTanks.length === 0) return
+
+    // Get canvas height from current terrain size
+    const canvasHeight = TERRAIN_SIZES[currentState.terrainSize].height
+    const launchTime = performance.now()
+
+    // Create projectiles for all ready tanks simultaneously
+    const newProjectiles: ProjectileState[] = []
+    for (const tank of readyTanks) {
+      // Use queued shot values for the projectile
+      const tankWithQueuedValues = {
+        ...tank,
+        angle: tank.queuedShot!.angle,
+        power: tank.queuedShot!.power,
+      }
+      const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight)
+      newProjectiles.push(projectile)
+    }
+
+    // Add all projectiles at once
+    projectilesRef.current = [...projectilesRef.current, ...newProjectiles]
+    setIsProjectileActive(true)
+
+    // Reset all tanks' queued state
+    for (const tank of readyTanks) {
+      actions.updateTank(tank.id, {
+        queuedShot: null,
+        isReady: false,
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTanksReady])
+
   const handleStartGame = () => {
-    actions.setPhase('terrain_select')
+    actions.setPhase('config')
   }
 
-  const handleTerrainSizeSelect = (size: TerrainSize) => {
-    actions.setTerrainSize(size)
-    actions.setPhase('enemy_select')
-  }
-
-  const handleEnemyCountSelect = (count: EnemyCount) => {
-    actions.setEnemyCount(count)
-    actions.setPhase('color_select')
-  }
-
-  const handleColorSelect = (color: TankColor) => {
+  const handleConfigComplete = (config: GameConfig) => {
     // Get terrain dimensions from selected size
-    const terrainConfig = TERRAIN_SIZES[state.terrainSize]
+    const terrainConfig = TERRAIN_SIZES[config.terrainSize]
 
     // Initialize game with terrain and tanks
     const { terrain, tanks } = initializeGame({
       canvasWidth: terrainConfig.width,
       canvasHeight: terrainConfig.height,
-      playerColor: color,
-      enemyCount: state.enemyCount,
+      playerColor: config.playerColor,
+      enemyCount: config.enemyCount,
     })
 
-    // Store player's color choice
-    actions.setPlayerColor(color)
+    // Store configuration choices
+    actions.setTerrainSize(config.terrainSize)
+    actions.setEnemyCount(config.enemyCount)
+    actions.setPlayerColor(config.playerColor)
 
     // Set terrain and tanks in game state
     actions.setTerrain(terrain)
@@ -367,11 +389,9 @@ function App() {
         updatedProjectiles.push({ ...updatedProjectile, isActive: false })
 
         // Create explosion at the landing position (in screen coordinates)
-        // TODO: Support multiple simultaneous explosions in tanks-qr0
-        if (!explosionRef.current?.isActive) {
-          explosionRef.current = createExplosion(position, currentTime)
-          setIsExplosionActive(true)
-        }
+        const newExplosion = createExplosion(position, currentTime)
+        explosionsRef.current = [...explosionsRef.current, newExplosion]
+        setIsExplosionActive(true)
 
         // Check for tank hits and apply damage
         for (const tank of tanks) {
@@ -397,22 +417,38 @@ function App() {
       setIsProjectileActive(false)
     }
 
-    // Render and update explosion
-    if (explosionRef.current?.isActive) {
-      const explosion = explosionRef.current
+    // Render and update all explosions
+    let anyExplosionActive = false
+    const updatedExplosions: ExplosionState[] = []
+
+    for (const explosion of explosionsRef.current) {
+      if (!explosion.isActive) {
+        continue // Don't keep inactive explosions
+      }
 
       // Update explosion state
-      explosionRef.current = updateExplosion(explosion, currentTime, deltaTime)
+      const updatedExplosion = updateExplosion(explosion, currentTime, deltaTime)
 
       // Render explosion
-      renderExplosion(ctx, explosionRef.current, currentTime)
+      renderExplosion(ctx, updatedExplosion, currentTime)
 
       // Check if explosion is complete
-      if (isExplosionComplete(explosionRef.current, currentTime)) {
-        explosionRef.current = { ...explosionRef.current, isActive: false }
-        setIsExplosionActive(false)
-        actions.nextTurn()
+      if (isExplosionComplete(updatedExplosion, currentTime)) {
+        // Don't add completed explosions to the array
+        continue
+      } else {
+        updatedExplosions.push(updatedExplosion)
+        anyExplosionActive = true
       }
+    }
+
+    // Update explosions ref
+    explosionsRef.current = updatedExplosions
+
+    // Only advance turn when ALL explosions are complete
+    if (isExplosionActive && !anyExplosionActive) {
+      setIsExplosionActive(false)
+      actions.nextTurn()
     }
   }
 
@@ -420,16 +456,8 @@ function App() {
     return <LoadingScreen onStart={handleStartGame} />
   }
 
-  if (state.phase === 'terrain_select') {
-    return <TerrainSizeSelector onSizeSelect={handleTerrainSizeSelect} />
-  }
-
-  if (state.phase === 'enemy_select') {
-    return <EnemyCountSelector onCountSelect={handleEnemyCountSelect} />
-  }
-
-  if (state.phase === 'color_select') {
-    return <ColorSelectionScreen onColorSelect={handleColorSelect} />
+  if (state.phase === 'config') {
+    return <GameConfigScreen onStartGame={handleConfigComplete} />
   }
 
   if (state.phase === 'gameover') {

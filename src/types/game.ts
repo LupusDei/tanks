@@ -1,4 +1,4 @@
-export type GamePhase = 'loading' | 'terrain_select' | 'enemy_select' | 'color_select' | 'playing' | 'gameover';
+export type GamePhase = 'loading' | 'config' | 'playing' | 'gameover';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
 
