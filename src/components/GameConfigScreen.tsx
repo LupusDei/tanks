@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, ENEMY_COUNT_OPTIONS, AIDifficulty, AI_DIFFICULTY_ORDER } from '../types/game'
-import { AI_DIFFICULTY_CONFIGS } from '../engine/ai'
+import { AI_DIFFICULTY_CONFIGS, getChevronCount, getStarCount } from '../engine/ai'
 import { PlayerStatsDisplay } from './PlayerStatsDisplay'
 import { loadGameConfig, saveGameConfig } from '../services/userDatabase'
 
@@ -160,6 +160,8 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
           <div className="game-config-screen__difficulty-options">
             {AI_DIFFICULTY_ORDER.map((difficulty) => {
               const config = AI_DIFFICULTY_CONFIGS[difficulty]
+              const chevrons = getChevronCount(difficulty)
+              const stars = getStarCount(difficulty)
               return (
                 <button
                   key={difficulty}
@@ -170,6 +172,14 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
                   aria-pressed={aiDifficulty === difficulty}
                 >
                   <span className="game-config-screen__difficulty-name">{config.name}</span>
+                  <div className="game-config-screen__difficulty-icon">
+                    {chevrons > 0 && Array.from({ length: chevrons }, (_, i) => (
+                      <span key={i} className="game-config-screen__chevron">▲</span>
+                    ))}
+                    {stars > 0 && Array.from({ length: stars }, (_, i) => (
+                      <span key={i} className="game-config-screen__star">★</span>
+                    ))}
+                  </div>
                   <span className="game-config-screen__difficulty-description">{config.description}</span>
                 </button>
               )

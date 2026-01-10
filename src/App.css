@@ -819,16 +819,16 @@ p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem 1.5rem;
   box-sizing: border-box;
   overflow-y: auto;
 }
 
 .game-config-screen__title {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   font-family: monospace;
   color: #00ff88;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
@@ -836,7 +836,7 @@ p {
 .game-config-screen__sections {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.8rem;
   width: 100%;
   max-width: 800px;
 }
@@ -845,11 +845,11 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.5rem;
 }
 
 .game-config-screen__section-title {
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-family: monospace;
   color: #888;
   text-transform: uppercase;
@@ -860,7 +860,7 @@ p {
 /* Terrain Options */
 .game-config-screen__terrain-options {
   display: flex;
-  gap: 0.8rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -869,11 +869,11 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.8rem 1rem;
+  gap: 0.25rem;
+  padding: 0.5rem 0.6rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid #444;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -886,14 +886,14 @@ p {
 .game-config-screen__terrain-option--selected {
   background: rgba(0, 255, 136, 0.15);
   border-color: #00ff88;
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
 }
 
 .game-config-screen__terrain-preview {
-  width: 70px;
-  height: 52px;
+  width: 55px;
+  height: 40px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -908,7 +908,7 @@ p {
 
 .game-config-screen__terrain-label {
   font-family: monospace;
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -916,7 +916,7 @@ p {
 
 .game-config-screen__terrain-dimensions {
   font-family: monospace;
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   color: #666;
 }
 
@@ -924,7 +924,7 @@ p {
 .game-config-screen__enemy-options {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
+  gap: 0.5rem;
   margin: 0 auto;
 }
 
@@ -933,11 +933,11 @@ p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  padding: 0.5rem;
+  gap: 0.2rem;
+  padding: 0.35rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid #444;
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
   aspect-ratio: 1;
@@ -951,27 +951,27 @@ p {
 .game-config-screen__enemy-option--selected {
   background: rgba(255, 68, 68, 0.15);
   border-color: #ff4444;
-  box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
 }
 
 .game-config-screen__enemy-preview {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.08rem;
   justify-content: center;
   align-items: center;
-  min-height: 20px;
+  min-height: 16px;
 }
 
 .game-config-screen__enemy-preview-row {
   display: flex;
-  gap: 0.1rem;
+  gap: 0.08rem;
   justify-content: center;
 }
 
 .game-config-screen__enemy-tank-icon {
-  width: 12px;
-  height: 8px;
+  width: 10px;
+  height: 6px;
   background: #ff4444;
   border-radius: 2px 2px 1px 1px;
   position: relative;
@@ -980,9 +980,9 @@ p {
 .game-config-screen__enemy-tank-icon::before {
   content: '';
   position: absolute;
-  top: 2px;
-  right: -4px;
-  width: 5px;
+  top: 1px;
+  right: -3px;
+  width: 4px;
   height: 2px;
   background: #ff4444;
   border-radius: 0 2px 2px 0;
@@ -994,40 +994,41 @@ p {
   bottom: -2px;
   left: 10%;
   width: 80%;
-  height: 3px;
+  height: 2px;
   background: #333;
   border-radius: 1px;
 }
 
 .game-config-screen__enemy-label {
   font-family: monospace;
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 
 /* Difficulty Options */
 .game-config-screen__difficulty-options {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 500px;
-  margin: 0 auto;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .game-config-screen__difficulty-option {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  padding: 1rem 1.25rem;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.6rem;
   background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border: 2px solid #444;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  text-align: left;
+  text-align: center;
+  min-width: 90px;
+  max-width: 110px;
 }
 
 .game-config-screen__difficulty-option:hover {
@@ -1038,28 +1039,49 @@ p {
 .game-config-screen__difficulty-option--selected {
   background: rgba(255, 170, 0, 0.2);
   border-color: #ffaa00;
-  box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
 }
 
 .game-config-screen__difficulty-name {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.9rem;
+  font-family: monospace;
+  font-size: 0.6rem;
   color: #ffaa00;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.game-config-screen__difficulty-icon {
+  display: flex;
+  gap: 0.15rem;
+  justify-content: center;
+  min-height: 16px;
+}
+
+.game-config-screen__chevron {
+  color: #ffaa00;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.game-config-screen__star {
+  color: #ffd700;
+  font-size: 0.8rem;
+  line-height: 1;
 }
 
 .game-config-screen__difficulty-description {
   font-family: monospace;
-  font-size: 0.75rem;
-  color: #aaa;
+  font-size: 0.5rem;
+  color: #888;
+  line-height: 1.2;
 }
 
 /* Color Options */
 .game-config-screen__color-options {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 1.2rem;
-  max-width: 580px;
+  gap: 0.5rem;
+  max-width: 480px;
   margin: 0 auto;
 }
 
@@ -1067,11 +1089,11 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.9rem 0.7rem;
+  gap: 0.25rem;
+  padding: 0.5rem 0.4rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid #444;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1084,24 +1106,24 @@ p {
 .game-config-screen__color-option--selected {
   background: color-mix(in srgb, var(--tank-color) 15%, transparent);
   border-color: var(--tank-color);
-  box-shadow: 0 0 20px color-mix(in srgb, var(--tank-color) 40%, transparent);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--tank-color) 40%, transparent);
 }
 
 .game-config-screen__tank-preview {
-  width: 42px;
-  height: 24px;
+  width: 32px;
+  height: 18px;
   background: var(--tank-color);
-  border-radius: 4px 4px 2px 2px;
+  border-radius: 3px 3px 2px 2px;
   position: relative;
 }
 
 .game-config-screen__tank-preview::before {
   content: '';
   position: absolute;
-  top: 8px;
-  right: -10px;
-  width: 12px;
-  height: 4px;
+  top: 6px;
+  right: -8px;
+  width: 10px;
+  height: 3px;
   background: var(--tank-color);
   border-radius: 0 2px 2px 0;
 }
@@ -1109,27 +1131,27 @@ p {
 .game-config-screen__tank-preview::after {
   content: '';
   position: absolute;
-  bottom: -4px;
+  bottom: -3px;
   left: 10%;
   width: 80%;
-  height: 6px;
+  height: 4px;
   background: #333;
   border-radius: 2px;
 }
 
 .game-config-screen__color-label {
   font-family: monospace;
-  font-size: 0.7rem;
+  font-size: 0.55rem;
   color: var(--tank-color);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
 
 /* Engage Button */
 .game-config-screen__engage-button {
-  margin-top: 1.5rem;
-  padding: 0.9rem 2.5rem;
-  font-size: 1.3rem;
+  margin-top: 0.8rem;
+  padding: 0.7rem 2rem;
+  font-size: 1.1rem;
   font-family: monospace;
   font-weight: bold;
   text-transform: uppercase;
@@ -1760,18 +1782,18 @@ p {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
+  gap: 0.4rem;
+  padding: 0.5rem 1.5rem;
   background: rgba(0, 255, 136, 0.05);
   border: 1px solid rgba(0, 255, 136, 0.2);
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 0.6rem;
   width: 100%;
-  max-width: 600px;
+  max-width: 500px;
 }
 
 .player-stats-display__name {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-family: monospace;
   color: #00ff88;
   font-weight: bold;
@@ -1782,19 +1804,19 @@ p {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .player-stats-display__stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  min-width: 70px;
+  gap: 0.15rem;
+  min-width: 55px;
 }
 
 .player-stats-display__stat-value {
-  font-size: 1.25rem;
+  font-size: 0.95rem;
   font-family: monospace;
   color: #fff;
   font-weight: bold;
@@ -1805,9 +1827,9 @@ p {
 }
 
 .player-stats-display__stat-label {
-  font-size: 0.7rem;
+  font-size: 0.55rem;
   font-family: monospace;
   color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
