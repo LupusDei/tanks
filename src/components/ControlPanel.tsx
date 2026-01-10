@@ -42,21 +42,21 @@ export function ControlPanel({
     []
   )
 
-  // Touch control handlers
+  // Touch control handlers - use 1% increments for fine control
   const handleAngleIncrease = useCallback(() => {
-    onAngleChange(clampAngle(angle + ANGLE_STEP_FAST))
+    onAngleChange(clampAngle(angle + ANGLE_STEP))
   }, [angle, onAngleChange, clampAngle])
 
   const handleAngleDecrease = useCallback(() => {
-    onAngleChange(clampAngle(angle - ANGLE_STEP_FAST))
+    onAngleChange(clampAngle(angle - ANGLE_STEP))
   }, [angle, onAngleChange, clampAngle])
 
   const handlePowerIncrease = useCallback(() => {
-    onPowerChange(clampPower(power + POWER_STEP_FAST))
+    onPowerChange(clampPower(power + POWER_STEP))
   }, [power, onPowerChange, clampPower])
 
   const handlePowerDecrease = useCallback(() => {
-    onPowerChange(clampPower(power - POWER_STEP_FAST))
+    onPowerChange(clampPower(power - POWER_STEP))
   }, [power, onPowerChange, clampPower])
 
   const handleKeyDown = useCallback(

@@ -1948,6 +1948,8 @@ p {
   /* Loading Screen Mobile */
   .loading-screen__overlay {
     padding-bottom: 20%;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 
   .magnetize-button {
@@ -2170,10 +2172,13 @@ p {
   .weapon-shop__main {
     flex: 1;
     min-height: 0;
-    max-height: calc(100vh - 140px);
+    max-height: calc(100vh - 100px);
+    max-height: calc(100dvh - 100px);
     padding: 0.5rem;
+    padding-bottom: 100px;
     border-radius: 8px 8px 0 0;
     border-bottom: none;
+    overflow-y: auto;
   }
 
   .weapon-shop__title {
@@ -2289,6 +2294,11 @@ p {
   .control-panel--mobile {
     padding: 0.5rem 0.75rem;
     gap: 0.75rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    transform: none;
+    max-width: calc(100% - 1rem);
   }
 
   .control-panel--mobile .control-panel__controls {
@@ -2392,7 +2402,7 @@ p {
 
   /* Weapon Selection Panel Mobile */
   .weapon-selection-panel {
-    bottom: 4rem;
+    bottom: 5.5rem;
     padding: 0.4rem 0.5rem;
   }
 
@@ -2447,5 +2457,100 @@ p {
   .game-over-screen__button {
     padding: 0.875rem 2rem;
     font-size: 1.1rem;
+  }
+}
+
+/* ===========================================
+   LANDSCAPE MOBILE STYLES
+   For mobile devices in landscape orientation
+   =========================================== */
+@media (max-height: 500px) and (min-width: 768px) {
+  /* Hide keyboard hints in landscape too */
+  .control-panel__keys,
+  .control-panel__hint,
+  .control-panel__fire-keys,
+  .fire-button__hint,
+  .weapon-selection-panel__hint {
+    display: none;
+  }
+
+  /* Turn indicator - move to left side in landscape */
+  .turn-indicator {
+    left: 1rem;
+    right: auto;
+    transform: none;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .turn-indicator__turn-number {
+    font-size: 0.6rem;
+  }
+
+  .turn-indicator__player {
+    font-size: 0.9rem;
+  }
+
+  .wind-indicator__display {
+    min-width: 80px;
+  }
+
+  .wind-indicator__arrow--left,
+  .wind-indicator__arrow--right {
+    width: 35px;
+  }
+
+  .wind-indicator__speed {
+    font-size: 0.55rem;
+  }
+
+  /* Control panel in landscape */
+  .control-panel--mobile {
+    padding: 0.4rem 0.6rem;
+    gap: 0.5rem;
+  }
+
+  .control-panel--mobile .control-panel__controls {
+    gap: 0.5rem;
+  }
+
+  .control-panel__touch-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .control-panel--mobile .control-panel__value {
+    font-size: 0.9rem;
+    min-width: 3rem;
+  }
+
+  .control-panel--mobile .control-panel__fire-button {
+    padding: 0.4rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  /* Weapon selection in landscape */
+  .weapon-selection-panel {
+    bottom: 4rem;
+    padding: 0.3rem 0.4rem;
+  }
+
+  .weapon-selection-panel__slot {
+    width: 2.25rem;
+    padding: 0.2rem 0.2rem 0.15rem;
+  }
+
+  .weapon-selection-panel__slot-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .weapon-selection-panel__slot-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .weapon-selection-panel__slot-name {
+    font-size: 0.3rem;
   }
 }
