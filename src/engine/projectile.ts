@@ -11,6 +11,13 @@ const BODY_HEIGHT = 20;
 const DOME_OFFSET = BODY_HEIGHT / 4; // Dome center is above tank center
 
 /**
+ * Animation speed multiplier for projectiles.
+ * Higher values make projectiles traverse their trajectory faster
+ * without changing the physics (same power = same distance).
+ */
+const ANIMATION_SPEED_MULTIPLIER = 2;
+
+/**
  * State of an active projectile animation.
  * All positions are stored in screen coordinates (y increases downward).
  */
@@ -97,9 +104,11 @@ export function createProjectileState(
 
 /**
  * Get current projectile position based on elapsed time.
+ * Applies ANIMATION_SPEED_MULTIPLIER to make projectiles animate faster
+ * while maintaining the same trajectory shape and distance.
  */
 export function getProjectilePosition(projectile: ProjectileState, currentTime: number): Position {
-  const elapsedSeconds = (currentTime - projectile.startTime) / 1000;
+  const elapsedSeconds = ((currentTime - projectile.startTime) / 1000) * ANIMATION_SPEED_MULTIPLIER;
   return calculatePosition(projectile.launchConfig, elapsedSeconds);
 }
 
