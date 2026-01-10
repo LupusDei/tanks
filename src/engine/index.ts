@@ -58,8 +58,11 @@ export {
   getChevronCount,
   getStarCount,
   getNextDifficulty,
+  selectAIWeapon,
+  getAIWeaponChoice,
   AI_DIFFICULTY_CONFIGS,
   AI_DIFFICULTY_ORDER,
+  AI_AVAILABLE_WEAPONS,
   type AIDecision,
   type AIDifficultyConfig,
 } from './ai';
