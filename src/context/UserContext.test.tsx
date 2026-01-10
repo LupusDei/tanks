@@ -133,13 +133,17 @@ describe('UserContext', () => {
   });
 
   it('loads existing user data on mount', () => {
-    // Pre-populate localStorage with existing user
+    // Pre-populate localStorage with existing user using new multi-player format
     const existingUser = {
       profile: { id: 'existing-id', username: 'ExistingPlayer', createdAt: 1000 },
-      stats: { gamesPlayed: 10, gamesWon: 7, gamesLost: 3, totalKills: 25, winRate: 70 },
+      stats: { gamesPlayed: 10, gamesWon: 7, gamesLost: 3, totalKills: 25, winRate: 70, balance: 500 },
       recentGames: [],
+      weaponInventory: { standard: Infinity },
     };
-    localStorageMock.setItem('tanks_user_data', JSON.stringify(existingUser));
+    // Store in the new multi-player database format
+    const playersDb = { 'ExistingPlayer': existingUser };
+    localStorageMock.setItem('tanks_players_db', JSON.stringify(playersDb));
+    localStorageMock.setItem('tanks_current_player', 'ExistingPlayer');
 
     const { result } = renderHook(() => useUser(), {
       wrapper: UserProvider,
