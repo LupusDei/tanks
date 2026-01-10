@@ -24,7 +24,7 @@ interface Particle {
 // Button dimensions for border calculations
 const BUTTON_HALF_WIDTH = 110
 const BUTTON_HALF_HEIGHT = 32
-const MIN_BUFFER = 8 // Minimum distance outside button edge when orbiting
+const MIN_BUFFER = 6 // Minimum distance outside button edge when orbiting
 const HOVER_OUTSET = 6 // Distance outside button edge when hovering
 
 // Get distance from center to button edge at a given angle
@@ -84,7 +84,7 @@ export function MagnetizeButton({
   const particles = useMemo<Particle[]>(() => {
     return Array.from({ length: particleCount }, (_, i) => ({
       id: i,
-      baseOffset: MIN_BUFFER + Math.random() * 20, // 8-28px beyond button edge
+      baseOffset: MIN_BUFFER + Math.random() * 16, // 6-22px beyond button edge
       orbitSpeed: 25 + Math.random() * 20, // Slower orbit (25-45 sec per rotation)
       startAngle: (i / particleCount) * 360 + Math.random() * 15,
       wobbleAmount: 3 + Math.random() * 6, // Smaller wobble (3-9px)
