@@ -107,29 +107,6 @@ function App() {
   const playerIsReady = playerTank?.isReady ?? false
   const shouldAIQueue = state.phase === 'playing' && playerIsReady && !isProjectileActive && !isExplosionActive
 
-  // Function to fire projectile for a specific tank (uses refs for latest state)
-  const fireProjectileForTank = useCallback((tankId: string) => {
-    const tank = stateRef.current.tanks.find((t) => t.id === tankId)
-    if (!tank) return
-
-    // Check if this tank already has an active projectile
-    const hasExistingProjectile = projectilesRef.current.some(
-      (p) => p.isActive && p.tankId === tankId
-    )
-    if (hasExistingProjectile) return
-
-    // Get canvas height from current terrain size
-    const canvasHeight = TERRAIN_SIZES[stateRef.current.terrainSize].height
-
-    // Add projectile to array
-    const newProjectile = createProjectileState(tank, performance.now(), canvasHeight)
-    projectilesRef.current = [...projectilesRef.current, newProjectile]
-    setIsProjectileActive(true)
-  }, [])
-
-  // Keep fireProjectileForTank in scope for tanks-9m2 (launch all when ready)
-  void fireProjectileForTank
-
   // Reset AI processing flag when player is no longer ready
   useEffect(() => {
     if (!shouldAIQueue) {
@@ -201,6 +178,54 @@ function App() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAIQueue])
+
+  // Check if all alive tanks are ready to fire
+  const aliveTanks = state.tanks.filter((t) => t.health > 0)
+  const allTanksReady = state.phase === 'playing' &&
+    aliveTanks.length > 0 &&
+    aliveTanks.every((t) => t.isReady) &&
+    !isProjectileActive &&
+    !isExplosionActive
+
+  // Launch all projectiles when all tanks are ready
+  useEffect(() => {
+    if (!allTanksReady) return
+
+    const currentState = stateRef.current
+    const readyTanks = currentState.tanks.filter((t) => t.health > 0 && t.isReady && t.queuedShot)
+
+    if (readyTanks.length === 0) return
+
+    // Get canvas height from current terrain size
+    const canvasHeight = TERRAIN_SIZES[currentState.terrainSize].height
+    const launchTime = performance.now()
+
+    // Create projectiles for all ready tanks simultaneously
+    const newProjectiles: ProjectileState[] = []
+    for (const tank of readyTanks) {
+      // Use queued shot values for the projectile
+      const tankWithQueuedValues = {
+        ...tank,
+        angle: tank.queuedShot!.angle,
+        power: tank.queuedShot!.power,
+      }
+      const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight)
+      newProjectiles.push(projectile)
+    }
+
+    // Add all projectiles at once
+    projectilesRef.current = [...projectilesRef.current, ...newProjectiles]
+    setIsProjectileActive(true)
+
+    // Reset all tanks' queued state
+    for (const tank of readyTanks) {
+      actions.updateTank(tank.id, {
+        queuedShot: null,
+        isReady: false,
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTanksReady])
 
   const handleStartGame = () => {
     actions.setPhase('config')
