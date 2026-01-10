@@ -44,7 +44,8 @@ const EXPLOSION_DAMAGE = 25
 
 function App() {
   const { state, actions } = useGame()
-  const projectileRef = useRef<ProjectileState | null>(null)
+  // Array of active projectiles for simultaneous firing
+  const projectilesRef = useRef<ProjectileState[]>([])
   const explosionRef = useRef<ExplosionState | null>(null)
   const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
@@ -64,13 +65,20 @@ function App() {
   // Function to fire projectile for a specific tank (uses refs for latest state)
   const fireProjectileForTank = useCallback((tankId: string) => {
     const tank = stateRef.current.tanks.find((t) => t.id === tankId)
-    if (!tank || isProjectileActiveRef.current) return
+    if (!tank) return
+
+    // Check if this tank already has an active projectile
+    const hasExistingProjectile = projectilesRef.current.some(
+      (p) => p.isActive && p.tankId === tankId
+    )
+    if (hasExistingProjectile) return
 
     // Get canvas height from current terrain size
     const canvasHeight = TERRAIN_SIZES[stateRef.current.terrainSize].height
 
-    // Start projectile animation
-    projectileRef.current = createProjectileState(tank, performance.now(), canvasHeight)
+    // Add projectile to array
+    const newProjectile = createProjectileState(tank, performance.now(), canvasHeight)
+    projectilesRef.current = [...projectilesRef.current, newProjectile]
     setIsProjectileActive(true)
   }, [])
 
@@ -257,8 +265,9 @@ function App() {
     }
 
     // Render tanks
+    const hasActiveProjectiles = projectilesRef.current.some((p) => p.isActive)
     for (const tank of tanks) {
-      const isCurrentTurn = tank.id === state.currentPlayerId && !projectileRef.current?.isActive
+      const isCurrentTurn = tank.id === state.currentPlayerId && !hasActiveProjectiles
       // Show rank insignia on enemy tanks to indicate AI difficulty
       const isEnemy = tank.id !== 'player'
       const chevronCount = isEnemy ? getChevronCount(state.aiDifficulty) : 0
@@ -270,26 +279,34 @@ function App() {
     const deltaTime = currentTime - lastFrameTimeRef.current
     lastFrameTimeRef.current = currentTime
 
-    // Render and update projectile
-    if (projectileRef.current?.isActive) {
-      const projectile = projectileRef.current
+    // Render and update all projectiles
+    let anyProjectileActive = false
+    const updatedProjectiles: ProjectileState[] = []
+
+    for (const projectile of projectilesRef.current) {
+      if (!projectile.isActive) {
+        updatedProjectiles.push(projectile)
+        continue
+      }
 
       // Update trace points
-      projectileRef.current = updateProjectileTrace(projectile, currentTime)
+      const updatedProjectile = updateProjectileTrace(projectile, currentTime)
 
       // Get current position
-      const position = getProjectilePosition(projectile, currentTime)
+      const position = getProjectilePosition(updatedProjectile, currentTime)
 
       // Check if projectile is out of bounds
       const terrainHeight = terrain ? getInterpolatedHeightAt(terrain, position.x) ?? 0 : 0
       if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight)) {
-        // Projectile has landed - create explosion at impact point
-        projectileRef.current = { ...projectile, isActive: false }
-        setIsProjectileActive(false)
+        // Projectile has landed - mark as inactive
+        updatedProjectiles.push({ ...updatedProjectile, isActive: false })
 
         // Create explosion at the landing position (in screen coordinates)
-        explosionRef.current = createExplosion(position, currentTime)
-        setIsExplosionActive(true)
+        // TODO: Support multiple simultaneous explosions in tanks-qr0
+        if (!explosionRef.current?.isActive) {
+          explosionRef.current = createExplosion(position, currentTime)
+          setIsExplosionActive(true)
+        }
 
         // Check for tank hits and apply damage
         for (const tank of tanks) {
@@ -298,9 +315,21 @@ function App() {
           }
         }
       } else {
+        // Projectile still active
+        updatedProjectiles.push(updatedProjectile)
+        anyProjectileActive = true
+
         // Render projectile
-        renderProjectile(ctx, projectile, currentTime)
+        renderProjectile(ctx, updatedProjectile, currentTime)
       }
+    }
+
+    // Update projectiles ref with new state
+    projectilesRef.current = updatedProjectiles
+
+    // Update isProjectileActive state if needed
+    if (isProjectileActive && !anyProjectileActive) {
+      setIsProjectileActive(false)
     }
 
     // Render and update explosion

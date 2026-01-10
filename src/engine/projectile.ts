@@ -27,6 +27,10 @@ export interface ProjectileState {
   startTime: number;
   tracePoints: Position[];
   canvasHeight: number;
+  /** ID of the tank that fired this projectile */
+  tankId: string;
+  /** Color of the tank that fired this projectile (for trail rendering) */
+  tankColor: string;
 }
 
 /**
@@ -99,6 +103,8 @@ export function createProjectileState(
     startTime,
     tracePoints: [{ ...launchConfig.position }],
     canvasHeight,
+    tankId: tank.id,
+    tankColor: tank.color,
   };
 }
 
@@ -115,6 +121,7 @@ export function getProjectilePosition(projectile: ProjectileState, currentTime: 
 /**
  * Render the projectile and its dotted trace line on canvas.
  * All positions in projectile state are already in screen coordinates.
+ * The trail color matches the tank that fired the projectile.
  */
 export function renderProjectile(
   ctx: CanvasRenderingContext2D,
@@ -127,10 +134,10 @@ export function renderProjectile(
   const canvasX = position.x;
   const canvasY = position.y;
 
-  // Draw dotted trace line
+  // Draw dotted trace line in the tank's color
   if (projectile.tracePoints.length > 0) {
     ctx.save();
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = projectile.tankColor;
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 8]);
     ctx.beginPath();
@@ -156,8 +163,8 @@ export function renderProjectile(
   ctx.arc(canvasX, canvasY, 5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Add a glow effect
-  ctx.shadowColor = '#ffff00';
+  // Add a glow effect with the tank's color
+  ctx.shadowColor = projectile.tankColor;
   ctx.shadowBlur = 10;
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();

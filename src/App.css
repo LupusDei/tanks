@@ -494,7 +494,7 @@ p {
   align-items: center;
   font-size: 0.5rem;
   color: #444;
-  align-self: center;
+  align-self: flex-end;
   gap: 0.15rem;
 }
 
