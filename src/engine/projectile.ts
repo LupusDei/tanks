@@ -15,7 +15,7 @@ const DOME_OFFSET = BODY_HEIGHT / 4; // Dome center is above tank center
  * Higher values make projectiles traverse their trajectory faster
  * without changing the physics (same power = same distance).
  */
-const ANIMATION_SPEED_MULTIPLIER = 1.5;
+const ANIMATION_SPEED_MULTIPLIER = 3;
 
 /**
  * State of an active projectile animation.
