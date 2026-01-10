@@ -74,6 +74,7 @@ export {
   renderExplosion,
   isPointInExplosion,
   getDistanceToExplosion,
+  checkTankHit,
   type ExplosionState,
   type ExplosionParticle,
 } from './explosion';
