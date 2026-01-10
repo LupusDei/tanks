@@ -57,6 +57,14 @@ export function GameProvider({ children }: GameProviderProps) {
     });
   }, []);
 
+  // Just increment turn counter without changing current player (for simultaneous mode)
+  const incrementTurn = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      currentTurn: prev.currentTurn + 1,
+    }));
+  }, []);
+
   const updateTank = useCallback((tankId: string, updates: Partial<TankState>) => {
     setState((prev) => ({
       ...prev,
@@ -128,6 +136,7 @@ export function GameProvider({ children }: GameProviderProps) {
     setPhase,
     initializeTanks,
     nextTurn,
+    incrementTurn,
     updateTank,
     setTerrain,
     damageTank,

@@ -262,27 +262,28 @@ function App() {
     actions.resetGame()
   }
 
+  // In simultaneous mode, player always controls their own tank
   const handleAngleChange = (newAngle: number) => {
-    const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
-    if (currentTank) {
-      actions.updateTank(currentTank.id, { angle: newAngle })
+    const playerTankForControl = state.tanks.find((t) => t.id === 'player')
+    if (playerTankForControl) {
+      actions.updateTank('player', { angle: newAngle })
     }
   }
 
   const handlePowerChange = (newPower: number) => {
-    const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
-    if (currentTank) {
-      actions.updateTank(currentTank.id, { power: newPower })
+    const playerTankForControl = state.tanks.find((t) => t.id === 'player')
+    if (playerTankForControl) {
+      actions.updateTank('player', { power: newPower })
     }
   }
 
   const handleFire = () => {
-    const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
-    if (!currentTank || isProjectileActive || currentTank.isReady) return
+    const playerTankForFire = state.tanks.find((t) => t.id === 'player')
+    if (!playerTankForFire || isProjectileActive || playerTankForFire.isReady) return
 
     // Queue the shot instead of firing immediately
-    actions.updateTank(currentTank.id, {
-      queuedShot: { angle: currentTank.angle, power: currentTank.power },
+    actions.updateTank('player', {
+      queuedShot: { angle: playerTankForFire.angle, power: playerTankForFire.power },
       isReady: true,
     })
   }
@@ -323,8 +324,8 @@ function App() {
     }
   }, [state.phase, state.tanks, state.aiDifficulty, state.terrainSize, isProjectileActive, isExplosionActive, actions])
 
-  const currentPlayerTank = state.tanks.find((t) => t.id === state.currentPlayerId)
-  const isPlayerTurn = state.currentPlayerId === 'player'
+  // In simultaneous mode, player always controls their own tank (playerTank defined above)
+  const playerIsAlive = playerTank && playerTank.health > 0
 
   const handleRender = (ctx: CanvasRenderingContext2D) => {
     const { terrain, tanks } = state
@@ -445,10 +446,12 @@ function App() {
     // Update explosions ref
     explosionsRef.current = updatedExplosions
 
-    // Only advance turn when ALL explosions are complete
+    // In simultaneous mode, just clear explosion state when all complete
+    // No turn cycling - all tanks fire together each round
     if (isExplosionActive && !anyExplosionActive) {
       setIsExplosionActive(false)
-      actions.nextTurn()
+      // Increment turn counter for round tracking
+      actions.incrementTurn()
     }
   }
 
@@ -472,18 +475,18 @@ function App() {
       <Canvas width={terrainConfig.width} height={terrainConfig.height} onRender={handleRender} onClick={handleCanvasClick} />
       <TurnIndicator
         turnNumber={state.currentTurn}
-        isPlayerTurn={isPlayerTurn}
+        isPlayerTurn={playerIsAlive ?? false}
       />
-      {currentPlayerTank && (
+      {playerTank && playerIsAlive && (
         <>
           <ControlPanel
-            angle={currentPlayerTank.angle}
-            power={currentPlayerTank.power}
+            angle={playerTank.angle}
+            power={playerTank.power}
             onAngleChange={handleAngleChange}
             onPowerChange={handlePowerChange}
             onFire={handleFire}
-            enabled={!isProjectileActive && !isExplosionActive && isPlayerTurn && !currentPlayerTank.isReady}
-            isQueued={currentPlayerTank.isReady}
+            enabled={!isProjectileActive && !isExplosionActive && !playerTank.isReady}
+            isQueued={playerTank.isReady}
           />
         </>
       )}
