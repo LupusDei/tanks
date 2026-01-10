@@ -55,6 +55,10 @@ export interface ProjectileState {
   targetPosition?: Position;
   /** Current velocity angle for homing missiles (adjusted by tracking) */
   currentAngle?: number;
+  /** Previous distance to target for proximity detection (homing missiles) */
+  previousDistanceToTarget?: number;
+  /** Flag indicating missile should explode at current position (proximity trigger) */
+  shouldProximityExplode?: boolean;
 }
 
 /**
@@ -919,6 +923,13 @@ export function checkTerrainCollision(
 const BOUNCE_ENERGY_RETENTION = 0.7;
 
 /**
+ * Minimum upward velocity for a bounce to ensure visible height.
+ * This prevents bounces that are too small to notice.
+ * In physics units (pixels per second in physics time).
+ */
+const MINIMUM_BOUNCE_VELOCITY = 80;
+
+/**
  * Check if a projectile can bounce and handle the bounce if so.
  * Returns a new projectile state if bounced, or null if should explode.
  *
@@ -949,7 +960,14 @@ export function handleProjectileBounce(
   // Simple reflection: reverse vertical velocity, keep horizontal
   // Apply energy loss to make bounces more realistic
   const newVx = vx * BOUNCE_ENERGY_RETENTION;
-  const newVy = -vy * BOUNCE_ENERGY_RETENTION; // Negative because screen coords are inverted
+  let newVy = -vy * BOUNCE_ENERGY_RETENTION; // Negative because screen coords are inverted
+
+  // Ensure minimum upward bounce velocity for visibility
+  // In screen coordinates, negative vy means upward (toward smaller y values)
+  // So we want newVy to be negative (upward) with sufficient magnitude
+  if (newVy > -MINIMUM_BOUNCE_VELOCITY) {
+    newVy = -MINIMUM_BOUNCE_VELOCITY;
+  }
 
   // Calculate new angle from reflected velocity
   const newAngle = Math.atan2(-newVy, newVx) * (180 / Math.PI); // Convert to degrees
@@ -964,7 +982,7 @@ export function handleProjectileBounce(
   const newLaunchConfig: LaunchConfig = {
     position: { ...collisionPoint },
     angle: newAngle,
-    power: Math.min(100, Math.max(10, newPower)), // Clamp power to valid range
+    power: Math.min(100, Math.max(15, newPower)), // Clamp power to valid range, higher minimum for visibility
     terrainWidth: projectile.launchConfig.terrainWidth,
   };
 
@@ -1238,8 +1256,21 @@ export function findNearestTarget(
 }
 
 /**
+ * Proximity explosion threshold - how close missile must be to target before
+ * distance tracking starts (prevents false triggers on first approach).
+ */
+const HOMING_PROXIMITY_THRESHOLD = 100;
+
+/**
+ * Minimum distance missile must have been to target before proximity explosion
+ * can trigger (prevents immediate explosion after launch).
+ */
+const HOMING_MIN_APPROACH_DISTANCE = 50;
+
+/**
  * Update homing missile trajectory to track toward target.
  * Gradually adjusts the launch angle to steer toward the nearest enemy.
+ * Also detects when missile has passed its closest approach point and should explode.
  *
  * @param projectile - Current projectile state
  * @param targetPos - Target position in screen coordinates
@@ -1264,9 +1295,29 @@ export function updateHomingTracking(
   // Get current projectile position
   const currentPos = getProjectilePosition(projectile, currentTime);
 
-  // Calculate direction to target
+  // Calculate distance to target
   const dx = targetPos.x - currentPos.x;
   const dy = targetPos.y - currentPos.y;
+  const currentDistance = Math.sqrt(dx * dx + dy * dy);
+
+  // Check for proximity explosion:
+  // If we were close to the target (within threshold) and started at a minimum approach distance,
+  // and now we're moving AWAY from the target, explode at this position
+  const previousDistance = projectile.previousDistanceToTarget;
+  if (
+    previousDistance !== undefined &&
+    previousDistance <= HOMING_PROXIMITY_THRESHOLD &&
+    previousDistance <= HOMING_MIN_APPROACH_DISTANCE &&
+    currentDistance > previousDistance
+  ) {
+    // Missile has passed its closest approach point - trigger proximity explosion
+    return {
+      ...projectile,
+      shouldProximityExplode: true,
+      previousDistanceToTarget: currentDistance,
+    };
+  }
+
   const targetAngle = Math.atan2(-dy, dx) * (180 / Math.PI); // Convert to degrees, negate dy for screen coords
 
   // Get current angle
@@ -1298,5 +1349,6 @@ export function updateHomingTracking(
     startTime: currentTime,
     currentAngle: newAngle,
     targetPosition: targetPos,
+    previousDistanceToTarget: currentDistance,
   };
 }

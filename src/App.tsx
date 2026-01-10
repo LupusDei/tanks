@@ -150,7 +150,7 @@ function App() {
     // Use refs to get current state to avoid re-running effect when tank state changes
     const currentState = stateRef.current
     const aliveTanks = currentState.tanks.filter((t) => t.health > 0)
-    const aiTanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady)
+    const aiTanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady && t.stunTurnsRemaining === 0)
 
     // Need at least 2 alive tanks for combat to continue
     if (aliveTanks.length < 2 || aiTanks.length === 0) {
@@ -159,6 +159,15 @@ function App() {
 
     // Mark as processing to prevent re-entry
     aiProcessingRef.current = true
+
+    // Mark stunned AI tanks as ready immediately (they skip their turn but don't hold up the round)
+    const stunnedAITanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady && t.stunTurnsRemaining > 0)
+    for (const stunnedTank of stunnedAITanks) {
+      actions.updateTank(stunnedTank.id, {
+        queuedShot: null,
+        isReady: true,
+      })
+    }
 
     // Calculate and queue shots for all AI tanks simultaneously
     for (const aiTank of aiTanks) {
@@ -382,6 +391,16 @@ function App() {
     const playerTankForFire = state.tanks.find((t) => t.id === 'player')
     if (!playerTankForFire || isProjectileActive || playerTankForFire.isReady) return
 
+    // Prevent firing if player is stunned
+    if (playerTankForFire.stunTurnsRemaining > 0) {
+      // Auto-mark as ready but skip the shot (stunned tanks don't fire)
+      actions.updateTank('player', {
+        queuedShot: null,
+        isReady: true,
+      })
+      return
+    }
+
     // Queue the shot instead of firing immediately
     actions.updateTank('player', {
       queuedShot: { angle: playerTankForFire.angle, power: playerTankForFire.power },
@@ -551,6 +570,14 @@ function App() {
           const position = getProjectilePosition(updatedProjectile, currentTime)
           const target = findNearestTarget(position, stateRef.current.tanks, updatedProjectile.tankId, ctx.canvas.height)
           updatedProjectile = updateHomingTracking(updatedProjectile, target, currentTime)
+
+          // Check for proximity explosion (missile passed closest approach to target)
+          if (updatedProjectile.shouldProximityExplode) {
+            currentProjectile = { ...updatedProjectile, isActive: false }
+            handleProjectileLanding(currentProjectile, position)
+            updatedProjectiles.push(currentProjectile)
+            continue // Skip to next projectile
+          }
         }
 
         // Get current position
@@ -694,6 +721,8 @@ function App() {
       setIsExplosionActive(false)
       // Increment turn counter for round tracking
       actions.incrementTurn()
+      // Decrement stun counters for all tanks at end of round
+      actions.decrementStuns()
     }
   }
 
