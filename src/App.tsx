@@ -25,6 +25,7 @@ import {
   updateExplosion,
   renderExplosion,
   isExplosionComplete,
+  checkTankHit,
   type ProjectileState,
   type ExplosionState,
 } from './engine'
@@ -37,6 +38,9 @@ const CANVAS_HEIGHT = 600
 const TANK_BODY_WIDTH = 40
 const TANK_BODY_HEIGHT = 20
 const TANK_WHEEL_RADIUS = 6
+
+// Damage dealt when explosion hits a tank
+const EXPLOSION_DAMAGE = 25
 
 function App() {
   const { state, actions } = useGame()
@@ -258,6 +262,13 @@ function App() {
         // Create explosion at the landing position (in screen coordinates)
         explosionRef.current = createExplosion(position, currentTime)
         setIsExplosionActive(true)
+
+        // Check for tank hits and apply damage
+        for (const tank of tanks) {
+          if (checkTankHit(position, tank, ctx.canvas.height)) {
+            actions.damageTank(tank.id, EXPLOSION_DAMAGE)
+          }
+        }
       } else {
         // Render projectile
         renderProjectile(ctx, projectile, currentTime)
