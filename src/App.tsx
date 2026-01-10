@@ -38,6 +38,8 @@ import {
   updateTankDestruction,
   renderTankDestruction,
   isDestructionComplete,
+  updateClusterBombSplit,
+  renderClusterSubProjectiles,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -444,59 +446,116 @@ function App() {
     let anyProjectileActive = false
     const updatedProjectiles: ProjectileState[] = []
 
+    // Helper function to handle projectile landing (explosion + damage + destruction animation)
+    const handleProjectileLanding = (proj: ProjectileState, landingPos: { x: number; y: number }) => {
+      const weaponConfig = getWeaponConfig(proj.weaponType as WeaponType)
+      // For sub-projectiles, use smaller blast radius
+      const blastRadius = proj.isSubProjectile ? weaponConfig.blastRadius * 0.6 : weaponConfig.blastRadius
+      // For sub-projectiles, don't create sub-explosions (pass 'standard' to avoid recursive sub-explosions)
+      const explosionType = proj.isSubProjectile ? 'standard' as WeaponType : proj.weaponType as WeaponType
+      const newExplosion = createExplosion(landingPos, currentTime, blastRadius, explosionType)
+      explosionsRef.current = [...explosionsRef.current, newExplosion]
+      setIsExplosionActive(true)
+
+      // Check for tank hits and apply weapon damage
+      const damage = proj.isSubProjectile ? weaponConfig.damage * 0.6 : weaponConfig.damage
+      for (const tank of tanks) {
+        if (checkTankHit(landingPos, tank, ctx.canvas.height, blastRadius)) {
+          // Check if this damage will kill the tank
+          const willKill = tank.health > 0 && tank.health - damage <= 0
+
+          actions.damageTank(tank.id, damage, proj.weaponType)
+
+          // Create destruction animation if tank was killed
+          if (willKill) {
+            // Create a temporary tank state with the killing weapon set
+            const killedTank = { ...tank, killedByWeapon: proj.weaponType }
+            const destruction = createTankDestruction(killedTank, ctx.canvas.height, currentTime)
+            if (destruction) {
+              destructionsRef.current = [...destructionsRef.current, destruction]
+            }
+          }
+        }
+      }
+    }
+
     for (const projectile of projectilesRef.current) {
-      if (!projectile.isActive) {
+      if (!projectile.isActive && !projectile.subProjectiles?.some(s => s.isActive)) {
         updatedProjectiles.push(projectile)
         continue
       }
 
-      // Update trace points
-      const updatedProjectile = updateProjectileTrace(projectile, currentTime)
+      // Check for cluster bomb split (only for active main projectiles)
+      let currentProjectile = projectile
+      if (projectile.isActive && projectile.weaponType === 'cluster_bomb' && !projectile.hasSplit) {
+        currentProjectile = updateClusterBombSplit(projectile, currentTime)
 
-      // Get current position
-      const position = getProjectilePosition(updatedProjectile, currentTime)
+        // If split just happened, the main projectile becomes inactive
+        // and sub-projectiles are created
+        if (currentProjectile.hasSplit && !projectile.hasSplit) {
+          // Main projectile just split - don't create explosion for main
+          // Sub-projectiles will create their own explosions on landing
+        }
+      }
 
-      // Check if projectile is out of bounds
-      const terrainHeight = terrain ? getInterpolatedHeightAt(terrain, position.x) ?? 0 : 0
-      if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight)) {
-        // Projectile has landed - mark as inactive
-        updatedProjectiles.push({ ...updatedProjectile, isActive: false })
+      // Handle main projectile if still active
+      if (currentProjectile.isActive) {
+        // Update trace points
+        const updatedProjectile = updateProjectileTrace(currentProjectile, currentTime)
 
-        // Get weapon config for explosion parameters
-        const weaponConfig = getWeaponConfig(updatedProjectile.weaponType as WeaponType)
+        // Get current position
+        const position = getProjectilePosition(updatedProjectile, currentTime)
 
-        // Create explosion at the landing position with weapon's blast radius
-        const newExplosion = createExplosion(position, currentTime, weaponConfig.blastRadius)
-        explosionsRef.current = [...explosionsRef.current, newExplosion]
-        setIsExplosionActive(true)
+        // Check if projectile is out of bounds
+        const terrainHeight = terrain ? getInterpolatedHeightAt(terrain, position.x) ?? 0 : 0
+        if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight)) {
+          // Projectile has landed - mark as inactive
+          currentProjectile = { ...updatedProjectile, isActive: false }
+          handleProjectileLanding(currentProjectile, position)
+        } else {
+          // Projectile still active
+          currentProjectile = updatedProjectile
+          anyProjectileActive = true
 
-        // Check for tank hits and apply weapon damage
-        for (const tank of tanks) {
-          if (checkTankHit(position, tank, ctx.canvas.height, weaponConfig.blastRadius)) {
-            // Check if this damage will kill the tank
-            const willKill = tank.health > 0 && tank.health - weaponConfig.damage <= 0
+          // Render projectile
+          renderProjectile(ctx, updatedProjectile, currentTime)
+        }
+      }
 
-            actions.damageTank(tank.id, weaponConfig.damage, updatedProjectile.weaponType)
+      // Handle sub-projectiles for cluster bomb
+      if (currentProjectile.subProjectiles && currentProjectile.subProjectiles.length > 0) {
+        const updatedSubProjectiles: ProjectileState[] = []
 
-            // Create destruction animation if tank was killed
-            if (willKill) {
-              // Create a temporary tank state with the killing weapon set
-              const killedTank = { ...tank, killedByWeapon: updatedProjectile.weaponType }
-              const destruction = createTankDestruction(killedTank, ctx.canvas.height, currentTime)
-              if (destruction) {
-                destructionsRef.current = [...destructionsRef.current, destruction]
-              }
-            }
+        for (const sub of currentProjectile.subProjectiles) {
+          if (!sub.isActive) {
+            updatedSubProjectiles.push(sub)
+            continue
+          }
+
+          // Update trace points for sub-projectile
+          const updatedSub = updateProjectileTrace(sub, currentTime)
+          const subPosition = getProjectilePosition(updatedSub, currentTime)
+
+          // Check if sub-projectile has landed
+          const subTerrainHeight = terrain ? getInterpolatedHeightAt(terrain, subPosition.x) ?? 0 : 0
+          if (isProjectileOutOfBounds(subPosition, ctx.canvas.width, ctx.canvas.height, subTerrainHeight)) {
+            // Sub-projectile has landed
+            updatedSubProjectiles.push({ ...updatedSub, isActive: false })
+            handleProjectileLanding(updatedSub, subPosition)
+          } else {
+            // Sub-projectile still active
+            updatedSubProjectiles.push(updatedSub)
+            anyProjectileActive = true
           }
         }
-      } else {
-        // Projectile still active
-        updatedProjectiles.push(updatedProjectile)
-        anyProjectileActive = true
 
-        // Render projectile
-        renderProjectile(ctx, updatedProjectile, currentTime)
+        currentProjectile = { ...currentProjectile, subProjectiles: updatedSubProjectiles }
+
+        // Render sub-projectiles
+        renderClusterSubProjectiles(ctx, currentProjectile, currentTime)
       }
+
+      updatedProjectiles.push(currentProjectile)
     }
 
     // Update projectiles ref with new state

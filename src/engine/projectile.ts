@@ -1,5 +1,5 @@
 import type { Position, TankState, TerrainData } from '../types/game';
-import { calculatePosition, degreesToRadians, type LaunchConfig } from './physics';
+import { calculatePosition, calculateVelocity, degreesToRadians, findTimeAtY, powerToVelocity, type LaunchConfig } from './physics';
 import { getInterpolatedHeightAt } from './terrain';
 import { type WeaponType, getWeaponConfig } from './weapons';
 
@@ -37,6 +37,14 @@ export interface ProjectileState {
   weaponType: WeaponType;
   /** Animation speed multiplier from weapon config */
   speedMultiplier: number;
+  /** Sub-projectiles for cluster bomb (spawned at 85% of trajectory) */
+  subProjectiles?: ProjectileState[];
+  /** Whether the cluster bomb has already split */
+  hasSplit?: boolean;
+  /** Estimated time when projectile will land (for trajectory progress calculation) */
+  estimatedLandingTime?: number;
+  /** Whether this is a sub-projectile (smaller, no further splitting) */
+  isSubProjectile?: boolean;
 }
 
 /**
@@ -115,6 +123,12 @@ export function createProjectileState(
 ): ProjectileState {
   const launchConfig = createLaunchConfig(tank, canvasHeight, canvasWidth);
   const weaponConfig = getWeaponConfig(weaponType);
+
+  // For cluster bombs, estimate landing time to calculate split point
+  const estimatedLandingTime = weaponType === 'cluster_bomb'
+    ? estimateLandingTimeFromLaunch(launchConfig, canvasHeight)
+    : undefined;
+
   return {
     isActive: true,
     launchConfig,
@@ -126,7 +140,31 @@ export function createProjectileState(
     tankColor: tank.color,
     weaponType,
     speedMultiplier: weaponConfig.projectileSpeedMultiplier,
+    estimatedLandingTime,
   };
+}
+
+/**
+ * Estimate landing time from launch config.
+ * This is a forward declaration - actual implementation is at the end of the file.
+ */
+function estimateLandingTimeFromLaunch(launchConfig: LaunchConfig, canvasHeight: number): number {
+  // Use the bottom of the screen as the target Y in screen coordinates
+  const targetY = canvasHeight;
+
+  // Binary search for when projectile reaches bottom of screen
+  const landingTime = findTimeAtY(launchConfig, targetY, true);
+
+  if (landingTime === null) {
+    // Fallback: estimate using 2x apex time
+    const angleRad = degreesToRadians(launchConfig.angle);
+    const velocity = powerToVelocity(launchConfig.power, launchConfig.terrainWidth);
+    const vy = velocity * Math.sin(angleRad);
+    const apexTime = vy / 10; // GRAVITY = 10
+    return Math.max(apexTime * 2, 1);
+  }
+
+  return landingTime;
 }
 
 /**
@@ -549,4 +587,222 @@ export function checkTerrainCollision(
   }
 
   return { hit: false, point: null, worldPoint: null };
+}
+
+/**
+ * Number of sub-projectiles created when cluster bomb splits.
+ */
+const CLUSTER_SUB_COUNT = 5;
+
+/**
+ * Percentage of trajectory at which cluster bomb splits (0.85 = 85%).
+ */
+const CLUSTER_SPLIT_THRESHOLD = 0.85;
+
+/**
+ * Estimate the landing time for a projectile based on its launch config.
+ * Uses the canvas height as a rough target since we don't have terrain data at launch.
+ * Returns the physics time (before animation speed multiplier).
+ */
+export function estimateLandingTime(launchConfig: LaunchConfig, canvasHeight: number): number {
+  // Estimate landing by finding when projectile returns to launch height or below
+  // Use the bottom of the screen as the target Y in screen coordinates
+  const targetY = canvasHeight; // Bottom of screen in screen coords
+
+  // Binary search for when projectile reaches bottom of screen
+  const landingTime = findTimeAtY(launchConfig, targetY, true);
+
+  // If we can't find it, estimate based on total flight time
+  if (landingTime === null) {
+    // Fallback: estimate using 2x apex time (symmetric arc approximation)
+    const angleRad = degreesToRadians(launchConfig.angle);
+    const velocity = powerToVelocity(launchConfig.power, launchConfig.terrainWidth);
+    const vy = velocity * Math.sin(angleRad);
+    const apexTime = vy / 10; // GRAVITY = 10
+    return Math.max(apexTime * 2, 1); // At least 1 second
+  }
+
+  return landingTime;
+}
+
+/**
+ * Get the trajectory progress as a value from 0 to 1.
+ * 0 = just launched, 1 = at estimated landing position.
+ */
+export function getTrajectoryProgress(projectile: ProjectileState, currentTime: number): number {
+  if (!projectile.estimatedLandingTime) {
+    return 0;
+  }
+
+  const elapsedMs = currentTime - projectile.startTime;
+  const elapsedPhysicsTime = (elapsedMs / 1000) * ANIMATION_SPEED_MULTIPLIER * projectile.speedMultiplier;
+
+  return Math.min(1, elapsedPhysicsTime / projectile.estimatedLandingTime);
+}
+
+/**
+ * Create sub-projectiles for cluster bomb split.
+ * Each sub-projectile gets a slightly different angle to spread out.
+ */
+function createClusterSubProjectiles(
+  parentProjectile: ProjectileState,
+  currentTime: number
+): ProjectileState[] {
+  const subProjectiles: ProjectileState[] = [];
+  const currentPos = getProjectilePosition(parentProjectile, currentTime);
+
+  // Calculate current velocity to inherit momentum
+  const elapsedMs = currentTime - parentProjectile.startTime;
+  const elapsedPhysicsTime = (elapsedMs / 1000) * ANIMATION_SPEED_MULTIPLIER * parentProjectile.speedMultiplier;
+  const { vx, vy } = calculateVelocity(parentProjectile.launchConfig, elapsedPhysicsTime);
+
+  // Calculate current velocity angle for spread calculations
+  const currentAngle = Math.atan2(-vy, vx) * (180 / Math.PI); // Convert to degrees, negate vy for screen coords
+
+  // Create sub-projectiles with spread angles
+  const spreadAngle = 15; // degrees spread from center
+
+  for (let i = 0; i < CLUSTER_SUB_COUNT; i++) {
+    // Spread evenly from -spreadAngle to +spreadAngle
+    const angleOffset = spreadAngle * ((i / (CLUSTER_SUB_COUNT - 1)) * 2 - 1);
+    const subAngle = currentAngle + angleOffset;
+
+    // Reduce power for sub-projectiles (they don't travel as far)
+    const subPower = parentProjectile.launchConfig.power * 0.3;
+
+    const subLaunchConfig: LaunchConfig = {
+      position: { ...currentPos },
+      angle: subAngle,
+      power: subPower,
+      terrainWidth: parentProjectile.launchConfig.terrainWidth,
+    };
+
+    // Estimate landing time for sub-projectile
+    const subLandingTime = estimateLandingTime(subLaunchConfig, parentProjectile.canvasHeight);
+
+    subProjectiles.push({
+      isActive: true,
+      launchConfig: subLaunchConfig,
+      startTime: currentTime,
+      tracePoints: [{ ...currentPos }],
+      canvasHeight: parentProjectile.canvasHeight,
+      canvasWidth: parentProjectile.canvasWidth,
+      tankId: parentProjectile.tankId,
+      tankColor: parentProjectile.tankColor,
+      weaponType: 'cluster_bomb',
+      speedMultiplier: parentProjectile.speedMultiplier * 1.2, // Slightly faster animation
+      isSubProjectile: true,
+      estimatedLandingTime: subLandingTime,
+    });
+  }
+
+  return subProjectiles;
+}
+
+/**
+ * Check if cluster bomb should split and create sub-projectiles.
+ * Returns updated projectile state with sub-projectiles if split occurs.
+ */
+export function updateClusterBombSplit(
+  projectile: ProjectileState,
+  currentTime: number
+): ProjectileState {
+  // Only process cluster bombs that haven't split yet
+  if (projectile.weaponType !== 'cluster_bomb' || projectile.hasSplit || projectile.isSubProjectile) {
+    return projectile;
+  }
+
+  // Check trajectory progress
+  const progress = getTrajectoryProgress(projectile, currentTime);
+
+  if (progress >= CLUSTER_SPLIT_THRESHOLD) {
+    // Time to split!
+    const subProjectiles = createClusterSubProjectiles(projectile, currentTime);
+
+    return {
+      ...projectile,
+      hasSplit: true,
+      isActive: false, // Main projectile becomes inactive after split
+      subProjectiles,
+    };
+  }
+
+  return projectile;
+}
+
+/**
+ * Render a cluster bomb sub-projectile (smaller than main projectile).
+ */
+function renderClusterSubProjectile(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  currentTime: number
+): void {
+  // Slight wobble animation
+  const wobble = Math.sin(currentTime * 0.03) * 1;
+  const drawX = x + wobble;
+
+  ctx.save();
+
+  // Orange glow
+  ctx.shadowColor = '#ff9933';
+  ctx.shadowBlur = 6;
+
+  // Smaller sphere
+  ctx.fillStyle = '#cc6600';
+  ctx.beginPath();
+  ctx.arc(drawX, y, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Single dot in center
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#553300';
+  ctx.beginPath();
+  ctx.arc(drawX, y, 1, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Render cluster bomb sub-projectiles.
+ */
+export function renderClusterSubProjectiles(
+  ctx: CanvasRenderingContext2D,
+  projectile: ProjectileState,
+  currentTime: number
+): void {
+  if (!projectile.subProjectiles) return;
+
+  for (const sub of projectile.subProjectiles) {
+    if (!sub.isActive) continue;
+
+    const position = getProjectilePosition(sub, currentTime);
+
+    // Draw trail
+    if (sub.tracePoints.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = sub.tankColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 4]);
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+
+      const firstPoint = sub.tracePoints[0]!;
+      ctx.moveTo(firstPoint.x, firstPoint.y);
+
+      for (let i = 1; i < sub.tracePoints.length; i++) {
+        const point = sub.tracePoints[i]!;
+        ctx.lineTo(point.x, point.y);
+      }
+
+      ctx.lineTo(position.x, position.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw sub-projectile
+    renderClusterSubProjectile(ctx, position.x, position.y, currentTime);
+  }
 }

@@ -48,6 +48,9 @@ export {
   worldToScreen,
   screenToWorld,
   checkTerrainCollision,
+  updateClusterBombSplit,
+  renderClusterSubProjectiles,
+  getTrajectoryProgress,
   type ProjectileState,
   type TerrainCollisionResult,
 } from './projectile';
