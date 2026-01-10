@@ -7,9 +7,13 @@ import {
   getChevronCount,
   getStarCount,
   getNextDifficulty,
+  selectAIWeapon,
+  getAIWeaponChoice,
   AI_DIFFICULTY_CONFIGS,
+  AI_AVAILABLE_WEAPONS,
 } from './ai';
 import type { TankState, TerrainData } from '../types/game';
+import { WEAPON_TYPES } from './weapons';
 
 // Helper to create a mock tank
 function createMockTank(overrides: Partial<TankState> = {}): TankState {
@@ -402,3 +406,127 @@ function standardDeviation(values: number[]): number {
   const avgSquaredDiff = squaredDiffs.reduce((a, b) => a + b, 0) / n;
   return Math.sqrt(avgSquaredDiff);
 }
+
+describe('AI_AVAILABLE_WEAPONS', () => {
+  it('should only allow standard for blind_fool', () => {
+    expect(AI_AVAILABLE_WEAPONS.blind_fool).toEqual(['standard']);
+  });
+
+  it('should only allow standard for private', () => {
+    expect(AI_AVAILABLE_WEAPONS.private).toEqual(['standard']);
+  });
+
+  it('should allow more weapons for veteran', () => {
+    expect(AI_AVAILABLE_WEAPONS.veteran).toContain('standard');
+    expect(AI_AVAILABLE_WEAPONS.veteran).toContain('heavy_artillery');
+    expect(AI_AVAILABLE_WEAPONS.veteran).toContain('precision');
+    expect(AI_AVAILABLE_WEAPONS.veteran.length).toBe(3);
+  });
+
+  it('should allow cluster_bomb for centurion', () => {
+    expect(AI_AVAILABLE_WEAPONS.centurion).toContain('cluster_bomb');
+  });
+
+  it('should allow all weapons for primus', () => {
+    expect(AI_AVAILABLE_WEAPONS.primus).toEqual(WEAPON_TYPES);
+  });
+});
+
+describe('selectAIWeapon', () => {
+  const shooter = createMockTank({ position: { x: 100, y: 100 } });
+  const farTarget = createMockTank({ position: { x: 600, y: 100 } });
+  const closeTarget = createMockTank({ position: { x: 200, y: 100 } });
+  const mediumTarget = createMockTank({ position: { x: 350, y: 100 } });
+
+  it('should always return standard for blind_fool', () => {
+    // Test with various random seeds
+    for (let seed = 0; seed <= 1; seed += 0.1) {
+      expect(selectAIWeapon('blind_fool', shooter, farTarget, seed)).toBe('standard');
+      expect(selectAIWeapon('blind_fool', shooter, closeTarget, seed)).toBe('standard');
+    }
+  });
+
+  it('should always return standard for private', () => {
+    for (let seed = 0; seed <= 1; seed += 0.1) {
+      expect(selectAIWeapon('private', shooter, farTarget, seed)).toBe('standard');
+    }
+  });
+
+  it('should sometimes use advanced weapons for veteran', () => {
+    const weapons = new Set<string>();
+    // Use random seeds to get different results
+    for (let seed = 0; seed <= 1; seed += 0.05) {
+      weapons.add(selectAIWeapon('veteran', shooter, mediumTarget, seed));
+    }
+    // Veteran has access to standard, heavy_artillery, precision
+    expect(weapons.size).toBeGreaterThan(1);
+  });
+
+  it('should prefer precision for close targets (veteran+)', () => {
+    // At close range with low random seed, should pick precision
+    const weapon = selectAIWeapon('veteran', shooter, closeTarget, 0.3);
+    expect(weapon).toBe('precision');
+  });
+
+  it('should prefer heavy_artillery for medium range (veteran+)', () => {
+    // At medium range with low random seed, should pick heavy_artillery
+    const weapon = selectAIWeapon('veteran', shooter, mediumTarget, 0.3);
+    expect(weapon).toBe('heavy_artillery');
+  });
+
+  it('should use cluster_bomb for centurion', () => {
+    // Centurion has cluster_bomb access
+    const weapon = selectAIWeapon('centurion', shooter, mediumTarget, 0.85);
+    expect(weapon).toBe('cluster_bomb');
+  });
+
+  it('should use napalm for primus', () => {
+    // Primus has napalm access
+    const weapon = selectAIWeapon('primus', shooter, farTarget, 0.5);
+    expect(weapon).toBe('napalm');
+  });
+
+  it('should only return weapons available to the difficulty', () => {
+    // Run many iterations with different seeds
+    for (let seed = 0; seed <= 1; seed += 0.05) {
+      const veteranWeapon = selectAIWeapon('veteran', shooter, farTarget, seed);
+      expect(AI_AVAILABLE_WEAPONS.veteran).toContain(veteranWeapon);
+
+      const centurionWeapon = selectAIWeapon('centurion', shooter, farTarget, seed);
+      expect(AI_AVAILABLE_WEAPONS.centurion).toContain(centurionWeapon);
+
+      const primusWeapon = selectAIWeapon('primus', shooter, farTarget, seed);
+      expect(AI_AVAILABLE_WEAPONS.primus).toContain(primusWeapon);
+    }
+  });
+
+  it('should return valid weapon types for all difficulties', () => {
+    const difficulties = ['blind_fool', 'private', 'veteran', 'centurion', 'primus'] as const;
+    for (const difficulty of difficulties) {
+      const weapon = selectAIWeapon(difficulty, shooter, farTarget);
+      expect(WEAPON_TYPES).toContain(weapon);
+    }
+  });
+});
+
+describe('getAIWeaponChoice', () => {
+  const shooter = createMockTank({ position: { x: 100, y: 100 } });
+  const target = createMockTank({ position: { x: 400, y: 100 } });
+
+  it('should return weaponType and weaponName', () => {
+    const choice = getAIWeaponChoice('veteran', shooter, target);
+
+    expect(choice.weaponType).toBeDefined();
+    expect(choice.weaponName).toBeDefined();
+    expect(typeof choice.weaponType).toBe('string');
+    expect(typeof choice.weaponName).toBe('string');
+  });
+
+  it('should return matching weapon name for type', () => {
+    // For blind_fool, always returns standard
+    const choice = getAIWeaponChoice('blind_fool', shooter, target);
+
+    expect(choice.weaponType).toBe('standard');
+    expect(choice.weaponName).toBe('Standard Shell');
+  });
+});

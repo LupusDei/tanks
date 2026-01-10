@@ -2,6 +2,7 @@ import type { TankState, TerrainData, Position, AIDifficulty } from '../types/ga
 import { AI_DIFFICULTY_ORDER } from '../types/game';
 import { GRAVITY, degreesToRadians, powerToVelocity } from './physics';
 import { getInterpolatedHeightAt } from './terrain';
+import { type WeaponType, WEAPON_TYPES, WEAPONS } from './weapons';
 
 export type { AIDifficulty } from '../types/game';
 export { AI_DIFFICULTY_ORDER } from '../types/game';
@@ -312,4 +313,108 @@ export function getNextDifficulty(current: AIDifficulty): AIDifficulty {
   const currentIndex = AI_DIFFICULTY_ORDER.indexOf(current);
   const nextIndex = (currentIndex + 1) % AI_DIFFICULTY_ORDER.length;
   return AI_DIFFICULTY_ORDER[nextIndex]!;
+}
+
+/**
+ * Weapons available to each AI difficulty level.
+ * Lower difficulties only use standard weapons.
+ * Higher difficulties have access to more advanced weapons.
+ */
+export const AI_AVAILABLE_WEAPONS: Record<AIDifficulty, WeaponType[]> = {
+  blind_fool: ['standard'],
+  private: ['standard'],
+  veteran: ['standard', 'heavy_artillery', 'precision'],
+  centurion: ['standard', 'heavy_artillery', 'precision', 'cluster_bomb'],
+  primus: WEAPON_TYPES, // All weapons
+};
+
+/**
+ * Select a weapon for an AI tank based on difficulty and tactical situation.
+ *
+ * Strategy:
+ * - Lower difficulties always use standard
+ * - Higher difficulties make tactical choices based on target distance
+ * - Very close: precision (fast, accurate)
+ * - Medium range: heavy_artillery (big blast radius for margin of error)
+ * - Long range: standard or cluster_bomb (good all-around)
+ *
+ * @param difficulty - AI difficulty level
+ * @param shooter - The AI tank
+ * @param target - The target tank
+ * @param randomSeed - Optional random value 0-1 for deterministic testing
+ */
+export function selectAIWeapon(
+  difficulty: AIDifficulty,
+  shooter: TankState,
+  target: TankState,
+  randomSeed?: number
+): WeaponType {
+  const availableWeapons = AI_AVAILABLE_WEAPONS[difficulty];
+
+  // If only standard is available, return it immediately
+  if (availableWeapons.length === 1) {
+    return 'standard';
+  }
+
+  // Calculate distance to target
+  const dx = Math.abs(target.position.x - shooter.position.x);
+  const dy = Math.abs(target.position.y - shooter.position.y);
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  // Use provided seed or generate random
+  const random = randomSeed ?? Math.random();
+
+  // Tactical weapon selection based on distance
+  // Close range (< 150px): Prefer precision for fast, accurate shots
+  // Medium range (150-350px): Prefer heavy_artillery for blast radius
+  // Long range (> 350px): Mix of weapons, cluster for area denial
+
+  if (distance < 150 && availableWeapons.includes('precision')) {
+    // Close range: 60% precision, 30% standard, 10% heavy
+    if (random < 0.6) return 'precision';
+    if (random < 0.9) return 'standard';
+    if (availableWeapons.includes('heavy_artillery')) return 'heavy_artillery';
+    return 'standard';
+  }
+
+  if (distance >= 150 && distance < 350 && availableWeapons.includes('heavy_artillery')) {
+    // Medium range: 50% heavy_artillery, 30% standard, 20% other
+    if (random < 0.5) return 'heavy_artillery';
+    if (random < 0.8) return 'standard';
+    if (availableWeapons.includes('cluster_bomb') && random < 0.9) return 'cluster_bomb';
+    if (availableWeapons.includes('precision')) return 'precision';
+    return 'standard';
+  }
+
+  // Long range or no special weapons: varied selection
+  if (availableWeapons.includes('cluster_bomb') && random < 0.25) {
+    return 'cluster_bomb';
+  }
+  if (availableWeapons.includes('heavy_artillery') && random < 0.45) {
+    return 'heavy_artillery';
+  }
+  if (availableWeapons.includes('napalm') && random < 0.55) {
+    return 'napalm';
+  }
+  if (availableWeapons.includes('precision') && random < 0.7) {
+    return 'precision';
+  }
+
+  return 'standard';
+}
+
+/**
+ * Get weapon configuration for display in AI opponent info.
+ */
+export function getAIWeaponChoice(
+  difficulty: AIDifficulty,
+  shooter: TankState,
+  target: TankState
+): { weaponType: WeaponType; weaponName: string } {
+  const weaponType = selectAIWeapon(difficulty, shooter, target);
+  const weapon = WEAPONS[weaponType];
+  return {
+    weaponType,
+    weaponName: weapon.name,
+  };
 }
