@@ -11,6 +11,7 @@ import {
   TurnIndicator,
 } from './components'
 import { useGame } from './context/useGame'
+import { useUser } from './context/UserContext'
 import {
   initializeGame,
   renderTank,
@@ -44,6 +45,7 @@ const EXPLOSION_DAMAGE = 25
 
 function App() {
   const { state, actions } = useGame()
+  const { userData, createNewUser, recordGame } = useUser()
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
   const explosionRef = useRef<ExplosionState | null>(null)
@@ -51,6 +53,40 @@ function App() {
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
   const aiTimeoutRef = useRef<number | null>(null)
+  const gameRecordedRef = useRef(false)
+
+  // Create default user if none exists
+  useEffect(() => {
+    if (!userData) {
+      createNewUser('Player')
+    }
+  }, [userData, createNewUser])
+
+  // Record game stats when game ends
+  useEffect(() => {
+    if (state.phase === 'gameover' && state.winner && !gameRecordedRef.current) {
+      gameRecordedRef.current = true
+      const isVictory = state.winner === 'player'
+      const enemiesKilled = state.tanks.filter(
+        (t) => t.id !== 'player' && t.health <= 0
+      ).length
+
+      recordGame({
+        isVictory,
+        enemyCount: state.enemyCount,
+        enemiesKilled,
+        terrainSize: state.terrainSize,
+        aiDifficulty: state.aiDifficulty,
+        turnsPlayed: state.currentTurn,
+        playerColor: state.playerColor!,
+      })
+    }
+
+    // Reset the recorded flag when game resets
+    if (state.phase === 'loading') {
+      gameRecordedRef.current = false
+    }
+  }, [state.phase, state.winner, state.tanks, state.enemyCount, state.terrainSize, state.aiDifficulty, state.currentTurn, state.playerColor, recordGame])
 
   // AI turn handler - only runs when turn changes to AI (and no active projectile/explosion)
   const isAITurn = state.phase === 'playing' && state.currentPlayerId !== 'player' && !isProjectileActive && !isExplosionActive

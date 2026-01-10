@@ -2,13 +2,39 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import App from './App'
 import { GameProvider } from './context/GameContext'
+import { UserProvider } from './context/UserContext'
+
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key]
+    }),
+    clear: vi.fn(() => {
+      store = {}
+    }),
+  }
+})()
+
+Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
 
 function renderWithProvider(ui: React.ReactElement) {
-  return render(<GameProvider>{ui}</GameProvider>)
+  return render(
+    <UserProvider>
+      <GameProvider>{ui}</GameProvider>
+    </UserProvider>
+  )
 }
 
 describe('App', () => {
   beforeEach(() => {
+    localStorageMock.clear()
+
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
       writable: true,
       value: vi.fn(() => ({
