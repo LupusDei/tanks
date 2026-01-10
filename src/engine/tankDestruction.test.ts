@@ -48,19 +48,30 @@ describe('createTankDestruction', () => {
     expect(destruction!.category).toBe('explosive');
   });
 
-  it('returns null for non-explosive weapon kills (ballistic)', () => {
+  it('creates destruction state for standard weapon kills (ballistic)', () => {
     const tank = createMockTank({ killedByWeapon: 'standard' });
     const destruction = createTankDestruction(tank, CANVAS_HEIGHT);
 
-    // Currently only explosive is implemented
-    expect(destruction).toBeNull();
+    expect(destruction).not.toBeNull();
+    expect(destruction!.category).toBe('ballistic');
+    expect(destruction!.isActive).toBe(true);
+    expect(destruction!.debris.length).toBeGreaterThan(0);
+    expect(destruction!.particles.length).toBeGreaterThan(0);
   });
 
-  it('returns null for non-explosive weapon kills (fire)', () => {
+  it('creates destruction state for precision weapon kills (ballistic)', () => {
+    const tank = createMockTank({ killedByWeapon: 'precision' });
+    const destruction = createTankDestruction(tank, CANVAS_HEIGHT);
+
+    expect(destruction).not.toBeNull();
+    expect(destruction!.category).toBe('ballistic');
+  });
+
+  it('returns null for fire weapon kills (not yet implemented)', () => {
     const tank = createMockTank({ killedByWeapon: 'napalm' });
     const destruction = createTankDestruction(tank, CANVAS_HEIGHT);
 
-    // Currently only explosive is implemented
+    // Fire category not yet implemented
     expect(destruction).toBeNull();
   });
 
@@ -301,5 +312,93 @@ describe('DESTRUCTION_DURATION_MS', () => {
   it('is a reasonable duration', () => {
     expect(DESTRUCTION_DURATION_MS).toBeGreaterThan(1000);
     expect(DESTRUCTION_DURATION_MS).toBeLessThan(5000);
+  });
+});
+
+describe('ballistic destruction', () => {
+  it('creates debris pieces with various types', () => {
+    const tank = createMockTank({ killedByWeapon: 'standard' });
+    const destruction = createTankDestruction(tank, CANVAS_HEIGHT);
+
+    const debrisTypes = destruction!.debris.map((d) => d.type);
+
+    expect(debrisTypes).toContain('hull_front');
+    expect(debrisTypes).toContain('hull_rear');
+    expect(debrisTypes).toContain('turret');
+    expect(debrisTypes).toContain('barrel');
+    expect(debrisTypes).toContain('track');
+    expect(debrisTypes).toContain('wheel');
+  });
+
+  it('has lower horizontal velocities than explosive destruction', () => {
+    const explosiveTank = createMockTank({ killedByWeapon: 'heavy_artillery' });
+    const ballisticTank = createMockTank({ killedByWeapon: 'standard' });
+
+    const explosiveDestruction = createTankDestruction(explosiveTank, CANVAS_HEIGHT)!;
+    const ballisticDestruction = createTankDestruction(ballisticTank, CANVAS_HEIGHT)!;
+
+    // Calculate average horizontal velocity magnitude for each
+    const explosiveAvgVx =
+      explosiveDestruction.debris.reduce((sum, d) => sum + Math.abs(d.vx), 0) /
+      explosiveDestruction.debris.length;
+    const ballisticAvgVx =
+      ballisticDestruction.debris.reduce((sum, d) => sum + Math.abs(d.vx), 0) /
+      ballisticDestruction.debris.length;
+
+    // Ballistic should have significantly lower horizontal velocities
+    expect(ballisticAvgVx).toBeLessThan(explosiveAvgVx);
+  });
+
+  it('creates dust particles (no fire colors)', () => {
+    const tank = createMockTank({ killedByWeapon: 'standard' });
+    const destruction = createTankDestruction(tank, CANVAS_HEIGHT);
+
+    // Ballistic particles should not contain fire colors (no #ff prefix)
+    const hasFireColors = destruction!.particles.some((p) => p.color.startsWith('#ff'));
+    expect(hasFireColors).toBe(false);
+
+    // Should have dust/earth colors instead
+    const dustColors = ['#8b7355', '#a0926c', '#6b5b45', '#777777', '#999999', '#5c4a3a', '#4a4a4a'];
+    const allDustColors = destruction!.particles.every((p) => dustColors.includes(p.color));
+    expect(allDustColors).toBe(true);
+  });
+
+  it('has fewer particles than explosive destruction', () => {
+    const explosiveTank = createMockTank({ killedByWeapon: 'heavy_artillery' });
+    const ballisticTank = createMockTank({ killedByWeapon: 'standard' });
+
+    const explosiveDestruction = createTankDestruction(explosiveTank, CANVAS_HEIGHT)!;
+    const ballisticDestruction = createTankDestruction(ballisticTank, CANVAS_HEIGHT)!;
+
+    expect(ballisticDestruction.particles.length).toBeLessThan(explosiveDestruction.particles.length);
+  });
+
+  it('updates ballistic debris with physics', () => {
+    const tank = createMockTank({ killedByWeapon: 'standard' });
+    const startTime = 1000;
+    const destruction = createTankDestruction(tank, CANVAS_HEIGHT, startTime)!;
+
+    const initialY = destruction.debris[0]!.y;
+    const deltaTimeMs = 100;
+
+    const updated = updateTankDestruction(destruction, startTime + deltaTimeMs, deltaTimeMs);
+
+    // Debris should fall due to gravity
+    expect(updated.debris[0]!.y).not.toBe(initialY);
+  });
+
+  it('creates fewer wheels than explosive destruction', () => {
+    const explosiveTank = createMockTank({ killedByWeapon: 'heavy_artillery' });
+    const ballisticTank = createMockTank({ killedByWeapon: 'standard' });
+
+    const explosiveDestruction = createTankDestruction(explosiveTank, CANVAS_HEIGHT)!;
+    const ballisticDestruction = createTankDestruction(ballisticTank, CANVAS_HEIGHT)!;
+
+    const explosiveWheels = explosiveDestruction.debris.filter((d) => d.type === 'wheel').length;
+    const ballisticWheels = ballisticDestruction.debris.filter((d) => d.type === 'wheel').length;
+
+    // Ballistic has 3 wheels, explosive has 4
+    expect(ballisticWheels).toBe(3);
+    expect(explosiveWheels).toBe(4);
   });
 });

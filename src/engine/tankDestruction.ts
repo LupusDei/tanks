@@ -194,6 +194,162 @@ function createExplosiveDebris(
 }
 
 /**
+ * Create debris pieces for ballistic destruction.
+ * The tank crumbles apart with parts falling due to gravity.
+ * More subdued than explosive - minimal horizontal velocity.
+ */
+function createBallisticDebris(
+  centerX: number,
+  centerY: number,
+  tankColor: string
+): TankDebris[] {
+  const debris: TankDebris[] = [];
+
+  // Hull front piece - tips forward slightly and falls
+  debris.push({
+    type: 'hull_front',
+    x: centerX - TANK_DIMS.bodyWidth / 4,
+    y: centerY,
+    vx: -15 - Math.random() * 10,
+    vy: -20 - Math.random() * 15,
+    rotation: 0,
+    rotationSpeed: 1 + Math.random() * 2,
+    width: TANK_DIMS.bodyWidth / 2,
+    height: TANK_DIMS.bodyHeight,
+    color: tankColor,
+    life: 1,
+  });
+
+  // Hull rear piece - tips backward and falls
+  debris.push({
+    type: 'hull_rear',
+    x: centerX + TANK_DIMS.bodyWidth / 4,
+    y: centerY,
+    vx: 10 + Math.random() * 10,
+    vy: -15 - Math.random() * 10,
+    rotation: 0,
+    rotationSpeed: -(1 + Math.random() * 2),
+    width: TANK_DIMS.bodyWidth / 2,
+    height: TANK_DIMS.bodyHeight,
+    color: tankColor,
+    life: 1,
+  });
+
+  // Turret dome - tips over and falls to one side
+  const turretDirection = Math.random() > 0.5 ? 1 : -1;
+  debris.push({
+    type: 'turret',
+    x: centerX,
+    y: centerY - TANK_DIMS.bodyHeight / 2,
+    vx: turretDirection * (20 + Math.random() * 15),
+    vy: -30 - Math.random() * 20,
+    rotation: 0,
+    rotationSpeed: turretDirection * (3 + Math.random() * 2),
+    width: TANK_DIMS.domeRadius * 2,
+    height: TANK_DIMS.domeRadius,
+    color: darkenColor(tankColor, 0.3),
+    life: 1,
+  });
+
+  // Barrel - detaches and falls
+  debris.push({
+    type: 'barrel',
+    x: centerX + 10,
+    y: centerY - TANK_DIMS.bodyHeight / 2,
+    vx: 15 + Math.random() * 10,
+    vy: -10 - Math.random() * 10,
+    rotation: Math.random() * 0.3 - 0.15,
+    rotationSpeed: 2 + Math.random() * 3,
+    width: TANK_DIMS.turretLength,
+    height: TANK_DIMS.turretWidth,
+    color: darkenColor(tankColor, 0.4),
+    life: 1,
+  });
+
+  // Left track - slides off to the left
+  debris.push({
+    type: 'track',
+    x: centerX - TANK_DIMS.bodyWidth / 3,
+    y: centerY + TANK_DIMS.bodyHeight / 2,
+    vx: -25 - Math.random() * 10,
+    vy: -5 - Math.random() * 5,
+    rotation: 0,
+    rotationSpeed: 0.5 + Math.random() * 0.5,
+    width: TANK_DIMS.bodyWidth / 2,
+    height: TANK_DIMS.wheelRadius * 2,
+    color: '#2a2a2a',
+    life: 1,
+  });
+
+  // Right track - slides off to the right
+  debris.push({
+    type: 'track',
+    x: centerX + TANK_DIMS.bodyWidth / 3,
+    y: centerY + TANK_DIMS.bodyHeight / 2,
+    vx: 25 + Math.random() * 10,
+    vy: -5 - Math.random() * 5,
+    rotation: 0,
+    rotationSpeed: -(0.5 + Math.random() * 0.5),
+    width: TANK_DIMS.bodyWidth / 2,
+    height: TANK_DIMS.wheelRadius * 2,
+    color: '#2a2a2a',
+    life: 1,
+  });
+
+  // A few wheels fall off and roll
+  for (let i = 0; i < 3; i++) {
+    const side = i === 0 ? -1 : i === 1 ? 1 : (Math.random() - 0.5) * 2;
+    debris.push({
+      type: 'wheel',
+      x: centerX + side * (TANK_DIMS.bodyWidth / 3) + (Math.random() - 0.5) * 10,
+      y: centerY + TANK_DIMS.bodyHeight / 2,
+      vx: side * (10 + Math.random() * 15),
+      vy: -10 - Math.random() * 15,
+      rotation: 0,
+      rotationSpeed: side * (4 + Math.random() * 4),
+      width: TANK_DIMS.wheelRadius * 2,
+      height: TANK_DIMS.wheelRadius * 2,
+      color: '#555555',
+      life: 1,
+    });
+  }
+
+  return debris;
+}
+
+/**
+ * Create dust and debris particles for ballistic destruction.
+ * No fire - just dust and small metal fragments.
+ */
+function createBallisticParticles(
+  centerX: number,
+  centerY: number
+): DestructionParticle[] {
+  const particles: DestructionParticle[] = [];
+  // Dust colors - browns, tans, grays
+  const colors = ['#8b7355', '#a0926c', '#6b5b45', '#777777', '#999999', '#5c4a3a', '#4a4a4a'];
+  const particleCount = 20;
+
+  for (let i = 0; i < particleCount; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 15 + Math.random() * 40; // Much slower than explosive
+    const isLargeDust = i < particleCount * 0.3;
+
+    particles.push({
+      x: centerX + (Math.random() - 0.5) * 30,
+      y: centerY + (Math.random() - 0.5) * 15,
+      vx: Math.cos(angle) * speed * 0.6,
+      vy: Math.sin(angle) * speed - 15, // Slight upward bias for dust cloud
+      radius: isLargeDust ? 6 + Math.random() * 8 : 2 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)]!,
+      life: 1,
+    });
+  }
+
+  return particles;
+}
+
+/**
  * Create smoke and fire particles for explosive destruction.
  */
 function createExplosiveParticles(
@@ -225,7 +381,7 @@ function createExplosiveParticles(
 
 /**
  * Create a tank destruction animation.
- * Currently only implements explosive destruction.
+ * Supports explosive and ballistic destruction categories.
  */
 export function createTankDestruction(
   tank: TankState,
@@ -238,22 +394,33 @@ export function createTankDestruction(
 
   const category = getDestructionCategory(tank.killedByWeapon);
 
-  // For now, only handle explosive destruction
-  // Other categories will be implemented in separate tasks
-  if (category !== 'explosive') {
+  // Fire category will be implemented in a separate task
+  if (category === 'fire') {
     return null;
   }
 
   const canvasY = canvasHeight - tank.position.y;
   const tankColor = getTankColorHex(tank.color);
 
+  let debris: TankDebris[];
+  let particles: DestructionParticle[];
+
+  if (category === 'explosive') {
+    debris = createExplosiveDebris(tank.position.x, canvasY, tankColor);
+    particles = createExplosiveParticles(tank.position.x, canvasY);
+  } else {
+    // ballistic
+    debris = createBallisticDebris(tank.position.x, canvasY, tankColor);
+    particles = createBallisticParticles(tank.position.x, canvasY);
+  }
+
   return {
     tankId: tank.id,
     position: { ...tank.position },
     canvasY,
     startTime,
-    debris: createExplosiveDebris(tank.position.x, canvasY, tankColor),
-    particles: createExplosiveParticles(tank.position.x, canvasY),
+    debris,
+    particles,
     isActive: true,
     category,
     tankColor,
@@ -463,27 +630,44 @@ export function renderTankDestruction(
 
   const progress = getDestructionProgress(destruction, currentTime);
 
-  // Draw initial flash for explosive destruction (first 10%)
-  if (progress < 0.1) {
-    const flashProgress = progress / 0.1;
-    const flashRadius = 40 + flashProgress * 30;
-    const flashAlpha = 1 - flashProgress;
+  // Category-specific initial effects
+  if (destruction.category === 'explosive') {
+    // Draw initial flash for explosive destruction (first 10%)
+    if (progress < 0.1) {
+      const flashProgress = progress / 0.1;
+      const flashRadius = 40 + flashProgress * 30;
+      const flashAlpha = 1 - flashProgress;
 
-    ctx.save();
-    const gradient = ctx.createRadialGradient(
-      destruction.position.x, destruction.canvasY, 0,
-      destruction.position.x, destruction.canvasY, flashRadius
-    );
-    gradient.addColorStop(0, `rgba(255, 255, 200, ${flashAlpha})`);
-    gradient.addColorStop(0.3, `rgba(255, 200, 100, ${flashAlpha * 0.8})`);
-    gradient.addColorStop(0.6, `rgba(255, 100, 50, ${flashAlpha * 0.4})`);
-    gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
+      ctx.save();
+      const gradient = ctx.createRadialGradient(
+        destruction.position.x, destruction.canvasY, 0,
+        destruction.position.x, destruction.canvasY, flashRadius
+      );
+      gradient.addColorStop(0, `rgba(255, 255, 200, ${flashAlpha})`);
+      gradient.addColorStop(0.3, `rgba(255, 200, 100, ${flashAlpha * 0.8})`);
+      gradient.addColorStop(0.6, `rgba(255, 100, 50, ${flashAlpha * 0.4})`);
+      gradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
 
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(destruction.position.x, destruction.canvasY, flashRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(destruction.position.x, destruction.canvasY, flashRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else if (destruction.category === 'ballistic') {
+    // Draw impact spark for ballistic destruction (first 5%)
+    if (progress < 0.05) {
+      const sparkProgress = progress / 0.05;
+      const sparkAlpha = 1 - sparkProgress;
+
+      ctx.save();
+      ctx.globalAlpha = sparkAlpha * 0.6;
+      ctx.fillStyle = '#ffff99';
+      ctx.beginPath();
+      ctx.arc(destruction.position.x, destruction.canvasY, 8 + sparkProgress * 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   // Render particles (behind debris)
@@ -496,25 +680,49 @@ export function renderTankDestruction(
     renderDebrisPiece(ctx, piece);
   }
 
-  // Draw smoke trail rising from explosion center
-  if (progress > 0.1 && progress < 0.8) {
-    const smokeAlpha = (1 - (progress - 0.1) / 0.7) * 0.4;
-    ctx.save();
-    ctx.globalAlpha = smokeAlpha;
+  // Category-specific trailing effects
+  if (destruction.category === 'explosive') {
+    // Draw smoke trail rising from explosion center
+    if (progress > 0.1 && progress < 0.8) {
+      const smokeAlpha = (1 - (progress - 0.1) / 0.7) * 0.4;
+      ctx.save();
+      ctx.globalAlpha = smokeAlpha;
 
-    const smokeGradient = ctx.createRadialGradient(
-      destruction.position.x, destruction.canvasY - progress * 60, 10,
-      destruction.position.x, destruction.canvasY - progress * 60, 30 + progress * 20
-    );
-    smokeGradient.addColorStop(0, 'rgba(80, 80, 80, 0.6)');
-    smokeGradient.addColorStop(0.5, 'rgba(60, 60, 60, 0.3)');
-    smokeGradient.addColorStop(1, 'rgba(40, 40, 40, 0)');
+      const smokeGradient = ctx.createRadialGradient(
+        destruction.position.x, destruction.canvasY - progress * 60, 10,
+        destruction.position.x, destruction.canvasY - progress * 60, 30 + progress * 20
+      );
+      smokeGradient.addColorStop(0, 'rgba(80, 80, 80, 0.6)');
+      smokeGradient.addColorStop(0.5, 'rgba(60, 60, 60, 0.3)');
+      smokeGradient.addColorStop(1, 'rgba(40, 40, 40, 0)');
 
-    ctx.fillStyle = smokeGradient;
-    ctx.beginPath();
-    ctx.arc(destruction.position.x, destruction.canvasY - progress * 60, 30 + progress * 20, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+      ctx.fillStyle = smokeGradient;
+      ctx.beginPath();
+      ctx.arc(destruction.position.x, destruction.canvasY - progress * 60, 30 + progress * 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else if (destruction.category === 'ballistic') {
+    // Draw dust cloud settling for ballistic destruction
+    if (progress < 0.6) {
+      const dustAlpha = (1 - progress / 0.6) * 0.3;
+      ctx.save();
+      ctx.globalAlpha = dustAlpha;
+
+      const dustGradient = ctx.createRadialGradient(
+        destruction.position.x, destruction.canvasY, 5,
+        destruction.position.x, destruction.canvasY, 25 + progress * 15
+      );
+      dustGradient.addColorStop(0, 'rgba(139, 115, 85, 0.5)');
+      dustGradient.addColorStop(0.6, 'rgba(107, 91, 69, 0.2)');
+      dustGradient.addColorStop(1, 'rgba(90, 74, 58, 0)');
+
+      ctx.fillStyle = dustGradient;
+      ctx.beginPath();
+      ctx.arc(destruction.position.x, destruction.canvasY, 25 + progress * 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 }
 
