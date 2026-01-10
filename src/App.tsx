@@ -46,6 +46,7 @@ import {
   type TankDestructionState,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount } from './types/game'
+import { getWeaponInventory } from './services/userDatabase'
 
 interface GameConfig {
   terrainSize: TerrainSize
@@ -60,7 +61,7 @@ const TANK_WHEEL_RADIUS = 6
 
 function App() {
   const { state, actions } = useGame()
-  const { userData, createNewUser, recordGame, weaponInventory, consumeWeapon } = useUser()
+  const { userData, createNewUser, recordGame, consumeWeapon } = useUser()
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
   // Array of active explosions for simultaneous impacts
@@ -325,11 +326,12 @@ function App() {
   }
 
   const handleWeaponConfirm = (weapon: WeaponType) => {
-    // Copy user's weapon inventory to game state for this session
-    // Standard always has infinite ammo
-    console.log('[handleWeaponConfirm] weaponInventory being copied:', weaponInventory)
+    // Read fresh inventory from localStorage to avoid stale closure issues
+    // (purchases made in WeaponShop might not be reflected in the captured weaponInventory)
+    const freshInventory = getWeaponInventory() ?? { standard: Infinity }
+    console.log('[handleWeaponConfirm] fresh inventory from localStorage:', freshInventory)
     actions.setWeaponAmmo({
-      ...weaponInventory,
+      ...freshInventory,
       standard: Infinity,
     })
     actions.setSelectedWeapon(weapon)
