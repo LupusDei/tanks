@@ -1944,4 +1944,15 @@ p {
   .weapon-selection-panel__hint {
     display: none;
   }
+
+  /* Loading Screen Mobile */
+  .loading-screen__overlay {
+    padding-bottom: 20%;
+  }
+
+  .magnetize-button {
+    min-width: 160px;
+    padding: 0.875rem 2rem;
+    font-size: 1.25rem;
+  }
 }

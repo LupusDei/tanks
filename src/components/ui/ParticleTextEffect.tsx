@@ -154,7 +154,9 @@ export function ParticleTextEffect({
     const offscreenCtx = offscreenCanvas.getContext("2d")!
 
     offscreenCtx.fillStyle = "white"
-    offscreenCtx.font = "bold 80px Arial, sans-serif"
+    // Responsive font size: smaller on mobile, larger on desktop
+    const fontSize = Math.min(80, canvas.width / 8)
+    offscreenCtx.font = `bold ${fontSize}px Arial, sans-serif`
     offscreenCtx.textAlign = "center"
     offscreenCtx.textBaseline = "middle"
     offscreenCtx.fillText(word, canvas.width / 2, canvas.height / 2)
