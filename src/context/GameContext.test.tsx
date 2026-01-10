@@ -183,4 +183,50 @@ describe('GameContext', () => {
     expect(result.current.state.tanks).toEqual([]);
     expect(result.current.state.terrain).toBeNull();
   });
+
+  it('has default terrain size of medium', () => {
+    const { result } = renderHook(() => useGame(), {
+      wrapper: GameProvider,
+    });
+
+    expect(result.current.state.terrainSize).toBe('medium');
+  });
+
+  it('sets terrain size', () => {
+    const { result } = renderHook(() => useGame(), {
+      wrapper: GameProvider,
+    });
+
+    act(() => {
+      result.current.actions.setTerrainSize('large');
+    });
+
+    expect(result.current.state.terrainSize).toBe('large');
+  });
+
+  it('sets terrain size to all valid sizes', () => {
+    const { result } = renderHook(() => useGame(), {
+      wrapper: GameProvider,
+    });
+
+    act(() => {
+      result.current.actions.setTerrainSize('small');
+    });
+    expect(result.current.state.terrainSize).toBe('small');
+
+    act(() => {
+      result.current.actions.setTerrainSize('medium');
+    });
+    expect(result.current.state.terrainSize).toBe('medium');
+
+    act(() => {
+      result.current.actions.setTerrainSize('large');
+    });
+    expect(result.current.state.terrainSize).toBe('large');
+
+    act(() => {
+      result.current.actions.setTerrainSize('huge');
+    });
+    expect(result.current.state.terrainSize).toBe('huge');
+  });
 });

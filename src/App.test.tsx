@@ -58,7 +58,7 @@ describe('App', () => {
     expect(screen.queryByTestId('turn-indicator')).not.toBeInTheDocument()
   })
 
-  it('transitions to color selection when start button clicked', () => {
+  it('transitions to terrain selection when start button clicked', () => {
     renderWithProvider(<App />)
 
     fireEvent.click(screen.getByTestId('start-button'))
@@ -67,6 +67,21 @@ describe('App', () => {
     fireEvent.transitionEnd(loadingScreen)
 
     expect(screen.queryByTestId('loading-screen')).not.toBeInTheDocument()
+    expect(screen.getByTestId('terrain-size-selector')).toBeInTheDocument()
+    expect(screen.getByText('Select Terrain Size')).toBeInTheDocument()
+  })
+
+  it('transitions to color selection when terrain size is selected', () => {
+    renderWithProvider(<App />)
+
+    // Go through loading screen
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Select a terrain size
+    fireEvent.click(screen.getByTestId('terrain-size-medium'))
+
+    expect(screen.queryByTestId('terrain-size-selector')).not.toBeInTheDocument()
     expect(screen.getByTestId('color-selection-screen')).toBeInTheDocument()
     expect(screen.getByText('Choose Your Tank')).toBeInTheDocument()
   })
@@ -77,6 +92,9 @@ describe('App', () => {
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Select terrain size
+    fireEvent.click(screen.getByTestId('terrain-size-medium'))
 
     // Select a color
     fireEvent.click(screen.getByTestId('color-button-red'))
@@ -92,6 +110,9 @@ describe('App', () => {
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Select terrain size
+    fireEvent.click(screen.getByTestId('terrain-size-medium'))
 
     // Select a color
     fireEvent.click(screen.getByTestId('color-button-blue'))
