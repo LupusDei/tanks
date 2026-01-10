@@ -995,8 +995,8 @@ p {
 .game-config-screen__color-options {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
-  max-width: 580px;
+  gap: 1.5rem;
+  max-width: 650px;
   margin: 0 auto;
 }
 
@@ -1005,7 +1005,7 @@ p {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.85rem 0.7rem;
+  padding: 1.1rem 0.9rem;
   background: rgba(255, 255, 255, 0.05);
   border: 2px solid #444;
   border-radius: 8px;
