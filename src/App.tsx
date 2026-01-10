@@ -52,6 +52,7 @@ import {
   generateInitialWind,
   generateNextWind,
   getProjectileVisual,
+  calculateKillReward,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -538,6 +539,13 @@ function App() {
 
           // Create destruction animation if tank was killed
           if (willKill) {
+            // Log the kill and money earned
+            const attackerTank = tanks.find(t => t.id === proj.tankId)
+            const attackerName = attackerTank?.id === 'player' ? 'Player' : `AI (${attackerTank?.color ?? 'unknown'})`
+            const victimName = tank.id === 'player' ? 'Player' : `AI (${tank.color})`
+            const moneyEarned = proj.tankId === 'player' ? calculateKillReward(state.aiDifficulty) : 0
+            console.log(`[Kill] ${attackerName} destroyed ${victimName}${moneyEarned > 0 ? ` - Earned $${moneyEarned}` : ''}`)
+
             // Create a temporary tank state with the killing weapon set
             const killedTank = { ...tank, killedByWeapon: proj.weaponType }
             const destruction = createTankDestruction(killedTank, ctx.canvas.height, currentTime)
