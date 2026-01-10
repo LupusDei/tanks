@@ -8,6 +8,8 @@ interface ControlPanelProps {
   onPowerChange: (power: number) => void
   onFire: () => void
   enabled?: boolean
+  /** Whether the player's shot is queued and waiting for others */
+  isQueued?: boolean
 }
 
 const ANGLE_STEP = 1
@@ -26,6 +28,7 @@ export function ControlPanel({
   onPowerChange,
   onFire,
   enabled = true,
+  isQueued = false,
 }: ControlPanelProps) {
   const clampAngle = useCallback(
     (newAngle: number) => Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, newAngle)),
@@ -133,15 +136,22 @@ export function ControlPanel({
       </div>
 
       <button
-        className="control-panel__fire-button"
+        className={`control-panel__fire-button${isQueued ? ' control-panel__fire-button--ready' : ''}`}
         data-testid="fire-button"
         onClick={onFire}
-        disabled={!enabled}
+        disabled={!enabled || isQueued}
       >
-        Fire!
-        <span className="control-panel__fire-keys">
-          <kbd>Space</kbd> / <kbd>Enter</kbd>
-        </span>
+        {isQueued ? 'Ready!' : 'Fire!'}
+        {!isQueued && (
+          <span className="control-panel__fire-keys">
+            <kbd>Space</kbd> / <kbd>Enter</kbd>
+          </span>
+        )}
+        {isQueued && (
+          <span className="control-panel__fire-keys">
+            Waiting for others...
+          </span>
+        )}
       </button>
     </div>
   )

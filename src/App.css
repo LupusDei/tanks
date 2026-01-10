@@ -542,6 +542,25 @@ p {
   cursor: not-allowed;
 }
 
+.control-panel__fire-button--ready {
+  background: linear-gradient(135deg, #44cc44 0%, #228822 100%);
+  cursor: default;
+  animation: pulse-ready 1.5s ease-in-out infinite;
+}
+
+.control-panel__fire-button--ready:disabled {
+  opacity: 1;
+}
+
+@keyframes pulse-ready {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(68, 204, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(68, 204, 68, 0.8);
+  }
+}
+
 .control-panel__fire-keys {
   font-size: 0.5rem;
   font-weight: normal;

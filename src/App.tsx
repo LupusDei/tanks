@@ -195,9 +195,13 @@ function App() {
 
   const handleFire = () => {
     const currentTank = state.tanks.find((t) => t.id === state.currentPlayerId)
-    if (!currentTank || isProjectileActive) return
+    if (!currentTank || isProjectileActive || currentTank.isReady) return
 
-    fireProjectileForTank(currentTank.id)
+    // Queue the shot instead of firing immediately
+    actions.updateTank(currentTank.id, {
+      queuedShot: { angle: currentTank.angle, power: currentTank.power },
+      isReady: true,
+    })
   }
 
   // Handle canvas click to cycle AI difficulty when clicking on any enemy tank
@@ -389,7 +393,8 @@ function App() {
             onAngleChange={handleAngleChange}
             onPowerChange={handlePowerChange}
             onFire={handleFire}
-            enabled={!isProjectileActive && !isExplosionActive && isPlayerTurn}
+            enabled={!isProjectileActive && !isExplosionActive && isPlayerTurn && !currentPlayerTank.isReady}
+            isQueued={currentPlayerTank.isReady}
           />
         </>
       )}
