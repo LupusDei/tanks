@@ -834,3 +834,303 @@ p {
   gap: 0.5rem;
   z-index: 1;
 }
+
+/* Game Configuration Screen Styles */
+.game-config-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background-color: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.game-config-screen__title {
+  font-size: 2.5rem;
+  font-family: monospace;
+  color: #00ff88;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.game-config-screen__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  max-width: 900px;
+}
+
+.game-config-screen__section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.game-config-screen__section-title {
+  font-size: 1.2rem;
+  font-family: monospace;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+/* Terrain Options */
+.game-config-screen__terrain-options {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.game-config-screen__terrain-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid #444;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.game-config-screen__terrain-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #00ff88;
+}
+
+.game-config-screen__terrain-option--selected {
+  background: rgba(0, 255, 136, 0.15);
+  border-color: #00ff88;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.game-config-screen__terrain-preview {
+  width: 80px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-config-screen__terrain-preview-inner {
+  background: linear-gradient(180deg, #1a1a1a 0%, #8B4513 60%, #8B4513 100%);
+  border-radius: 2px;
+  min-width: 40%;
+  min-height: 40%;
+}
+
+.game-config-screen__terrain-label {
+  font-family: monospace;
+  font-size: 1rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.game-config-screen__terrain-dimensions {
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #666;
+}
+
+/* Enemy Options */
+.game-config-screen__enemy-options {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.game-config-screen__enemy-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid #444;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 70px;
+}
+
+.game-config-screen__enemy-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ff4444;
+}
+
+.game-config-screen__enemy-option--selected {
+  background: rgba(255, 68, 68, 0.15);
+  border-color: #ff4444;
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+}
+
+.game-config-screen__enemy-preview {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  align-items: center;
+  min-height: 24px;
+}
+
+.game-config-screen__enemy-tank-icon {
+  width: 16px;
+  height: 10px;
+  background: #ff4444;
+  border-radius: 3px 3px 2px 2px;
+  position: relative;
+}
+
+.game-config-screen__enemy-tank-icon::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: -5px;
+  width: 6px;
+  height: 3px;
+  background: #ff4444;
+  border-radius: 0 2px 2px 0;
+}
+
+.game-config-screen__enemy-tank-icon::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 10%;
+  width: 80%;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+}
+
+.game-config-screen__enemy-label {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Color Options */
+.game-config-screen__color-options {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.game-config-screen__color-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid #444;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.game-config-screen__color-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--tank-color);
+}
+
+.game-config-screen__color-option--selected {
+  background: color-mix(in srgb, var(--tank-color) 15%, transparent);
+  border-color: var(--tank-color);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--tank-color) 40%, transparent);
+}
+
+.game-config-screen__tank-preview {
+  width: 50px;
+  height: 30px;
+  background: var(--tank-color);
+  border-radius: 6px 6px 3px 3px;
+  position: relative;
+}
+
+.game-config-screen__tank-preview::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: -12px;
+  width: 15px;
+  height: 5px;
+  background: var(--tank-color);
+  border-radius: 0 3px 3px 0;
+}
+
+.game-config-screen__tank-preview::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 10%;
+  width: 80%;
+  height: 8px;
+  background: #333;
+  border-radius: 3px;
+}
+
+.game-config-screen__color-label {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--tank-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Engage Button */
+.game-config-screen__engage-button {
+  margin-top: 2rem;
+  padding: 1rem 3rem;
+  font-size: 1.5rem;
+  font-family: monospace;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #333;
+  background: #444;
+  border: 2px solid #555;
+  border-radius: 8px;
+  cursor: not-allowed;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.game-config-screen__engage-button--active {
+  color: #1a1a1a;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+  border-color: #00ff88;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4);
+}
+
+.game-config-screen__engage-button--active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 30px rgba(0, 255, 136, 0.6);
+  background: linear-gradient(135deg, #00ffaa 0%, #00dd77 100%);
+}
+
+.game-config-screen__engage-button--active:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(0, 255, 136, 0.4);
+}

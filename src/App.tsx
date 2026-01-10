@@ -2,12 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
   Canvas,
-  ColorSelectionScreen,
   ControlPanel,
-  EnemyCountSelector,
+  GameConfigScreen,
   GameOverScreen,
   LoadingScreen,
-  TerrainSizeSelector,
   TurnIndicator,
 } from './components'
 import { useGame } from './context/useGame'
@@ -34,6 +32,12 @@ import {
   type ExplosionState,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount } from './types/game'
+
+interface GameConfig {
+  terrainSize: TerrainSize
+  enemyCount: EnemyCount
+  playerColor: TankColor
+}
 
 // Tank dimensions for hit detection (must match tank.ts)
 const TANK_BODY_WIDTH = 40
@@ -199,33 +203,25 @@ function App() {
   }, [shouldAIQueue])
 
   const handleStartGame = () => {
-    actions.setPhase('terrain_select')
+    actions.setPhase('config')
   }
 
-  const handleTerrainSizeSelect = (size: TerrainSize) => {
-    actions.setTerrainSize(size)
-    actions.setPhase('enemy_select')
-  }
-
-  const handleEnemyCountSelect = (count: EnemyCount) => {
-    actions.setEnemyCount(count)
-    actions.setPhase('color_select')
-  }
-
-  const handleColorSelect = (color: TankColor) => {
+  const handleConfigComplete = (config: GameConfig) => {
     // Get terrain dimensions from selected size
-    const terrainConfig = TERRAIN_SIZES[state.terrainSize]
+    const terrainConfig = TERRAIN_SIZES[config.terrainSize]
 
     // Initialize game with terrain and tanks
     const { terrain, tanks } = initializeGame({
       canvasWidth: terrainConfig.width,
       canvasHeight: terrainConfig.height,
-      playerColor: color,
-      enemyCount: state.enemyCount,
+      playerColor: config.playerColor,
+      enemyCount: config.enemyCount,
     })
 
-    // Store player's color choice
-    actions.setPlayerColor(color)
+    // Store configuration choices
+    actions.setTerrainSize(config.terrainSize)
+    actions.setEnemyCount(config.enemyCount)
+    actions.setPlayerColor(config.playerColor)
 
     // Set terrain and tanks in game state
     actions.setTerrain(terrain)
@@ -420,16 +416,8 @@ function App() {
     return <LoadingScreen onStart={handleStartGame} />
   }
 
-  if (state.phase === 'terrain_select') {
-    return <TerrainSizeSelector onSizeSelect={handleTerrainSizeSelect} />
-  }
-
-  if (state.phase === 'enemy_select') {
-    return <EnemyCountSelector onCountSelect={handleEnemyCountSelect} />
-  }
-
-  if (state.phase === 'color_select') {
-    return <ColorSelectionScreen onColorSelect={handleColorSelect} />
+  if (state.phase === 'config') {
+    return <GameConfigScreen onStartGame={handleConfigComplete} />
   }
 
   if (state.phase === 'gameover') {

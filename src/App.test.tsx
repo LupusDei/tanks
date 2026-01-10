@@ -84,7 +84,7 @@ describe('App', () => {
     expect(screen.queryByTestId('turn-indicator')).not.toBeInTheDocument()
   })
 
-  it('transitions to terrain selection when start button clicked', () => {
+  it('transitions to configuration screen when start button clicked', () => {
     renderWithProvider(<App />)
 
     fireEvent.click(screen.getByTestId('start-button'))
@@ -93,79 +93,87 @@ describe('App', () => {
     fireEvent.transitionEnd(loadingScreen)
 
     expect(screen.queryByTestId('loading-screen')).not.toBeInTheDocument()
-    expect(screen.getByTestId('terrain-size-selector')).toBeInTheDocument()
-    expect(screen.getByText('Select Terrain Size')).toBeInTheDocument()
+    expect(screen.getByTestId('game-config-screen')).toBeInTheDocument()
+    expect(screen.getByText('Battle Configuration')).toBeInTheDocument()
   })
 
-  it('transitions to enemy count selection when terrain size is selected', () => {
+  it('shows all configuration sections on config screen', () => {
     renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
 
-    // Select a terrain size
-    fireEvent.click(screen.getByTestId('terrain-size-medium'))
+    // Check all sections are present
+    expect(screen.getByText('Terrain Size')).toBeInTheDocument()
+    expect(screen.getByText('Enemy Count')).toBeInTheDocument()
+    expect(screen.getByText('Your Tank')).toBeInTheDocument()
 
-    expect(screen.queryByTestId('terrain-size-selector')).not.toBeInTheDocument()
-    expect(screen.getByTestId('enemy-count-selector')).toBeInTheDocument()
-    expect(screen.getByText('Select Enemy Count')).toBeInTheDocument()
+    // Check Engage button is present but disabled
+    const engageButton = screen.getByTestId('config-engage-button')
+    expect(engageButton).toBeInTheDocument()
+    expect(engageButton).toBeDisabled()
   })
 
-  it('transitions to color selection when enemy count is selected', () => {
+  it('enables Engage button only when all selections are made', () => {
     renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
 
-    // Select terrain size
-    fireEvent.click(screen.getByTestId('terrain-size-medium'))
+    const engageButton = screen.getByTestId('config-engage-button')
 
-    // Select enemy count
-    fireEvent.click(screen.getByTestId('enemy-count-1'))
+    // Button should be disabled initially
+    expect(engageButton).toBeDisabled()
 
-    expect(screen.queryByTestId('enemy-count-selector')).not.toBeInTheDocument()
-    expect(screen.getByTestId('color-selection-screen')).toBeInTheDocument()
-    expect(screen.getByText('Choose Your Tank')).toBeInTheDocument()
+    // Select terrain size - still disabled
+    fireEvent.click(screen.getByTestId('config-terrain-medium'))
+    expect(engageButton).toBeDisabled()
+
+    // Select enemy count - still disabled
+    fireEvent.click(screen.getByTestId('config-enemy-1'))
+    expect(engageButton).toBeDisabled()
+
+    // Select color - now enabled
+    fireEvent.click(screen.getByTestId('config-color-red'))
+    expect(engageButton).not.toBeDisabled()
   })
 
-  it('transitions to game when color is selected', () => {
+  it('transitions to game when Engage button is clicked with all selections', () => {
     renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
 
-    // Select terrain size
-    fireEvent.click(screen.getByTestId('terrain-size-medium'))
+    // Make all selections
+    fireEvent.click(screen.getByTestId('config-terrain-medium'))
+    fireEvent.click(screen.getByTestId('config-enemy-1'))
+    fireEvent.click(screen.getByTestId('config-color-red'))
 
-    // Select enemy count
-    fireEvent.click(screen.getByTestId('enemy-count-1'))
+    // Click Engage
+    fireEvent.click(screen.getByTestId('config-engage-button'))
 
-    // Select a color
-    fireEvent.click(screen.getByTestId('color-button-red'))
-
-    expect(screen.queryByTestId('color-selection-screen')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('game-config-screen')).not.toBeInTheDocument()
     expect(screen.getByTestId('turn-indicator')).toBeInTheDocument()
     expect(screen.getByTestId('fire-button')).toBeInTheDocument()
   })
 
-  it('renders the canvas component after selecting color', () => {
+  it('renders the canvas component after clicking Engage', () => {
     const { container } = renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
 
-    // Select terrain size
-    fireEvent.click(screen.getByTestId('terrain-size-medium'))
+    // Make all selections
+    fireEvent.click(screen.getByTestId('config-terrain-medium'))
+    fireEvent.click(screen.getByTestId('config-enemy-1'))
+    fireEvent.click(screen.getByTestId('config-color-blue'))
 
-    // Select enemy count
-    fireEvent.click(screen.getByTestId('enemy-count-1'))
-
-    // Select a color
-    fireEvent.click(screen.getByTestId('color-button-blue'))
+    // Click Engage
+    fireEvent.click(screen.getByTestId('config-engage-button'))
 
     const canvas = container.querySelector('canvas')
     expect(canvas).toBeInTheDocument()
