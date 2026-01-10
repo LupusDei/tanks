@@ -146,22 +146,25 @@ export function createProjectileState(
 
 /**
  * Estimate landing time from launch config.
- * This is a forward declaration - actual implementation is at the end of the file.
+ * Uses the launch Y position as the target, assuming the projectile will land
+ * at approximately the same height it was fired from (typical for tanks on terrain).
  */
-function estimateLandingTimeFromLaunch(launchConfig: LaunchConfig, canvasHeight: number): number {
-  // Use the bottom of the screen as the target Y in screen coordinates
-  const targetY = canvasHeight;
+function estimateLandingTimeFromLaunch(launchConfig: LaunchConfig, _canvasHeight: number): number {
+  // Use the launch position Y as the target (projectile lands at similar height)
+  // This is more accurate than using canvas bottom since terrain is usually
+  // at similar heights across the map
+  const targetY = launchConfig.position.y;
 
-  // Binary search for when projectile reaches bottom of screen
+  // Binary search for when projectile returns to launch height (after apex)
   const landingTime = findTimeAtY(launchConfig, targetY, true);
 
   if (landingTime === null) {
-    // Fallback: estimate using 2x apex time
+    // Fallback: estimate using 2x apex time (symmetric arc)
     const angleRad = degreesToRadians(launchConfig.angle);
     const velocity = powerToVelocity(launchConfig.power, launchConfig.terrainWidth);
     const vy = velocity * Math.sin(angleRad);
     const apexTime = vy / 10; // GRAVITY = 10
-    return Math.max(apexTime * 2, 1);
+    return Math.max(apexTime * 2, 0.5);
   }
 
   return landingTime;
@@ -601,15 +604,14 @@ const CLUSTER_SPLIT_THRESHOLD = 0.85;
 
 /**
  * Estimate the landing time for a projectile based on its launch config.
- * Uses the canvas height as a rough target since we don't have terrain data at launch.
+ * Uses the launch Y position as target (assumes landing at similar height).
  * Returns the physics time (before animation speed multiplier).
  */
-export function estimateLandingTime(launchConfig: LaunchConfig, canvasHeight: number): number {
-  // Estimate landing by finding when projectile returns to launch height or below
-  // Use the bottom of the screen as the target Y in screen coordinates
-  const targetY = canvasHeight; // Bottom of screen in screen coords
+export function estimateLandingTime(launchConfig: LaunchConfig, _canvasHeight: number): number {
+  // Use launch position Y as target - projectile lands at similar height
+  const targetY = launchConfig.position.y;
 
-  // Binary search for when projectile reaches bottom of screen
+  // Binary search for when projectile returns to launch height
   const landingTime = findTimeAtY(launchConfig, targetY, true);
 
   // If we can't find it, estimate based on total flight time
@@ -619,7 +621,7 @@ export function estimateLandingTime(launchConfig: LaunchConfig, canvasHeight: nu
     const velocity = powerToVelocity(launchConfig.power, launchConfig.terrainWidth);
     const vy = velocity * Math.sin(angleRad);
     const apexTime = vy / 10; // GRAVITY = 10
-    return Math.max(apexTime * 2, 1); // At least 1 second
+    return Math.max(apexTime * 2, 0.5);
   }
 
   return landingTime;
