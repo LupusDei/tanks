@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { UserProvider, useUser } from './UserContext';
+import { WEAPONS, STARTING_MONEY } from '../engine/weapons';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -181,14 +182,15 @@ describe('UserContext', () => {
     });
 
     const initialBalance = result.current.balance;
+    const heavyCost = WEAPONS.heavy_artillery.cost;
 
     act(() => {
       const success = result.current.purchaseWeapon('heavy_artillery', 2);
       expect(success).toBe(true);
     });
 
-    // Heavy artillery costs 200 each, so 2 costs 400
-    expect(result.current.balance).toBe(initialBalance - 400);
+    // Heavy artillery costs heavyCost each, so 2 costs 2x
+    expect(result.current.balance).toBe(initialBalance - heavyCost * 2);
     expect(result.current.getWeaponCount('heavy_artillery')).toBe(2);
   });
 
@@ -201,14 +203,17 @@ describe('UserContext', () => {
       result.current.createNewUser('TestPlayer');
     });
 
-    // Try to buy more than we can afford (starting money is 500, napalm costs 350)
+    // Try to buy more than we can afford
+    const napalmCost = WEAPONS.napalm.cost;
     act(() => {
-      const success = result.current.purchaseWeapon('napalm', 2); // 700 total
+      // Try to buy enough napalm to exceed starting balance
+      const qtyThatExceedsBalance = Math.ceil(STARTING_MONEY / napalmCost) + 1;
+      const success = result.current.purchaseWeapon('napalm', qtyThatExceedsBalance);
       expect(success).toBe(false);
     });
 
     // Balance should be unchanged
-    expect(result.current.balance).toBe(500);
+    expect(result.current.balance).toBe(STARTING_MONEY);
     expect(result.current.getWeaponCount('napalm')).toBe(0);
   });
 
@@ -221,20 +226,21 @@ describe('UserContext', () => {
       result.current.createNewUser('TestPlayer');
     });
 
-    // First purchase some weapons
+    // First purchase some weapons (use cluster_bomb which is cheaper at $350)
+    // Starting balance is $500, so we can afford 1 cluster bomb
     act(() => {
-      result.current.purchaseWeapon('precision', 3);
+      result.current.purchaseWeapon('cluster_bomb', 1);
     });
 
-    expect(result.current.getWeaponCount('precision')).toBe(3);
+    expect(result.current.getWeaponCount('cluster_bomb')).toBe(1);
 
     // Consume one
     act(() => {
-      const success = result.current.consumeWeapon('precision');
+      const success = result.current.consumeWeapon('cluster_bomb');
       expect(success).toBe(true);
     });
 
-    expect(result.current.getWeaponCount('precision')).toBe(2);
+    expect(result.current.getWeaponCount('cluster_bomb')).toBe(0);
   });
 
   it('consumeWeapon always succeeds for standard weapon', () => {

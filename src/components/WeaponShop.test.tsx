@@ -186,40 +186,45 @@ describe('WeaponShop', () => {
     it('updates total cost when quantity changes', () => {
       const onConfirm = vi.fn();
       renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+      const heavyCost = WEAPONS.heavy_artillery.cost;
 
       expect(screen.getByTestId('total-cost')).toHaveTextContent('$0');
 
-      // Add 1 heavy artillery ($200)
+      // Add 1 heavy artillery
       fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
-      expect(screen.getByTestId('total-cost')).toHaveTextContent('$200');
+      expect(screen.getByTestId('total-cost')).toHaveTextContent(`$${heavyCost}`);
 
-      // Add another ($400 total)
+      // Add another (2x cost total)
       fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
-      expect(screen.getByTestId('total-cost')).toHaveTextContent('$400');
+      expect(screen.getByTestId('total-cost')).toHaveTextContent(`$${heavyCost * 2}`);
     });
 
     it('updates balance after when quantity changes', () => {
       const onConfirm = vi.fn();
       renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+      const heavyCost = WEAPONS.heavy_artillery.cost;
 
       expect(screen.getByTestId('balance-after')).toHaveTextContent(`$${STARTING_MONEY}`);
 
-      // Add 1 heavy artillery ($200)
+      // Add 1 heavy artillery
       fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
-      expect(screen.getByTestId('balance-after')).toHaveTextContent(`$${STARTING_MONEY - 200}`);
+      expect(screen.getByTestId('balance-after')).toHaveTextContent(`$${STARTING_MONEY - heavyCost}`);
     });
 
     it('calculates cost correctly for multiple weapon types', () => {
       const onConfirm = vi.fn();
       renderWithUser(<WeaponShop onConfirm={onConfirm} />, 1000);
+      const heavyCost = WEAPONS.heavy_artillery.cost;
+      const precisionCost = WEAPONS.precision.cost;
+      const totalCost = heavyCost + precisionCost;
 
-      // Add 1 heavy artillery ($200)
+      // Add 1 heavy artillery
       fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
-      // Add 1 precision ($150)
+      // Add 1 precision
       fireEvent.click(screen.getByTestId('qty-plus-precision'));
 
-      expect(screen.getByTestId('total-cost')).toHaveTextContent('$350');
-      expect(screen.getByTestId('balance-after')).toHaveTextContent('$650');
+      expect(screen.getByTestId('total-cost')).toHaveTextContent(`$${totalCost}`);
+      expect(screen.getByTestId('balance-after')).toHaveTextContent(`$${1000 - totalCost}`);
     });
   });
 
@@ -268,12 +273,13 @@ describe('WeaponShop', () => {
     it('shows purchase total in confirm button when items selected', () => {
       const onConfirm = vi.fn();
       renderWithUser(<WeaponShop onConfirm={onConfirm} />);
+      const heavyCost = WEAPONS.heavy_artillery.cost;
 
       // Add 1 heavy artillery
       fireEvent.click(screen.getByTestId('qty-plus-heavy_artillery'));
 
       const confirmButton = screen.getByTestId('weapon-shop-confirm');
-      expect(confirmButton).toHaveTextContent('Confirm Purchases ($200)');
+      expect(confirmButton).toHaveTextContent(`Confirm Purchases ($${heavyCost})`);
     });
 
     it('calls onConfirm after purchasing weapons', () => {
