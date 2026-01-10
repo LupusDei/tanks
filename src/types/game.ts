@@ -3,7 +3,7 @@ import type { WeaponType } from '../engine/weapons';
 // Re-export WeaponType for convenience
 export type { WeaponType };
 
-export type GamePhase = 'loading' | 'config' | 'weaponShop' | 'playing' | 'gameover';
+export type GamePhase = 'loading' | 'playerName' | 'config' | 'weaponShop' | 'playing' | 'gameover';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow';
 

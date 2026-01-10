@@ -6,6 +6,7 @@ import {
   GameConfigScreen,
   GameOverScreen,
   LoadingScreen,
+  PlayerNameEntry,
   TurnIndicator,
   WeaponShop,
 } from './components'
@@ -61,12 +62,6 @@ function App() {
   const [isExplosionActive, setIsExplosionActive] = useState(false)
   const gameRecordedRef = useRef(false)
 
-  // Create default user if none exists
-  useEffect(() => {
-    if (!userData) {
-      createNewUser('Player')
-    }
-  }, [userData, createNewUser])
 
   // Record game stats when game ends
   useEffect(() => {
@@ -260,6 +255,17 @@ function App() {
   }, [allTanksReady])
 
   const handleStartGame = () => {
+    actions.setPhase('playerName')
+  }
+
+  const handlePlayerNameSubmit = (name: string) => {
+    // Create or update user with the entered name
+    if (!userData) {
+      createNewUser(name)
+    } else if (userData.profile.username !== name) {
+      // If the name is different, create a new user (name-based identity)
+      createNewUser(name)
+    }
     actions.setPhase('config')
   }
 
@@ -493,6 +499,10 @@ function App() {
 
   if (state.phase === 'loading') {
     return <LoadingScreen onStart={handleStartGame} />
+  }
+
+  if (state.phase === 'playerName') {
+    return <PlayerNameEntry onSubmit={handlePlayerNameSubmit} />
   }
 
   if (state.phase === 'config') {

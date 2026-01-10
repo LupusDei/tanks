@@ -84,7 +84,7 @@ describe('App', () => {
     expect(screen.queryByTestId('turn-indicator')).not.toBeInTheDocument()
   })
 
-  it('transitions to configuration screen when start button clicked', () => {
+  it('transitions to player name entry screen when start button clicked', () => {
     renderWithProvider(<App />)
 
     fireEvent.click(screen.getByTestId('start-button'))
@@ -93,6 +93,24 @@ describe('App', () => {
     fireEvent.transitionEnd(loadingScreen)
 
     expect(screen.queryByTestId('loading-screen')).not.toBeInTheDocument()
+    expect(screen.getByTestId('player-name-entry')).toBeInTheDocument()
+    expect(screen.getByText('Enter Your Name')).toBeInTheDocument()
+  })
+
+  it('transitions to configuration screen after entering player name', () => {
+    renderWithProvider(<App />)
+
+    // Go through loading screen
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Enter player name
+    const input = screen.getByTestId('player-name-input')
+    fireEvent.change(input, { target: { value: 'TestPlayer' } })
+    fireEvent.click(screen.getByTestId('player-name-submit'))
+    fireEvent.transitionEnd(screen.getByTestId('player-name-entry'))
+
+    expect(screen.queryByTestId('player-name-entry')).not.toBeInTheDocument()
     expect(screen.getByTestId('game-config-screen')).toBeInTheDocument()
     expect(screen.getByText('Battle Configuration')).toBeInTheDocument()
   })
@@ -103,6 +121,12 @@ describe('App', () => {
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Go through player name entry
+    const input = screen.getByTestId('player-name-input')
+    fireEvent.change(input, { target: { value: 'TestPlayer' } })
+    fireEvent.click(screen.getByTestId('player-name-submit'))
+    fireEvent.transitionEnd(screen.getByTestId('player-name-entry'))
 
     // Check all sections are present
     expect(screen.getByText('Terrain Size')).toBeInTheDocument()
@@ -121,6 +145,12 @@ describe('App', () => {
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Go through player name entry
+    const input = screen.getByTestId('player-name-input')
+    fireEvent.change(input, { target: { value: 'TestPlayer' } })
+    fireEvent.click(screen.getByTestId('player-name-submit'))
+    fireEvent.transitionEnd(screen.getByTestId('player-name-entry'))
 
     const engageButton = screen.getByTestId('config-engage-button')
 
@@ -147,6 +177,12 @@ describe('App', () => {
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
 
+    // Go through player name entry
+    const input = screen.getByTestId('player-name-input')
+    fireEvent.change(input, { target: { value: 'TestPlayer' } })
+    fireEvent.click(screen.getByTestId('player-name-submit'))
+    fireEvent.transitionEnd(screen.getByTestId('player-name-entry'))
+
     // Make all selections
     fireEvent.click(screen.getByTestId('config-terrain-medium'))
     fireEvent.click(screen.getByTestId('config-enemy-1'))
@@ -166,6 +202,12 @@ describe('App', () => {
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Go through player name entry
+    const input = screen.getByTestId('player-name-input')
+    fireEvent.change(input, { target: { value: 'TestPlayer' } })
+    fireEvent.click(screen.getByTestId('player-name-submit'))
+    fireEvent.transitionEnd(screen.getByTestId('player-name-entry'))
 
     // Make all selections
     fireEvent.click(screen.getByTestId('config-terrain-medium'))
@@ -189,6 +231,12 @@ describe('App', () => {
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
     fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+
+    // Go through player name entry
+    const input = screen.getByTestId('player-name-input')
+    fireEvent.change(input, { target: { value: 'TestPlayer' } })
+    fireEvent.click(screen.getByTestId('player-name-submit'))
+    fireEvent.transitionEnd(screen.getByTestId('player-name-entry'))
 
     // Make all selections
     fireEvent.click(screen.getByTestId('config-terrain-medium'))
