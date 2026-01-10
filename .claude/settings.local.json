@@ -47,7 +47,9 @@
       "Bash(bd daemon status:*)",
       "Bash(git rebase:*)",
       "Bash(bd dep remove:*)",
-      "Bash(npx vite build)"
+      "Bash(bd comments tanks-2kf add \"Adapt the MagnetizeButton component for the loading screen start button. The button should have particles that get attracted to the button on hover/touch.\n\nKey features:\n- Particles spread around button initially\n- On hover: particles animate toward button center with spring physics\n- On mouse leave: particles spring back to original positions\n- Particle opacity increases when attracting\n\nTechnical notes:\n- Install framer-motion for animations\n- Adapt Tailwind styles to plain CSS \\(project uses App.css, not Tailwind\\)\n- Replace current start-button in LoadingScreen.tsx\n- Keep existing fade-out transition behavior\n- Use green color scheme to match existing button \\(#00ff88\\)\n\nReference component uses:\n- framer-motion useAnimation for coordinated particle control\n- Spring physics for natural movement\n- ~12-14 particles spread in 360px radius\")",
+      "Bash(bd comments tanks-2kf:*)",
+      "Bash(bd comments add:*)"
     ]
   }
 }
