@@ -217,6 +217,7 @@ describe('tank', () => {
         isActive: true,
         queuedShot: null,
         isReady: false,
+        killedByWeapon: null,
       };
     });
 

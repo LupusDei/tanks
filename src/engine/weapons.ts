@@ -25,6 +25,32 @@ export type WeaponType =
   | 'napalm';
 
 /**
+ * Destruction animation category.
+ * Determines which type of tank destruction animation plays.
+ */
+export type DestructionCategory = 'explosive' | 'ballistic' | 'fire';
+
+/**
+ * Map weapon types to their destruction animation category.
+ * - explosive: Tank explodes outward with debris (missiles, nukes, cluster bombs)
+ * - ballistic: Tank falls apart mechanically (standard shot, precision)
+ * - fire: Tank burns and chars (napalm, fire weapons)
+ */
+export function getDestructionCategory(weaponType: WeaponType): DestructionCategory {
+  switch (weaponType) {
+    case 'napalm':
+      return 'fire';
+    case 'heavy_artillery':
+    case 'cluster_bomb':
+      return 'explosive';
+    case 'standard':
+    case 'precision':
+    default:
+      return 'ballistic';
+  }
+}
+
+/**
  * Configuration for a weapon type.
  */
 export interface WeaponConfig {

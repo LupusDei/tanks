@@ -80,13 +80,22 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, terrain }));
   }, []);
 
-  const damageTank = useCallback((tankId: string, damage: number) => {
+  const damageTank = useCallback((tankId: string, damage: number, weaponType?: WeaponType) => {
     setState((prev) => {
-      const updatedTanks = prev.tanks.map((tank) =>
-        tank.id === tankId
-          ? { ...tank, health: Math.max(0, tank.health - damage) }
-          : tank
-      );
+      const updatedTanks = prev.tanks.map((tank) => {
+        if (tank.id !== tankId) return tank;
+
+        const newHealth = Math.max(0, tank.health - damage);
+        const wasAlive = tank.health > 0;
+        const nowDead = newHealth <= 0;
+
+        return {
+          ...tank,
+          health: newHealth,
+          // Track the killing weapon if this damage killed the tank
+          killedByWeapon: wasAlive && nowDead && weaponType ? weaponType : tank.killedByWeapon,
+        };
+      });
 
       const aliveTanks = updatedTanks.filter((tank) => tank.health > 0);
 

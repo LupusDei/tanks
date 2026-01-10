@@ -446,7 +446,7 @@ function App() {
         // Check for tank hits and apply weapon damage
         for (const tank of tanks) {
           if (checkTankHit(position, tank, ctx.canvas.height, weaponConfig.blastRadius)) {
-            actions.damageTank(tank.id, weaponConfig.damage)
+            actions.damageTank(tank.id, weaponConfig.damage, updatedProjectile.weaponType)
           }
         }
       } else {

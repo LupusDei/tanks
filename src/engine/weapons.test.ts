@@ -21,6 +21,7 @@ import {
   calculateKillReward,
   calculateWinBonus,
   calculateGameEarnings,
+  getDestructionCategory,
 } from './weapons';
 
 describe('Economy constants', () => {
@@ -320,5 +321,29 @@ describe('Economy balance', () => {
 
     // Should take more than a modest game to afford the most expensive weapon
     expect(mostExpensive!.cost).toBeGreaterThan(modestGameEarnings);
+  });
+});
+
+describe('getDestructionCategory', () => {
+  it('returns ballistic for standard and precision weapons', () => {
+    expect(getDestructionCategory('standard')).toBe('ballistic');
+    expect(getDestructionCategory('precision')).toBe('ballistic');
+  });
+
+  it('returns explosive for heavy artillery and cluster bomb', () => {
+    expect(getDestructionCategory('heavy_artillery')).toBe('explosive');
+    expect(getDestructionCategory('cluster_bomb')).toBe('explosive');
+  });
+
+  it('returns fire for napalm', () => {
+    expect(getDestructionCategory('napalm')).toBe('fire');
+  });
+
+  it('covers all weapon types', () => {
+    // Ensure every weapon type has a valid destruction category
+    for (const weaponType of WEAPON_TYPES) {
+      const category = getDestructionCategory(weaponType);
+      expect(['explosive', 'ballistic', 'fire']).toContain(category);
+    }
   });
 });
