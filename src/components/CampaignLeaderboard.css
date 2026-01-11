@@ -130,12 +130,6 @@
   font-weight: bold;
 }
 
-.campaign-leaderboard__row--eliminated td {
-  color: #666;
-  text-decoration: line-through;
-  opacity: 0.7;
-}
-
 .campaign-leaderboard__row--leader {
   background: rgba(255, 215, 0, 0.1);
 }

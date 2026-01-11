@@ -134,11 +134,9 @@ export function CampaignLeaderboard({
           <tbody>
             {rankedParticipants.map((participant, index) => {
               const isPlayer = participant.id === playerId;
-              const isEliminated = participant.wins === 0 && participant.gamesPlayed > 0;
               const rowClasses = [
                 'campaign-leaderboard__row',
                 isPlayer ? 'campaign-leaderboard__row--player' : '',
-                isEliminated ? 'campaign-leaderboard__row--eliminated' : '',
                 index === 0 ? 'campaign-leaderboard__row--leader' : '',
               ].filter(Boolean).join(' ');
 

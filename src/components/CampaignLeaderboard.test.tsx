@@ -139,43 +139,6 @@ describe('CampaignLeaderboard', () => {
     expect(playerRow).toHaveTextContent('(You)');
   });
 
-  it('marks eliminated tanks with special styling', () => {
-    const participants = [
-      createParticipant({ id: 'winner', name: 'Winner', wins: 2, gamesPlayed: 2 }),
-      createParticipant({ id: 'eliminated', name: 'Eliminated', wins: 0, gamesPlayed: 2 }),
-    ];
-
-    render(
-      <CampaignLeaderboard
-        participants={participants}
-        currentGame={2}
-        totalGames={5}
-        onContinue={() => {}}
-      />
-    );
-
-    const eliminatedRow = screen.getByTestId('leaderboard-row-eliminated');
-    expect(eliminatedRow).toHaveClass('campaign-leaderboard__row--eliminated');
-  });
-
-  it('does not mark tank as eliminated if they have not played games yet', () => {
-    const participants = [
-      createParticipant({ id: 'new', name: 'New Tank', wins: 0, gamesPlayed: 0 }),
-    ];
-
-    render(
-      <CampaignLeaderboard
-        participants={participants}
-        currentGame={1}
-        totalGames={5}
-        onContinue={() => {}}
-      />
-    );
-
-    const row = screen.getByTestId('leaderboard-row-new');
-    expect(row).not.toHaveClass('campaign-leaderboard__row--eliminated');
-  });
-
   it('calls onContinue when Continue button is clicked', () => {
     const handleContinue = vi.fn();
 
