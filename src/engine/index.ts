@@ -156,3 +156,13 @@ export {
   generateInitialWind,
   generateNextWind,
 } from './wind';
+
+export {
+  MONEY_ANIMATION_DURATION_MS,
+  createMoneyAnimation,
+  getMoneyAnimationProgress,
+  isMoneyAnimationComplete,
+  updateMoneyAnimation,
+  renderMoneyAnimation,
+  type MoneyAnimationState,
+} from './moneyAnimation';
