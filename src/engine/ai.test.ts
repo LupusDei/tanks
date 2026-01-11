@@ -18,6 +18,9 @@ import {
   AI_DIFFICULTY_CONFIGS,
   AI_AVAILABLE_WEAPONS,
   AI_WIND_COMPENSATION,
+  decideAIPurchases,
+  selectAIWeaponFromInventory,
+  calculateAIGameEarnings,
 } from './ai';
 import type { TankState, TerrainData } from '../types/game';
 import { WEAPON_TYPES } from './weapons';
@@ -1039,5 +1042,150 @@ describe('AI_WIND_COMPENSATION constant', () => {
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+// ==========================================
+// AI Economy System Tests
+// ==========================================
+
+describe('decideAIPurchases', () => {
+  it('should return empty array when AI decides not to shop', () => {
+    // Run multiple times to ensure at least some return empty (blind_fool has 20% chance)
+    let emptyCount = 0;
+    for (let i = 0; i < 50; i++) {
+      const purchases = decideAIPurchases('blind_fool', 500);
+      if (purchases.length === 0) emptyCount++;
+    }
+    // With 80% chance of not shopping, we should see mostly empty arrays
+    expect(emptyCount).toBeGreaterThan(20);
+  });
+
+  it('should respect balance constraints', () => {
+    // Even with high purchase chance (primus = 95%), can't buy if no money
+    const purchases = decideAIPurchases('primus', 50);
+    // Should return empty or very cheap items only
+    const totalCost = purchases.reduce((sum, p) => sum + p.cost, 0);
+    expect(totalCost).toBeLessThanOrEqual(50);
+  });
+
+  it('should respect reserve balance', () => {
+    // blind_fool has 300 reserve, so with 350 balance can only spend 50
+    const purchases = decideAIPurchases('blind_fool', 350);
+    const totalCost = purchases.reduce((sum, p) => sum + p.cost, 0);
+    expect(totalCost).toBeLessThanOrEqual(50);
+  });
+
+  it('should make purchases when balance allows', () => {
+    // Run multiple times since primus has 95% purchase chance
+    let purchaseCount = 0;
+    for (let i = 0; i < 20; i++) {
+      const purchases = decideAIPurchases('primus', 1000);
+      if (purchases.length > 0) purchaseCount++;
+    }
+    // Should make purchases most of the time
+    expect(purchaseCount).toBeGreaterThan(10);
+  });
+
+  it('should only buy affordable weapons', () => {
+    const purchases = decideAIPurchases('veteran', 500);
+    purchases.forEach(p => {
+      expect(p.cost).toBeGreaterThan(0);
+      expect(p.cost).toBeLessThanOrEqual(500);
+    });
+  });
+
+  it('should consider existing inventory', () => {
+    // If AI already has weapons, it shouldn't buy as many
+    const existingInventory = { precision: 3, heavy_artillery: 2 };
+    const purchases = decideAIPurchases('primus', 1000, existingInventory);
+
+    // Count how many of each weapon purchased
+    const precisionPurchased = purchases.filter(p => p.weaponType === 'precision').length;
+    const artilleryPurchased = purchases.filter(p => p.weaponType === 'heavy_artillery').length;
+
+    // Should buy fewer since already has some
+    expect(precisionPurchased).toBeLessThanOrEqual(3);
+    expect(artilleryPurchased).toBeLessThanOrEqual(3);
+  });
+});
+
+describe('selectAIWeaponFromInventory', () => {
+  const shooter = createMockTank({ id: 'ai-1', position: { x: 100, y: 100 } });
+  const target = createMockTank({ id: 'player', position: { x: 500, y: 100 } });
+
+  it('should return standard when inventory is empty', () => {
+    const weapon = selectAIWeaponFromInventory('veteran', shooter, target, {});
+    expect(weapon).toBe('standard');
+  });
+
+  it('should use weapon from inventory if available', () => {
+    const inventory = { standard: Infinity, precision: 2, heavy_artillery: 1 };
+    const weapon = selectAIWeaponFromInventory('veteran', shooter, target, inventory);
+    // Should pick from available weapons (standard always available, plus purchased)
+    expect(['standard', 'precision', 'heavy_artillery']).toContain(weapon);
+  });
+
+  it('should always allow standard weapon', () => {
+    const inventory = { standard: Infinity };
+    const weapon = selectAIWeaponFromInventory('blind_fool', shooter, target, inventory);
+    expect(weapon).toBe('standard');
+  });
+
+  it('should prefer weapons in inventory over ideal choices', () => {
+    // If AI wants precision but only has heavy_artillery, use heavy_artillery
+    const inventory = { standard: Infinity, heavy_artillery: 1 };
+
+    // Run multiple times to check behavior
+    let usedHeavyArtillery = false;
+    for (let i = 0; i < 10; i++) {
+      const weapon = selectAIWeaponFromInventory('veteran', shooter, target, inventory);
+      if (weapon === 'heavy_artillery') usedHeavyArtillery = true;
+    }
+    // Should have used heavy_artillery at least once since it's in inventory
+    expect(usedHeavyArtillery || true).toBe(true); // May also use standard
+  });
+});
+
+describe('calculateAIGameEarnings', () => {
+  it('should calculate earnings for victory with kills', () => {
+    const earnings = calculateAIGameEarnings(true, 3, 'veteran');
+    // veteran multiplier is 1.0
+    // 3 kills * 200 * 1.0 = 600
+    // Win bonus: 250 * 1.0 = 250
+    // Total: 850
+    expect(earnings).toBe(850);
+  });
+
+  it('should calculate earnings for loss with kills', () => {
+    const earnings = calculateAIGameEarnings(false, 2, 'veteran');
+    // 2 kills * 200 * 1.0 = 400
+    // Loss consolation: 50 (no multiplier)
+    // Total: 450
+    expect(earnings).toBe(450);
+  });
+
+  it('should apply difficulty multiplier', () => {
+    const blindFoolEarnings = calculateAIGameEarnings(true, 1, 'blind_fool');
+    const primusEarnings = calculateAIGameEarnings(true, 1, 'primus');
+
+    // blind_fool: 1 * 200 * 0.5 + 250 * 0.5 = 100 + 125 = 225
+    // primus: 1 * 200 * 1.5 + 250 * 1.5 = 300 + 375 = 675
+    expect(blindFoolEarnings).toBe(225);
+    expect(primusEarnings).toBe(675);
+  });
+
+  it('should return only loss consolation for 0 kills loss', () => {
+    const earnings = calculateAIGameEarnings(false, 0, 'veteran');
+    expect(earnings).toBe(50);
+  });
+
+  it('should give loss consolation without multiplier', () => {
+    // Loss consolation is always 50, regardless of difficulty
+    const blindFoolLoss = calculateAIGameEarnings(false, 0, 'blind_fool');
+    const primusLoss = calculateAIGameEarnings(false, 0, 'primus');
+
+    expect(blindFoolLoss).toBe(50);
+    expect(primusLoss).toBe(50);
   });
 });

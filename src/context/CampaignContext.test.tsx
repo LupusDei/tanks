@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { CampaignProvider, useCampaign } from './CampaignContext';
-import type { CampaignConfig, CampaignLength } from '../types/game';
+import type { CampaignConfig } from '../types/game';
 
 // Clear localStorage before each test
 beforeEach(() => {

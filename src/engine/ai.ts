@@ -1,8 +1,8 @@
-import type { TankState, TerrainData, Position, AIDifficulty } from '../types/game';
+import type { TankState, TerrainData, Position, AIDifficulty, WeaponInventory } from '../types/game';
 import { AI_DIFFICULTY_ORDER } from '../types/game';
 import { GRAVITY, degreesToRadians, powerToVelocity, WIND_SCALE } from './physics';
 import { getInterpolatedHeightAt } from './terrain';
-import { type WeaponType, WEAPON_TYPES, WEAPONS } from './weapons';
+import { type WeaponType, WEAPON_TYPES, WEAPONS, getPurchasableWeapons } from './weapons';
 
 export type { AIDifficulty } from '../types/game';
 export { AI_DIFFICULTY_ORDER } from '../types/game';
@@ -754,4 +754,244 @@ export function selectTargetWithPersistence(
   }
 
   return newTarget;
+}
+
+// ==========================================
+// AI Economy System - Weapon Purchasing
+// ==========================================
+
+/**
+ * Weapon purchase priority for each difficulty level.
+ * Higher difficulties make smarter, more tactical purchases.
+ * Lower difficulties buy more randomly or not at all.
+ */
+interface WeaponPurchasePreference {
+  /** Weapons this difficulty prefers, in order of preference */
+  preferredWeapons: WeaponType[];
+  /** Chance (0-1) that AI will make a purchase when it can afford one */
+  purchaseChance: number;
+  /** Minimum balance AI will keep (won't spend below this) */
+  reserveBalance: number;
+}
+
+const AI_PURCHASE_PREFERENCES: Record<AIDifficulty, WeaponPurchasePreference> = {
+  blind_fool: {
+    // Blind fools rarely buy and make random choices
+    preferredWeapons: ['heavy_artillery', 'bouncing_betty'],
+    purchaseChance: 0.2,
+    reserveBalance: 300,
+  },
+  private: {
+    // Privates occasionally buy, prefer simple weapons
+    preferredWeapons: ['heavy_artillery', 'precision', 'bouncing_betty'],
+    purchaseChance: 0.4,
+    reserveBalance: 200,
+  },
+  veteran: {
+    // Veterans make decent tactical choices
+    preferredWeapons: ['precision', 'heavy_artillery', 'cluster_bomb', 'napalm'],
+    purchaseChance: 0.6,
+    reserveBalance: 150,
+  },
+  centurion: {
+    // Centurions make good tactical purchases
+    preferredWeapons: ['precision', 'homing_missile', 'heavy_artillery', 'cluster_bomb', 'bunker_buster'],
+    purchaseChance: 0.8,
+    reserveBalance: 100,
+  },
+  primus: {
+    // Primus makes optimal purchases
+    preferredWeapons: ['precision', 'homing_missile', 'bunker_buster', 'heavy_artillery', 'cluster_bomb', 'napalm'],
+    purchaseChance: 0.95,
+    reserveBalance: 50,
+  },
+};
+
+/**
+ * Represents a purchase decision made by the AI.
+ */
+export interface AIPurchaseDecision {
+  weaponType: WeaponType;
+  cost: number;
+}
+
+/**
+ * Decide which weapons an AI should purchase between games.
+ * Returns a list of purchases to make, respecting the AI's balance and preferences.
+ *
+ * @param difficulty - AI difficulty level
+ * @param balance - Current balance available
+ * @param existingInventory - Current weapon inventory
+ * @returns Array of weapon purchases to make
+ */
+export function decideAIPurchases(
+  difficulty: AIDifficulty,
+  balance: number,
+  existingInventory: WeaponInventory = {}
+): AIPurchaseDecision[] {
+  const prefs = AI_PURCHASE_PREFERENCES[difficulty];
+  const purchases: AIPurchaseDecision[] = [];
+
+  // Check if AI decides to make any purchases this round
+  if (Math.random() > prefs.purchaseChance) {
+    return []; // AI decided not to shop
+  }
+
+  let remainingBalance = balance;
+  const purchasableWeapons = getPurchasableWeapons();
+
+  // Calculate how many of each preferred weapon the AI should try to have
+  const targetInventory = calculateTargetInventory(difficulty, prefs.preferredWeapons);
+
+  // Try to buy preferred weapons up to target amounts
+  for (const weaponType of prefs.preferredWeapons) {
+    const weapon = WEAPONS[weaponType];
+    const currentCount = existingInventory[weaponType] ?? 0;
+    const targetCount = targetInventory[weaponType] ?? 1;
+
+    // Buy up to target count, respecting balance constraints
+    while (
+      currentCount + purchases.filter(p => p.weaponType === weaponType).length < targetCount &&
+      remainingBalance - weapon.cost >= prefs.reserveBalance
+    ) {
+      purchases.push({ weaponType, cost: weapon.cost });
+      remainingBalance -= weapon.cost;
+    }
+  }
+
+  // Higher difficulty AIs may opportunistically buy cheap weapons with spare cash
+  if (difficulty === 'centurion' || difficulty === 'primus') {
+    const cheapWeapons = purchasableWeapons
+      .filter(w => w.cost <= 200 && !prefs.preferredWeapons.includes(w.id))
+      .sort((a, b) => a.cost - b.cost);
+
+    for (const weapon of cheapWeapons) {
+      if (remainingBalance - weapon.cost >= prefs.reserveBalance && Math.random() > 0.5) {
+        purchases.push({ weaponType: weapon.id, cost: weapon.cost });
+        remainingBalance -= weapon.cost;
+        break; // Just one opportunistic purchase
+      }
+    }
+  }
+
+  return purchases;
+}
+
+/**
+ * Calculate target inventory counts based on difficulty.
+ * Higher difficulties aim for more diverse and larger inventories.
+ */
+function calculateTargetInventory(
+  difficulty: AIDifficulty,
+  preferredWeapons: WeaponType[]
+): Partial<Record<WeaponType, number>> {
+  const target: Partial<Record<WeaponType, number>> = {};
+
+  switch (difficulty) {
+    case 'blind_fool':
+    case 'private':
+      // Low difficulties just want 1 of their top preferred weapon
+      if (preferredWeapons[0]) target[preferredWeapons[0]] = 1;
+      break;
+
+    case 'veteran':
+      // Veterans want 1-2 of top weapons
+      preferredWeapons.slice(0, 2).forEach((w, i) => {
+        target[w] = 2 - i; // First weapon: 2, second: 1
+      });
+      break;
+
+    case 'centurion':
+      // Centurions want a good arsenal
+      preferredWeapons.slice(0, 3).forEach((w, i) => {
+        target[w] = 3 - i; // First: 3, second: 2, third: 1
+      });
+      break;
+
+    case 'primus':
+      // Primus wants a full arsenal
+      preferredWeapons.slice(0, 4).forEach((w, i) => {
+        target[w] = 3 - Math.min(i, 2); // First three: 3,2,1, rest: 1
+      });
+      break;
+  }
+
+  return target;
+}
+
+/**
+ * Select a weapon for an AI tank from its inventory.
+ * Uses tactical decision-making based on difficulty and situation.
+ *
+ * @param difficulty - AI difficulty level
+ * @param shooter - The AI tank
+ * @param target - The target tank
+ * @param inventory - The AI's weapon inventory
+ * @returns The weapon to use (always returns at least 'standard')
+ */
+export function selectAIWeaponFromInventory(
+  difficulty: AIDifficulty,
+  shooter: TankState,
+  target: TankState,
+  inventory: WeaponInventory
+): WeaponType {
+  // Get base weapon selection (what AI would ideally use)
+  const idealWeapon = selectAIWeapon(difficulty, shooter, target);
+
+  // Check if AI has this weapon in inventory
+  const inventoryCount = inventory[idealWeapon] ?? 0;
+  if (idealWeapon === 'standard' || inventoryCount > 0) {
+    return idealWeapon;
+  }
+
+  // If ideal weapon not available, check preferred weapons in order
+  const prefs = AI_PURCHASE_PREFERENCES[difficulty];
+  for (const weaponType of prefs.preferredWeapons) {
+    const count = inventory[weaponType] ?? 0;
+    if (count > 0) {
+      return weaponType;
+    }
+  }
+
+  // Fall back to any available weapon
+  for (const weaponType of WEAPON_TYPES) {
+    if (weaponType === 'standard') continue;
+    const count = inventory[weaponType] ?? 0;
+    if (count > 0) {
+      return weaponType;
+    }
+  }
+
+  // Default to standard (always available)
+  return 'standard';
+}
+
+/**
+ * Calculate money earned by an AI tank from a game result.
+ * Uses the same formula as players.
+ */
+export function calculateAIGameEarnings(
+  isVictory: boolean,
+  killCount: number,
+  aiDifficulty: AIDifficulty
+): number {
+  // Import constants directly to avoid circular dependency
+  const KILL_REWARD = 200;
+  const WIN_BONUS = 250;
+  const LOSS_CONSOLATION = 50;
+  const DIFFICULTY_MULTIPLIERS: Record<AIDifficulty, number> = {
+    blind_fool: 0.5,
+    private: 0.75,
+    veteran: 1.0,
+    centurion: 1.25,
+    primus: 1.5,
+  };
+
+  const multiplier = DIFFICULTY_MULTIPLIERS[aiDifficulty];
+  const killReward = Math.round(KILL_REWARD * multiplier) * killCount;
+  const endBonus = isVictory
+    ? Math.round(WIN_BONUS * multiplier)
+    : LOSS_CONSOLATION;
+
+  return killReward + endBonus;
 }
