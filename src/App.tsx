@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
-  Canvas,
   ControlPanel,
   GameConfigScreen,
+  GameContainer,
   GameOverScreen,
   LoadingScreen,
   PlayerNameEntry,
@@ -822,7 +822,12 @@ function App() {
 
   return (
     <div className="app">
-      <Canvas width={terrainConfig.width} height={terrainConfig.height} onRender={handleRender} onClick={handleCanvasClick} />
+      <GameContainer
+        canvasWidth={terrainConfig.width}
+        canvasHeight={terrainConfig.height}
+        onRender={handleRender}
+        onClick={handleCanvasClick}
+      />
       <TurnIndicator
         turnNumber={state.currentTurn}
         playerAlive={playerIsAlive ?? false}

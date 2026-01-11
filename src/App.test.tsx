@@ -35,19 +35,41 @@ describe('App', () => {
   beforeEach(() => {
     localStorageMock.clear()
 
+    // Create a mock gradient object
+    const mockGradient = {
+      addColorStop: vi.fn(),
+    }
+
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
       writable: true,
       value: vi.fn(() => ({
         clearRect: vi.fn(),
         fillRect: vi.fn(),
         fillText: vi.fn(),
+        strokeRect: vi.fn(),
         beginPath: vi.fn(),
+        closePath: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
         arc: vi.fn(),
+        ellipse: vi.fn(),
         fill: vi.fn(),
+        stroke: vi.fn(),
+        save: vi.fn(),
+        restore: vi.fn(),
+        translate: vi.fn(),
+        rotate: vi.fn(),
+        drawImage: vi.fn(),
+        createLinearGradient: vi.fn(() => mockGradient),
+        createRadialGradient: vi.fn(() => mockGradient),
         getImageData: vi.fn(() => ({
           data: new Uint8ClampedArray(800 * 600 * 4),
         })),
         canvas: { width: 800, height: 600 },
+        globalCompositeOperation: 'source-over',
+        fillStyle: '',
+        strokeStyle: '',
+        lineWidth: 1,
       })),
     })
 
