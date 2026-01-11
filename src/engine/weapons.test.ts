@@ -36,7 +36,7 @@ describe('Economy constants', () => {
 
   it('KILL_REWARD is a positive number', () => {
     expect(KILL_REWARD).toBeGreaterThan(0);
-    expect(KILL_REWARD).toBe(100);
+    expect(KILL_REWARD).toBe(200);
   });
 
   it('WIN_BONUS is greater than LOSS_CONSOLATION', () => {
@@ -79,7 +79,7 @@ describe('Weapon configurations', () => {
   });
 
   it('WEAPON_HEAVY_ARTILLERY has high damage but not one-shot', () => {
-    expect(WEAPON_HEAVY_ARTILLERY.damage).toBe(60); // ~2 hits to kill
+    expect(WEAPON_HEAVY_ARTILLERY.damage).toBe(65); // ~2 hits to kill
     expect(WEAPON_HEAVY_ARTILLERY.damage).toBeLessThan(100);
   });
 

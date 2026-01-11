@@ -90,8 +90,9 @@ describe('WeaponShop', () => {
       renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
       expect(screen.getByText('FREE')).toBeInTheDocument();
-      expect(screen.getByText(`$${WEAPONS.heavy_artillery.cost}`)).toBeInTheDocument();
-      expect(screen.getByText(`$${WEAPONS.precision.cost}`)).toBeInTheDocument();
+      // Use getAllByText since some weapons may have the same price
+      expect(screen.getAllByText(`$${WEAPONS.heavy_artillery.cost}`).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(`$${WEAPONS.precision.cost}`).length).toBeGreaterThan(0);
     });
 
     it('shows owned count for each weapon', () => {

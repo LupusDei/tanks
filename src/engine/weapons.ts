@@ -102,7 +102,7 @@ export const STARTING_MONEY = 500;
  * Money earned per enemy kill.
  * Primary source of income during gameplay.
  */
-export const KILL_REWARD = 100;
+export const KILL_REWARD = 200;
 
 /**
  * Bonus money for winning a game.
@@ -149,14 +149,14 @@ export const WEAPON_STANDARD: WeaponConfig = {
 
 /**
  * Heavy Artillery - bigger explosions, more damage area.
- * Slower projectile, high damage (60%) but not one-shot.
+ * Slower projectile, high damage (65%) but not one-shot.
  */
 export const WEAPON_HEAVY_ARTILLERY: WeaponConfig = {
   id: 'heavy_artillery',
   name: 'Heavy Artillery',
   description: 'Massive blast radius. Slower but devastating. ~2 hits to kill.',
   cost: 250,
-  damage: 60,
+  damage: 65,
   blastRadius: 35,
   projectileSpeedMultiplier: 0.8,
 };
@@ -164,13 +164,12 @@ export const WEAPON_HEAVY_ARTILLERY: WeaponConfig = {
 /**
  * Precision Shot (Sniper) - smaller blast, faster projectile.
  * THE ONLY ONE-SHOT WEAPON. For skilled players who can aim accurately.
- * Premium price reflects its instant-kill capability.
  */
 export const WEAPON_PRECISION: WeaponConfig = {
   id: 'precision',
   name: 'Sniper Shot',
   description: 'One-shot kill. Fast and accurate. Small blast radius.',
-  cost: 400,
+  cost: 200,
   damage: 100,
   blastRadius: 12,
   projectileSpeedMultiplier: 1.3,
@@ -179,14 +178,14 @@ export const WEAPON_PRECISION: WeaponConfig = {
 /**
  * Cluster Bomb - splits into multiple smaller explosions.
  * Good for area denial. Each cluster does partial damage.
- * 25% per hit × 5 = 125% total potential damage.
+ * 35% per hit × 5 = 175% total potential damage.
  */
 export const WEAPON_CLUSTER_BOMB: WeaponConfig = {
   id: 'cluster_bomb',
   name: 'Cluster Bomb',
-  description: 'Splits into 5 explosions. 125% total potential damage.',
-  cost: 350,
-  damage: 25, // Per cluster, 5 clusters = 125 potential if all hit
+  description: 'Splits into 5 explosions. 175% total potential damage.',
+  cost: 300,
+  damage: 35, // Per cluster, 5 clusters = 175 potential if all hit
   blastRadius: 10,
   projectileSpeedMultiplier: 0.9,
 };
@@ -200,7 +199,7 @@ export const WEAPON_NAPALM: WeaponConfig = {
   id: 'napalm',
   name: 'Napalm',
   description: 'Creates a burning area. 20% initial + burn damage.',
-  cost: 275,
+  cost: 250,
   damage: 20, // Initial hit damage, plus DoT
   blastRadius: 30,
   projectileSpeedMultiplier: 0.85,
