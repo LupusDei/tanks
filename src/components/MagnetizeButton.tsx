@@ -1,11 +1,14 @@
 import { useEffect, useState, useMemo } from "react"
 
+type ButtonVariant = 'primary' | 'secondary'
+
 interface MagnetizeButtonProps {
   onClick?: () => void
   children: React.ReactNode
   particleCount?: number
   disabled?: boolean
   className?: string
+  variant?: ButtonVariant
   "data-testid"?: string
 }
 
@@ -61,6 +64,7 @@ export function MagnetizeButton({
   particleCount = 56,
   disabled = false,
   className = "",
+  variant = "primary",
   "data-testid": testId,
 }: MagnetizeButtonProps) {
   const [isHovering, setIsHovering] = useState(false)
@@ -97,7 +101,7 @@ export function MagnetizeButton({
 
   return (
     <button
-      className={`magnetize-button ${isHovering ? "magnetize-button--attracting" : ""} ${className}`}
+      className={`magnetize-button magnetize-button--${variant} ${isHovering ? "magnetize-button--attracting" : ""} ${className}`}
       onClick={onClick}
       onMouseEnter={() => !disabled && setIsHovering(true)}
       onMouseLeave={() => !disabled && setIsHovering(false)}

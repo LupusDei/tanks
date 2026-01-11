@@ -16,7 +16,7 @@ import {
   recordCampaignGameEnd,
   advanceCampaignGame,
   purchaseCampaignWeapon,
-  useCampaignWeapon,
+  consumeCampaignWeapon,
   updateCampaignParticipantBalance,
 } from '../services/userDatabase';
 import { getRandomGeneralNames } from '../data/legendaryGenerals';
@@ -192,7 +192,7 @@ export function CampaignProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const useWeaponCallback = useCallback((participantId: string, weaponType: WeaponType): boolean => {
-    const success = useCampaignWeapon(participantId, weaponType);
+    const success = consumeCampaignWeapon(participantId, weaponType);
     if (success) {
       // Reload campaign state to reflect changes
       const updated = loadActiveCampaign();

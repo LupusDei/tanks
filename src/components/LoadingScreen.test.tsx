@@ -2,8 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { LoadingScreen } from './LoadingScreen'
 
+// Mock userDatabase module
+vi.mock('../services/userDatabase', () => ({
+  hasActiveCampaign: vi.fn(() => false),
+}))
+
+import { hasActiveCampaign } from '../services/userDatabase'
+
 describe('LoadingScreen', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
+    localStorage.clear()
+    vi.mocked(hasActiveCampaign).mockReturnValue(false)
+
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
       writable: true,
       value: vi.fn(() => ({
@@ -39,6 +50,7 @@ describe('LoadingScreen', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -47,7 +59,7 @@ describe('LoadingScreen', () => {
     expect(screen.getByTestId('loading-screen')).toBeInTheDocument()
   })
 
-  it('renders the start button', () => {
+  it('renders the start button initially', () => {
     render(<LoadingScreen />)
     expect(screen.getByTestId('start-button')).toBeInTheDocument()
     expect(screen.getByText('Start Game')).toBeInTheDocument()
@@ -59,35 +71,152 @@ describe('LoadingScreen', () => {
     expect(canvas).toBeInTheDocument()
   })
 
-  it('starts fade out when start button is clicked', () => {
+  it('shows mode selection when start button is clicked', () => {
     render(<LoadingScreen />)
-
-    expect(screen.getByTestId('loading-screen')).not.toHaveClass('loading-screen--fade-out')
 
     fireEvent.click(screen.getByTestId('start-button'))
 
-    expect(screen.getByTestId('loading-screen')).toHaveClass('loading-screen--fade-out')
+    expect(screen.getByTestId('mode-select')).toBeInTheDocument()
+    expect(screen.getByTestId('free-play-button')).toBeInTheDocument()
+    expect(screen.getByTestId('campaign-button')).toBeInTheDocument()
   })
 
-  it('calls onStart callback after transition', () => {
+  it('calls onFreePlay when Free Play is clicked', async () => {
+    const handleFreePlay = vi.fn()
+    render(<LoadingScreen onFreePlay={handleFreePlay} />)
+
+    fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
+
+    // Wait for timeout
+    vi.advanceTimersByTime(800)
+
+    expect(handleFreePlay).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls back to onStart for backward compatibility', async () => {
     const handleStart = vi.fn()
     render(<LoadingScreen onStart={handleStart} />)
 
     fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
 
-    const loadingScreen = screen.getByTestId('loading-screen')
-    fireEvent.transitionEnd(loadingScreen)
+    vi.advanceTimersByTime(800)
 
     expect(handleStart).toHaveBeenCalledTimes(1)
   })
 
-  it('does not call onStart if not transitioning', () => {
-    const handleStart = vi.fn()
-    render(<LoadingScreen onStart={handleStart} />)
+  describe('Campaign flow - no existing campaign', () => {
+    it('shows campaign length selection when no active campaign', () => {
+      vi.mocked(hasActiveCampaign).mockReturnValue(false)
+      render(<LoadingScreen />)
 
-    const loadingScreen = screen.getByTestId('loading-screen')
-    fireEvent.transitionEnd(loadingScreen)
+      fireEvent.click(screen.getByTestId('start-button'))
+      fireEvent.click(screen.getByTestId('campaign-button'))
 
-    expect(handleStart).not.toHaveBeenCalled()
+      expect(screen.getByTestId('campaign-length')).toBeInTheDocument()
+      expect(screen.getByText('Select Campaign Length')).toBeInTheDocument()
+      expect(screen.getByTestId('campaign-length-3')).toBeInTheDocument()
+      expect(screen.getByTestId('campaign-length-5')).toBeInTheDocument()
+      expect(screen.getByTestId('campaign-length-8')).toBeInTheDocument()
+      expect(screen.getByTestId('campaign-length-13')).toBeInTheDocument()
+    })
+
+    it('calls onNewCampaign with selected length', async () => {
+      const handleNewCampaign = vi.fn()
+      render(<LoadingScreen onNewCampaign={handleNewCampaign} />)
+
+      fireEvent.click(screen.getByTestId('start-button'))
+      fireEvent.click(screen.getByTestId('campaign-button'))
+      fireEvent.click(screen.getByTestId('campaign-length-5'))
+
+      vi.advanceTimersByTime(800)
+
+      expect(handleNewCampaign).toHaveBeenCalledWith(5)
+    })
+  })
+
+  describe('Campaign flow - existing campaign', () => {
+    beforeEach(() => {
+      vi.mocked(hasActiveCampaign).mockReturnValue(true)
+    })
+
+    it('shows campaign options when active campaign exists', () => {
+      render(<LoadingScreen />)
+
+      fireEvent.click(screen.getByTestId('start-button'))
+      fireEvent.click(screen.getByTestId('campaign-button'))
+
+      expect(screen.getByTestId('campaign-options')).toBeInTheDocument()
+      expect(screen.getByTestId('resume-campaign-button')).toBeInTheDocument()
+      expect(screen.getByTestId('new-campaign-button')).toBeInTheDocument()
+    })
+
+    it('calls onResumeCampaign when Resume is clicked', async () => {
+      const handleResume = vi.fn()
+      render(<LoadingScreen onResumeCampaign={handleResume} />)
+
+      fireEvent.click(screen.getByTestId('start-button'))
+      fireEvent.click(screen.getByTestId('campaign-button'))
+      fireEvent.click(screen.getByTestId('resume-campaign-button'))
+
+      vi.advanceTimersByTime(800)
+
+      expect(handleResume).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows length selection when New Campaign is clicked', () => {
+      render(<LoadingScreen />)
+
+      fireEvent.click(screen.getByTestId('start-button'))
+      fireEvent.click(screen.getByTestId('campaign-button'))
+      fireEvent.click(screen.getByTestId('new-campaign-button'))
+
+      expect(screen.getByTestId('campaign-length')).toBeInTheDocument()
+    })
+  })
+
+  describe('Back button navigation', () => {
+    it('goes back from campaign length to mode select', () => {
+      render(<LoadingScreen />)
+
+      fireEvent.click(screen.getByTestId('start-button'))
+      fireEvent.click(screen.getByTestId('campaign-button'))
+
+      expect(screen.getByTestId('campaign-length')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('back-button'))
+
+      expect(screen.getByTestId('mode-select')).toBeInTheDocument()
+    })
+
+    it('goes back from campaign options to mode select', () => {
+      vi.mocked(hasActiveCampaign).mockReturnValue(true)
+      render(<LoadingScreen />)
+
+      fireEvent.click(screen.getByTestId('start-button'))
+      fireEvent.click(screen.getByTestId('campaign-button'))
+
+      expect(screen.getByTestId('campaign-options')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('back-button'))
+
+      expect(screen.getByTestId('mode-select')).toBeInTheDocument()
+    })
+
+    it('goes back from campaign length to campaign options when campaign exists', () => {
+      vi.mocked(hasActiveCampaign).mockReturnValue(true)
+      render(<LoadingScreen />)
+
+      fireEvent.click(screen.getByTestId('start-button'))
+      fireEvent.click(screen.getByTestId('campaign-button'))
+      fireEvent.click(screen.getByTestId('new-campaign-button'))
+
+      expect(screen.getByTestId('campaign-length')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByTestId('back-button'))
+
+      expect(screen.getByTestId('campaign-options')).toBeInTheDocument()
+    })
   })
 })

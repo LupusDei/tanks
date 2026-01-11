@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import App from './App'
 import { GameProvider } from './context/GameContext'
 import { UserProvider } from './context/UserContext'
@@ -106,20 +106,26 @@ describe('App', () => {
     expect(screen.queryByTestId('turn-indicator')).not.toBeInTheDocument()
   })
 
-  it('transitions to player name entry screen when start button clicked (new user)', () => {
+  it('transitions to player name entry screen when Free Play is clicked (new user)', async () => {
+    vi.useFakeTimers()
     renderWithProvider(<App />)
 
+    // Click Start -> Free Play
     fireEvent.click(screen.getByTestId('start-button'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
 
-    const loadingScreen = screen.getByTestId('loading-screen')
-    fireEvent.transitionEnd(loadingScreen)
+    await act(async () => {
+      vi.advanceTimersByTime(800) // Wait for setTimeout
+    })
 
     expect(screen.queryByTestId('loading-screen')).not.toBeInTheDocument()
     expect(screen.getByTestId('player-name-entry')).toBeInTheDocument()
     expect(screen.getByText('Enter Your Name')).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
-  it('skips name entry and goes directly to config screen for existing user', () => {
+  it('skips name entry and goes directly to config screen for existing user', async () => {
+    vi.useFakeTimers()
     // Set up existing user in localStorage
     const existingUser = {
       profile: { id: 'test-id', username: 'ExistingPlayer', createdAt: Date.now() },
@@ -132,21 +138,31 @@ describe('App', () => {
 
     renderWithProvider(<App />)
 
-    // Click start button
+    // Click Start -> Free Play
     fireEvent.click(screen.getByTestId('start-button'))
-    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
+
+    await act(async () => {
+      vi.advanceTimersByTime(800)
+    })
 
     // Should skip name entry and go directly to config screen
     expect(screen.queryByTestId('player-name-entry')).not.toBeInTheDocument()
     expect(screen.getByTestId('game-config-screen')).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
-  it('transitions to configuration screen after entering player name', () => {
+  it('transitions to configuration screen after entering player name', async () => {
+    vi.useFakeTimers()
     renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
-    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
+
+    await act(async () => {
+      vi.advanceTimersByTime(800)
+    })
 
     // Enter player name
     const input = screen.getByTestId('player-name-input')
@@ -157,14 +173,20 @@ describe('App', () => {
     expect(screen.queryByTestId('player-name-entry')).not.toBeInTheDocument()
     expect(screen.getByTestId('game-config-screen')).toBeInTheDocument()
     expect(screen.getByText('Battle Configuration')).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
-  it('shows all configuration sections on config screen', () => {
+  it('shows all configuration sections on config screen', async () => {
+    vi.useFakeTimers()
     renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
-    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
+
+    await act(async () => {
+      vi.advanceTimersByTime(800)
+    })
 
     // Go through player name entry
     const input = screen.getByTestId('player-name-input')
@@ -181,14 +203,20 @@ describe('App', () => {
     const engageButton = screen.getByTestId('config-engage-button')
     expect(engageButton).toBeInTheDocument()
     expect(engageButton).not.toBeDisabled()
+    vi.useRealTimers()
   })
 
-  it('has default selections pre-selected and Engage button enabled', () => {
+  it('has default selections pre-selected and Engage button enabled', async () => {
+    vi.useFakeTimers()
     renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
-    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
+
+    await act(async () => {
+      vi.advanceTimersByTime(800)
+    })
 
     // Go through player name entry
     const input = screen.getByTestId('player-name-input')
@@ -210,14 +238,20 @@ describe('App', () => {
     expect(screen.getByTestId('config-difficulty-veteran')).toHaveAttribute('aria-pressed', 'true')
     // Color: 'orange' (middle of 10)
     expect(screen.getByTestId('config-color-orange')).toHaveAttribute('aria-pressed', 'true')
+    vi.useRealTimers()
   })
 
-  it('transitions to weapon shop when Engage button is clicked with all selections', () => {
+  it('transitions to weapon shop when Engage button is clicked with all selections', async () => {
+    vi.useFakeTimers()
     renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
-    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
+
+    await act(async () => {
+      vi.advanceTimersByTime(800)
+    })
 
     // Go through player name entry
     const input = screen.getByTestId('player-name-input')
@@ -237,14 +271,20 @@ describe('App', () => {
     // Should show weapon shop
     expect(screen.queryByTestId('game-config-screen')).not.toBeInTheDocument()
     expect(screen.getByTestId('weapon-shop')).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
-  it('transitions to game after weapon selection', () => {
+  it('transitions to game after weapon selection', async () => {
+    vi.useFakeTimers()
     renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
-    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
+
+    await act(async () => {
+      vi.advanceTimersByTime(800)
+    })
 
     // Go through player name entry
     const input = screen.getByTestId('player-name-input')
@@ -267,14 +307,20 @@ describe('App', () => {
     expect(screen.queryByTestId('weapon-shop')).not.toBeInTheDocument()
     expect(screen.getByTestId('turn-indicator')).toBeInTheDocument()
     expect(screen.getByTestId('fire-button')).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
-  it('renders the canvas component after completing weapon selection', () => {
+  it('renders the canvas component after completing weapon selection', async () => {
+    vi.useFakeTimers()
     const { container } = renderWithProvider(<App />)
 
     // Go through loading screen
     fireEvent.click(screen.getByTestId('start-button'))
-    fireEvent.transitionEnd(screen.getByTestId('loading-screen'))
+    fireEvent.click(screen.getByTestId('free-play-button'))
+
+    await act(async () => {
+      vi.advanceTimersByTime(800)
+    })
 
     // Go through player name entry
     const input = screen.getByTestId('player-name-input')
@@ -296,6 +342,7 @@ describe('App', () => {
 
     const canvas = container.querySelector('canvas')
     expect(canvas).toBeInTheDocument()
+    vi.useRealTimers()
   })
 
 })

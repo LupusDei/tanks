@@ -833,7 +833,7 @@ export function purchaseCampaignWeapon(
  * Use a weapon from a campaign participant's inventory.
  * Returns true if weapon was available and consumed.
  */
-export function useCampaignWeapon(
+export function consumeCampaignWeapon(
   participantId: string,
   weaponType: WeaponType
 ): boolean {
