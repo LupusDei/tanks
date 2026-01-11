@@ -166,3 +166,74 @@ export interface UserData {
   /** Owned weapons and their quantities. Standard is always Infinity. */
   weaponInventory: WeaponInventory;
 }
+
+// ============================================================================
+// Campaign Mode Types
+// ============================================================================
+
+/** Available campaign lengths (number of games) */
+export type CampaignLength = 3 | 5 | 8 | 13;
+
+/** All available campaign lengths for UI selection */
+export const CAMPAIGN_LENGTH_OPTIONS: CampaignLength[] = [3, 5, 8, 13];
+
+/** Starting balance for all participants in a campaign */
+export const CAMPAIGN_STARTING_BALANCE = 500;
+
+/**
+ * A participant in a campaign (player or AI tank).
+ * Tracks their individual stats, balance, and progression.
+ */
+export interface CampaignParticipant {
+  /** Unique identifier for this participant */
+  id: string;
+  /** Display name (player name or legendary general name) */
+  name: string;
+  /** Whether this is the human player */
+  isPlayer: boolean;
+  /** Current money balance (starts at 500) */
+  balance: number;
+  /** Total kills across all campaign games */
+  kills: number;
+  /** Total deaths across all campaign games */
+  deaths: number;
+  /** Number of games played in this campaign */
+  gamesPlayed: number;
+  /** Number of game wins in this campaign */
+  wins: number;
+  /** Current skill level (starts at selected difficulty, can increase) */
+  currentLevel: AIDifficulty;
+  /** Weapon inventory for this participant */
+  weaponInventory: WeaponInventory;
+  /** Tank color assigned for this campaign */
+  color: TankColor;
+}
+
+/**
+ * Configuration locked for the entire campaign.
+ * Set at campaign start and cannot be changed mid-campaign.
+ */
+export interface CampaignConfig {
+  terrainSize: TerrainSize;
+  enemyCount: EnemyCount;
+  playerColor: TankColor;
+  aiDifficulty: AIDifficulty;
+}
+
+/**
+ * Full campaign state persisted to localStorage.
+ */
+export interface CampaignState {
+  /** Unique campaign identifier */
+  campaignId: string;
+  /** Total number of games in this campaign */
+  length: CampaignLength;
+  /** Current game number (1-indexed) */
+  currentGame: number;
+  /** Timestamp when campaign started */
+  startedAt: number;
+  /** Locked configuration for the entire campaign */
+  config: CampaignConfig;
+  /** All campaign participants (player + AI tanks) */
+  participants: CampaignParticipant[];
+}
