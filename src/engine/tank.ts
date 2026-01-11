@@ -48,6 +48,7 @@ export interface RenderTankOptions {
   isCurrentTurn?: boolean;
   chevronCount?: number; // Number of chevrons to display (1-3 for lower ranks)
   starCount?: number; // Number of stars to display (1-2 for higher ranks)
+  name?: string; // Tank name to display below the tank
 }
 
 /**
@@ -61,7 +62,7 @@ export function renderTank(
   canvasHeight: number,
   options: RenderTankOptions = {}
 ): void {
-  const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false, chevronCount = 0, starCount = 0 } = options;
+  const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false, chevronCount = 0, starCount = 0, name } = options;
   const { position, angle, color, health, stunTurnsRemaining } = tank;
   const isStunned = stunTurnsRemaining > 0;
   const { bodyWidth, bodyHeight, turretLength, turretWidth, wheelRadius } = dimensions;
@@ -76,8 +77,42 @@ export function renderTank(
   ctx.save();
   ctx.translate(canvasX, canvasY);
 
-  // Draw yellow arrow indicator for current turn (below tank)
-  if (isCurrentTurn) {
+  // Draw tank name indicator with triangle (below tank)
+  if (name) {
+    ctx.save();
+    const nameY = bodyHeight / 2 + wheelRadius + 12;
+    const arrowHeight = 8;
+    const arrowWidth = 8;
+    const arrowColor = isCurrentTurn ? '#ffff00' : 'rgba(255, 255, 255, 0.7)';
+
+    // Glow effect (stronger for current turn)
+    ctx.shadowColor = isCurrentTurn ? '#ffff00' : 'rgba(255, 255, 255, 0.5)';
+    ctx.shadowBlur = isCurrentTurn ? 8 : 4;
+
+    // Draw small triangle pointing up
+    ctx.fillStyle = arrowColor;
+    ctx.beginPath();
+    ctx.moveTo(0, nameY); // Top point
+    ctx.lineTo(-arrowWidth / 2, nameY + arrowHeight); // Bottom left
+    ctx.lineTo(arrowWidth / 2, nameY + arrowHeight); // Bottom right
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw tank name below the triangle
+    const textY = nameY + arrowHeight + 12;
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = isCurrentTurn ? '#ffff00' : 'rgba(255, 255, 255, 0.9)';
+    ctx.shadowBlur = isCurrentTurn ? 6 : 2;
+
+    // Truncate name if too long
+    const maxLength = 12;
+    const displayName = name.length > maxLength ? name.substring(0, maxLength - 1) + '…' : name;
+    ctx.fillText(displayName, 0, textY);
+    ctx.restore();
+  } else if (isCurrentTurn) {
+    // Only draw arrow indicator if no name but is current turn
     ctx.save();
     const arrowY = bodyHeight / 2 + wheelRadius + 12;
     const arrowHeight = 12;

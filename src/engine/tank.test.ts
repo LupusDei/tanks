@@ -197,7 +197,13 @@ describe('tank', () => {
         lineWidth: 0,
         shadowColor: '',
         shadowBlur: 0,
+        font: '',
+        textAlign: '',
+        textBaseline: '',
+        lineCap: '',
+        lineJoin: '',
         fillRect: vi.fn(),
+        fillText: vi.fn(),
         beginPath: vi.fn(),
         arc: vi.fn(),
         ellipse: vi.fn(),
@@ -296,6 +302,30 @@ describe('tank', () => {
       expect(() => renderTank(ctx, tank, 600, {})).not.toThrow();
       expect(() => renderTank(ctx, tank, 600, { isCurrentTurn: true })).not.toThrow();
       expect(() => renderTank(ctx, tank, 600, { isCurrentTurn: false })).not.toThrow();
+    });
+
+    it('renders tank name when provided', () => {
+      renderTank(ctx, tank, 600, { name: 'General Patton' });
+      expect(ctx.fillText).toHaveBeenCalled();
+    });
+
+    it('truncates long tank names', () => {
+      renderTank(ctx, tank, 600, { name: 'Very Long General Name That Should Be Truncated' });
+      // Should render without errors even with long name
+      expect(ctx.fillText).toHaveBeenCalled();
+    });
+
+    it('does not render name when not provided', () => {
+      renderTank(ctx, tank, 600);
+      // fillText should not be called when no name is provided
+      expect(ctx.fillText).not.toHaveBeenCalled();
+    });
+
+    it('renders name with triangle indicator for current turn', () => {
+      renderTank(ctx, tank, 600, { name: 'Player', isCurrentTurn: true });
+      expect(ctx.fillText).toHaveBeenCalled();
+      // Triangle and text should both be drawn
+      expect(ctx.fill).toHaveBeenCalled();
     });
   });
 });

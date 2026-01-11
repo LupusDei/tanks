@@ -706,7 +706,19 @@ function App() {
       const isEnemy = tank.id !== 'player'
       const chevronCount = isEnemy ? getChevronCount(state.aiDifficulty) : 0
       const starCount = isEnemy ? getStarCount(state.aiDifficulty) : 0
-      renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount })
+
+      // Get tank name for display
+      let tankName: string | undefined
+      if (isCampaignMode && campaign) {
+        // Campaign mode: look up name from participants
+        const participant = campaign.participants.find(p => p.id === tank.id)
+        tankName = participant?.name
+      } else if (tank.id === 'player' && userData) {
+        // Free play: show player's username
+        tankName = userData.profile.username
+      }
+
+      renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount, name: tankName })
     }
 
     const currentTime = performance.now()
