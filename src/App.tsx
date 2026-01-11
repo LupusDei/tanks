@@ -53,10 +53,15 @@ import {
   generateNextWind,
   getProjectileVisual,
   calculateKillReward,
+  createMoneyAnimation,
+  updateMoneyAnimation,
+  renderMoneyAnimation,
+  isMoneyAnimationComplete,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
   type TankDestructionState,
+  type MoneyAnimationState,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, AIDifficulty } from './types/game'
 import { getWeaponInventory } from './services/userDatabase'
@@ -82,6 +87,8 @@ function App() {
   const explosionsRef = useRef<ExplosionState[]>([])
   // Array of active tank destruction animations
   const destructionsRef = useRef<TankDestructionState[]>([])
+  // Array of active money earned animations
+  const moneyAnimationsRef = useRef<MoneyAnimationState[]>([])
   const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
@@ -550,6 +557,12 @@ function App() {
             const moneyEarned = proj.tankId === 'player' ? calculateKillReward(state.aiDifficulty) : 0
             console.log(`[Kill] ${attackerName} destroyed ${victimName}${moneyEarned > 0 ? ` - Earned $${moneyEarned}` : ''}`)
 
+            // Create money animation if player earned money from this kill
+            if (moneyEarned > 0) {
+              const moneyAnim = createMoneyAnimation(tank.position, ctx.canvas.height, moneyEarned, currentTime)
+              moneyAnimationsRef.current = [...moneyAnimationsRef.current, moneyAnim]
+            }
+
             // Create a temporary tank state with the killing weapon set
             const killedTank = { ...tank, killedByWeapon: proj.weaponType }
             const destruction = createTankDestruction(killedTank, ctx.canvas.height, currentTime)
@@ -777,6 +790,32 @@ function App() {
 
     // Update destructions ref
     destructionsRef.current = updatedDestructions
+
+    // Render and update all money animations
+    const updatedMoneyAnimations: MoneyAnimationState[] = []
+
+    for (const moneyAnim of moneyAnimationsRef.current) {
+      if (!moneyAnim.isActive) {
+        continue // Don't keep inactive animations
+      }
+
+      // Update animation state
+      const updatedMoneyAnim = updateMoneyAnimation(moneyAnim, currentTime)
+
+      // Render animation
+      renderMoneyAnimation(ctx, updatedMoneyAnim, currentTime)
+
+      // Check if animation is complete
+      if (isMoneyAnimationComplete(updatedMoneyAnim, currentTime)) {
+        // Don't add completed animations to the array
+        continue
+      } else {
+        updatedMoneyAnimations.push(updatedMoneyAnim)
+      }
+    }
+
+    // Update money animations ref
+    moneyAnimationsRef.current = updatedMoneyAnimations
 
     // In simultaneous mode, just clear explosion state when all complete
     // No turn cycling - all tanks fire together each round
