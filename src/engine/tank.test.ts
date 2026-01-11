@@ -309,10 +309,10 @@ describe('tank', () => {
       expect(ctx.fillText).toHaveBeenCalled();
     });
 
-    it('truncates long tank names', () => {
-      renderTank(ctx, tank, 600, { name: 'Very Long General Name That Should Be Truncated' });
-      // Should render without errors even with long name
-      expect(ctx.fillText).toHaveBeenCalled();
+    it('wraps long tank names to multiple lines', () => {
+      renderTank(ctx, tank, 600, { name: 'Field Marshal Erwin Rommel' });
+      // Should render multiple lines for multi-word names
+      expect(ctx.fillText).toHaveBeenCalledTimes(2); // Two lines
     });
 
     it('does not render name when not provided', () => {

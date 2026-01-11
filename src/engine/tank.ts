@@ -98,18 +98,33 @@ export function renderTank(
     ctx.closePath();
     ctx.fill();
 
-    // Draw tank name below the triangle
-    const textY = nameY + arrowHeight + 12;
-    ctx.font = 'bold 10px monospace';
+    // Draw tank name below the triangle (wrap to 2 lines if needed)
+    const textY = nameY + arrowHeight + 4;
+    ctx.font = 'bold 9px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = isCurrentTurn ? '#ffff00' : 'rgba(255, 255, 255, 0.9)';
     ctx.shadowBlur = isCurrentTurn ? 6 : 2;
 
-    // Truncate name if too long
-    const maxLength = 12;
-    const displayName = name.length > maxLength ? name.substring(0, maxLength - 1) + '…' : name;
-    ctx.fillText(displayName, 0, textY);
+    // Split name into words and wrap to 2 lines
+    const words = name.split(' ');
+    const lineHeight = 10;
+
+    if (words.length === 1) {
+      // Single word - just display it
+      ctx.fillText(name, 0, textY);
+    } else if (words.length === 2) {
+      // Two words - one per line
+      ctx.fillText(words[0]!, 0, textY);
+      ctx.fillText(words[1]!, 0, textY + lineHeight);
+    } else {
+      // Three+ words - split roughly in half
+      const midpoint = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, midpoint).join(' ');
+      const line2 = words.slice(midpoint).join(' ');
+      ctx.fillText(line1, 0, textY);
+      ctx.fillText(line2, 0, textY + lineHeight);
+    }
     ctx.restore();
   } else if (isCurrentTurn) {
     // Only draw arrow indicator if no name but is current turn
