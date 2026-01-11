@@ -559,15 +559,21 @@ function createCampaignWeaponInventory(): WeaponInventory {
 
 /**
  * Create a new campaign participant.
+ * @param id - The participant ID (must match game tank ID: 'player', 'enemy-1', etc.)
+ * @param name - Display name for the participant
+ * @param isPlayer - Whether this is the human player
+ * @param startingLevel - Initial difficulty level
+ * @param color - Tank color
  */
 export function createCampaignParticipant(
+  id: string,
   name: string,
   isPlayer: boolean,
   startingLevel: AIDifficulty,
   color: TankColor
 ): CampaignParticipant {
   return {
-    id: generateId(),
+    id,
     name,
     isPlayer,
     balance: CAMPAIGN_STARTING_BALANCE,
@@ -635,6 +641,7 @@ export function hasActiveCampaign(): boolean {
 
 /**
  * Create a new campaign with the given parameters.
+ * Campaign participant IDs match game tank IDs ('player', 'enemy-1', 'enemy-2', etc.)
  * @param length - Number of games in the campaign (3, 5, 8, or 13)
  * @param config - Locked configuration for the campaign
  * @param playerName - Name of the human player
@@ -650,18 +657,20 @@ export function createNewCampaign(
   const allColors: TankColor[] = ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'cyan', 'pink', 'white', 'brown'];
   const availableColors = allColors.filter(c => c !== config.playerColor);
 
-  // Create player participant
+  // Create player participant with ID matching game tank ID
   const player = createCampaignParticipant(
+    'player', // ID must match game tank ID
     playerName,
     true,
     config.aiDifficulty,
     config.playerColor
   );
 
-  // Create AI participants
+  // Create AI participants with IDs matching game tank IDs ('enemy-1', 'enemy-2', etc.)
   const aiParticipants: CampaignParticipant[] = aiNames.slice(0, config.enemyCount).map((name, index) => {
     const color = availableColors[index % availableColors.length]!;
-    return createCampaignParticipant(name, false, config.aiDifficulty, color);
+    const tankId = `enemy-${index + 1}`; // Must match game tank ID
+    return createCampaignParticipant(tankId, name, false, config.aiDifficulty, color);
   });
 
   const campaign: CampaignState = {

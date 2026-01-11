@@ -106,6 +106,20 @@ describe('Campaign Integration', () => {
         expect(campaign.length).toBe(length);
       }
     });
+
+    it('assigns predictable IDs matching game tank IDs', () => {
+      const campaign = createNewCampaign(3, defaultConfig, 'TestPlayer', aiNames);
+
+      // Player ID must match game tank ID
+      const player = getPlayer(campaign.participants);
+      expect(player?.id).toBe('player');
+
+      // AI IDs must match game tank IDs
+      const ais = getAIs(campaign.participants);
+      expect(ais[0]?.id).toBe('enemy-1');
+      expect(ais[1]?.id).toBe('enemy-2');
+      expect(ais[2]?.id).toBe('enemy-3');
+    });
   });
 
   describe('Campaign Persistence', () => {
