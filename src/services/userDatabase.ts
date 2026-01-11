@@ -7,7 +7,12 @@ import type {
   AIDifficulty,
   TankColor,
   WeaponInventory,
+  CampaignState,
+  CampaignParticipant,
+  CampaignLength,
+  CampaignConfig,
 } from '../types/game';
+import { CAMPAIGN_STARTING_BALANCE } from '../types/game';
 import { STARTING_MONEY, calculateGameEarnings, type WeaponType } from '../engine/weapons';
 
 // Storage keys
@@ -15,6 +20,7 @@ const PLAYERS_DB_KEY = 'tanks_players_db';
 const CURRENT_PLAYER_KEY = 'tanks_current_player';
 const LEGACY_STORAGE_KEY = 'tanks_user_data';
 const GAME_CONFIG_KEY = 'tanks_game_config';
+const CAMPAIGN_KEY = 'tanks_active_campaign';
 
 // Game config interface for persisting selections between sessions
 export interface GameConfig {
@@ -530,4 +536,319 @@ export function loadGameConfig(): GameConfig | null {
   } catch {
     return null;
   }
+}
+
+// ============================================================================
+// CAMPAIGN STORAGE FUNCTIONS
+// ============================================================================
+
+/**
+ * Generate a unique campaign ID.
+ */
+function generateCampaignId(): string {
+  return `campaign-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Create a default weapon inventory for a campaign participant.
+ * Everyone starts with only the standard weapon.
+ */
+function createCampaignWeaponInventory(): WeaponInventory {
+  return { standard: Infinity };
+}
+
+/**
+ * Create a new campaign participant.
+ */
+export function createCampaignParticipant(
+  name: string,
+  isPlayer: boolean,
+  startingLevel: AIDifficulty,
+  color: TankColor
+): CampaignParticipant {
+  return {
+    id: generateId(),
+    name,
+    isPlayer,
+    balance: CAMPAIGN_STARTING_BALANCE,
+    kills: 0,
+    deaths: 0,
+    gamesPlayed: 0,
+    wins: 0,
+    currentLevel: startingLevel,
+    weaponInventory: createCampaignWeaponInventory(),
+    color,
+  };
+}
+
+/**
+ * Load the active campaign from localStorage.
+ * Returns null if no active campaign exists.
+ */
+export function loadActiveCampaign(): CampaignState | null {
+  try {
+    const stored = localStorage.getItem(CAMPAIGN_KEY);
+    if (!stored) return null;
+    const campaign = JSON.parse(stored) as CampaignState;
+
+    // Restore Infinity for standard weapon in all participants
+    for (const participant of campaign.participants) {
+      if (participant.weaponInventory?.standard === null) {
+        participant.weaponInventory.standard = Infinity;
+      }
+    }
+
+    return campaign;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save the active campaign to localStorage.
+ */
+export function saveActiveCampaign(campaign: CampaignState): void {
+  try {
+    localStorage.setItem(CAMPAIGN_KEY, JSON.stringify(campaign));
+  } catch {
+    console.error('Failed to save campaign to localStorage');
+  }
+}
+
+/**
+ * Clear the active campaign from localStorage.
+ */
+export function clearActiveCampaign(): void {
+  try {
+    localStorage.removeItem(CAMPAIGN_KEY);
+  } catch {
+    console.error('Failed to clear campaign from localStorage');
+  }
+}
+
+/**
+ * Check if there's an active campaign.
+ */
+export function hasActiveCampaign(): boolean {
+  return loadActiveCampaign() !== null;
+}
+
+/**
+ * Create a new campaign with the given parameters.
+ * @param length - Number of games in the campaign (3, 5, 8, or 13)
+ * @param config - Locked configuration for the campaign
+ * @param playerName - Name of the human player
+ * @param aiNames - Names for AI tanks (from legendary generals)
+ */
+export function createNewCampaign(
+  length: CampaignLength,
+  config: CampaignConfig,
+  playerName: string,
+  aiNames: string[]
+): CampaignState {
+  // Create all AI tank colors (excluding player color)
+  const allColors: TankColor[] = ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'cyan', 'pink', 'white', 'brown'];
+  const availableColors = allColors.filter(c => c !== config.playerColor);
+
+  // Create player participant
+  const player = createCampaignParticipant(
+    playerName,
+    true,
+    config.aiDifficulty,
+    config.playerColor
+  );
+
+  // Create AI participants
+  const aiParticipants: CampaignParticipant[] = aiNames.slice(0, config.enemyCount).map((name, index) => {
+    const color = availableColors[index % availableColors.length]!;
+    return createCampaignParticipant(name, false, config.aiDifficulty, color);
+  });
+
+  const campaign: CampaignState = {
+    campaignId: generateCampaignId(),
+    length,
+    currentGame: 1,
+    startedAt: Date.now(),
+    config,
+    participants: [player, ...aiParticipants],
+  };
+
+  saveActiveCampaign(campaign);
+  return campaign;
+}
+
+/**
+ * Get a participant by ID from the active campaign.
+ */
+export function getCampaignParticipant(participantId: string): CampaignParticipant | null {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return null;
+  return campaign.participants.find(p => p.id === participantId) ?? null;
+}
+
+/**
+ * Get the player participant from the active campaign.
+ */
+export function getCampaignPlayer(): CampaignParticipant | null {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return null;
+  return campaign.participants.find(p => p.isPlayer) ?? null;
+}
+
+/**
+ * Update a participant's balance in the active campaign.
+ */
+export function updateCampaignParticipantBalance(participantId: string, delta: number): void {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return;
+
+  const participant = campaign.participants.find(p => p.id === participantId);
+  if (participant) {
+    participant.balance = Math.max(0, participant.balance + delta);
+    saveActiveCampaign(campaign);
+  }
+}
+
+/**
+ * Record a kill for a participant in the active campaign.
+ * Also handles skill progression (level up every 3 kills).
+ */
+export function recordCampaignKill(killerId: string): AIDifficulty | null {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return null;
+
+  const killer = campaign.participants.find(p => p.id === killerId);
+  if (!killer) return null;
+
+  const previousKills = killer.kills;
+  killer.kills += 1;
+
+  // Check for level up (every 3 kills)
+  const previousLevel = Math.floor(previousKills / 3);
+  const newLevel = Math.floor(killer.kills / 3);
+
+  let leveledUp: AIDifficulty | null = null;
+  if (newLevel > previousLevel) {
+    // Level up! Get next difficulty
+    const difficulties: AIDifficulty[] = ['blind_fool', 'private', 'veteran', 'centurion', 'primus'];
+    const currentIndex = difficulties.indexOf(killer.currentLevel);
+    if (currentIndex < difficulties.length - 1) {
+      killer.currentLevel = difficulties[currentIndex + 1]!;
+      leveledUp = killer.currentLevel;
+    }
+  }
+
+  saveActiveCampaign(campaign);
+  return leveledUp;
+}
+
+/**
+ * Record a death for a participant in the active campaign.
+ */
+export function recordCampaignDeath(victimId: string): void {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return;
+
+  const victim = campaign.participants.find(p => p.id === victimId);
+  if (victim) {
+    victim.deaths += 1;
+    saveActiveCampaign(campaign);
+  }
+}
+
+/**
+ * Record the end of a campaign game.
+ * Updates wins, games played, and advances to next game.
+ */
+export function recordCampaignGameEnd(winnerId: string): void {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return;
+
+  // Increment games played for all participants
+  for (const participant of campaign.participants) {
+    participant.gamesPlayed += 1;
+  }
+
+  // Record win for the winner
+  const winner = campaign.participants.find(p => p.id === winnerId);
+  if (winner) {
+    winner.wins += 1;
+  }
+
+  saveActiveCampaign(campaign);
+}
+
+/**
+ * Advance to the next game in the campaign.
+ * Returns false if campaign is complete.
+ */
+export function advanceCampaignGame(): boolean {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return false;
+
+  if (campaign.currentGame >= campaign.length) {
+    return false; // Campaign complete
+  }
+
+  campaign.currentGame += 1;
+  saveActiveCampaign(campaign);
+  return true;
+}
+
+/**
+ * Check if the campaign is complete (all games played).
+ */
+export function isCampaignComplete(): boolean {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return false;
+  return campaign.currentGame > campaign.length;
+}
+
+/**
+ * Purchase a weapon for a campaign participant.
+ * Returns true if purchase was successful.
+ */
+export function purchaseCampaignWeapon(
+  participantId: string,
+  weaponType: WeaponType,
+  cost: number
+): boolean {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return false;
+
+  const participant = campaign.participants.find(p => p.id === participantId);
+  if (!participant) return false;
+
+  if (participant.balance < cost) return false;
+
+  participant.balance -= cost;
+  const currentCount = participant.weaponInventory[weaponType] ?? 0;
+  participant.weaponInventory[weaponType] = currentCount + 1;
+
+  saveActiveCampaign(campaign);
+  return true;
+}
+
+/**
+ * Use a weapon from a campaign participant's inventory.
+ * Returns true if weapon was available and consumed.
+ */
+export function useCampaignWeapon(
+  participantId: string,
+  weaponType: WeaponType
+): boolean {
+  if (weaponType === 'standard') return true; // Standard is infinite
+
+  const campaign = loadActiveCampaign();
+  if (!campaign) return false;
+
+  const participant = campaign.participants.find(p => p.id === participantId);
+  if (!participant) return false;
+
+  const currentCount = participant.weaponInventory[weaponType] ?? 0;
+  if (currentCount <= 0) return false;
+
+  participant.weaponInventory[weaponType] = currentCount - 1;
+  saveActiveCampaign(campaign);
+  return true;
 }
