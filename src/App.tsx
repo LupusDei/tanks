@@ -66,7 +66,7 @@ import {
   type MoneyAnimationState,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, AIDifficulty, CampaignLength } from './types/game'
-import { getWeaponInventory } from './services/userDatabase'
+import { getWeaponInventory, loadActiveCampaign } from './services/userDatabase'
 import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings } from './engine/ai'
 
 interface GameConfig {
@@ -494,10 +494,11 @@ function App() {
 
   const handleWeaponConfirm = (weapon: WeaponType) => {
     if (isCampaignMode) {
-      // Campaign mode: use campaign inventory
-      const player = getPlayer()
+      // Campaign mode: read fresh from localStorage (context state may not have updated yet)
+      const freshCampaign = loadActiveCampaign()
+      const player = freshCampaign?.participants.find(p => p.isPlayer)
       const campaignInventory = player?.weaponInventory ?? { standard: Infinity }
-      console.log('[handleWeaponConfirm] campaign inventory:', campaignInventory)
+      console.log('[handleWeaponConfirm] campaign inventory from localStorage:', campaignInventory)
       actions.setWeaponAmmo({
         ...campaignInventory,
         standard: Infinity,
