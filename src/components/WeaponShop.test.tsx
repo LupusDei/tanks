@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { WeaponShop } from './WeaponShop';
 import { UserProvider } from '../context/UserContext';
+import { CampaignProvider } from '../context/CampaignContext';
 import { WEAPONS, WEAPON_TYPES, STARTING_MONEY } from '../engine/weapons';
 
 // Mock localStorage
@@ -24,7 +25,7 @@ const localStorageMock = (() => {
 
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
-// Helper to render with UserProvider
+// Helper to render with UserProvider and CampaignProvider
 function renderWithUser(ui: React.ReactElement, initialBalance = STARTING_MONEY) {
   // Set up user data in localStorage using new multi-player format
   const userData = {
@@ -45,7 +46,13 @@ function renderWithUser(ui: React.ReactElement, initialBalance = STARTING_MONEY)
   localStorageMock.setItem('tanks_players_db', JSON.stringify(playersDb));
   localStorageMock.setItem('tanks_current_player', 'TestUser');
 
-  return render(<UserProvider>{ui}</UserProvider>);
+  return render(
+    <UserProvider>
+      <CampaignProvider>
+        {ui}
+      </CampaignProvider>
+    </UserProvider>
+  );
 }
 
 describe('WeaponShop', () => {

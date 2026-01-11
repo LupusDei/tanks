@@ -10,9 +10,11 @@ import {
   TurnIndicator,
   WeaponSelectionPanel,
   WeaponShop,
+  CampaignLeaderboard,
 } from './components'
 import { useGame } from './context/useGame'
 import { useUser } from './context/UserContext'
+import { useCampaign } from './context/CampaignContext'
 import {
   initializeGame,
   renderTank,
@@ -63,8 +65,9 @@ import {
   type TankDestructionState,
   type MoneyAnimationState,
 } from './engine'
-import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, AIDifficulty } from './types/game'
+import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, AIDifficulty, CampaignLength } from './types/game'
 import { getWeaponInventory } from './services/userDatabase'
+import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings } from './engine/ai'
 
 interface GameConfig {
   terrainSize: TerrainSize
@@ -81,6 +84,26 @@ const TANK_WHEEL_RADIUS = 6
 function App() {
   const { state, actions } = useGame()
   const { userData, createNewUser, recordGame, consumeWeapon } = useUser()
+  const {
+    campaign,
+    isCampaignMode,
+    getPlayer,
+    getAIParticipants,
+    startNewCampaign,
+    resumeCampaign,
+    abandonCampaign,
+    recordKill,
+    recordDeath,
+    recordGameEnd,
+    advanceToNextGame,
+    updateBalance,
+    purchaseWeapon: campaignPurchaseWeapon,
+    useWeapon: campaignUseWeapon,
+    isCampaignComplete,
+    getCurrentGame,
+    getTotalGames,
+  } = useCampaign()
+
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
   // Array of active explosions for simultaneous impacts
@@ -94,32 +117,59 @@ function App() {
   const [isExplosionActive, setIsExplosionActive] = useState(false)
   const gameRecordedRef = useRef(false)
 
+  // Track kills during the current game for campaign earnings
+  const gameKillsRef = useRef<Map<string, number>>(new Map())
+
 
   // Record game stats when game ends
   useEffect(() => {
     if (state.phase === 'gameover' && state.winner && !gameRecordedRef.current) {
       gameRecordedRef.current = true
-      const isVictory = state.winner === 'player'
-      const enemiesKilled = state.tanks.filter(
-        (t) => t.id !== 'player' && t.health <= 0
-      ).length
 
-      recordGame({
-        isVictory,
-        enemyCount: state.enemyCount,
-        enemiesKilled,
-        terrainSize: state.terrainSize,
-        aiDifficulty: state.aiDifficulty,
-        turnsPlayed: state.currentTurn,
-        playerColor: state.playerColor!,
-      })
+      if (isCampaignMode) {
+        // Campaign mode: record win and transition to leaderboard
+        recordGameEnd(state.winner)
+
+        // Calculate and apply campaign earnings for all participants
+        const gameKills = gameKillsRef.current
+        for (const [tankId, killCount] of gameKills.entries()) {
+          const isWinner = tankId === state.winner
+          const participant = campaign?.participants.find(p => p.id === tankId)
+          if (participant) {
+            const earnings = calculateAIGameEarnings(isWinner, killCount, participant.currentLevel)
+            if (earnings > 0) {
+              updateBalance(tankId, earnings)
+            }
+          }
+        }
+
+        // Transition to campaign leaderboard
+        actions.setPhase('campaignLeaderboard')
+      } else {
+        // Free play mode: record stats as usual
+        const isVictory = state.winner === 'player'
+        const enemiesKilled = state.tanks.filter(
+          (t) => t.id !== 'player' && t.health <= 0
+        ).length
+
+        recordGame({
+          isVictory,
+          enemyCount: state.enemyCount,
+          enemiesKilled,
+          terrainSize: state.terrainSize,
+          aiDifficulty: state.aiDifficulty,
+          turnsPlayed: state.currentTurn,
+          playerColor: state.playerColor!,
+        })
+      }
     }
 
-    // Reset the recorded flag when game resets
-    if (state.phase === 'loading') {
+    // Reset the recorded flag and kill tracker when game resets
+    if (state.phase === 'loading' || state.phase === 'config' || state.phase === 'weaponShop') {
       gameRecordedRef.current = false
+      gameKillsRef.current.clear()
     }
-  }, [state.phase, state.winner, state.tanks, state.enemyCount, state.terrainSize, state.aiDifficulty, state.currentTurn, state.playerColor, recordGame])
+  }, [state.phase, state.winner, state.tanks, state.enemyCount, state.terrainSize, state.aiDifficulty, state.currentTurn, state.playerColor, recordGame, isCampaignMode, recordGameEnd, campaign, updateBalance, actions])
 
   // Track whether AI tanks are currently processing their shots
   const aiProcessingRef = useRef(false)
@@ -283,7 +333,25 @@ function App() {
         weaponType = currentState.selectedWeapon
       } else if (playerTankForAI) {
         // AI selects weapon based on difficulty and target
-        weaponType = selectAIWeapon(currentState.aiDifficulty, tank, playerTankForAI)
+        if (isCampaignMode && campaign) {
+          // Campaign mode: use campaign inventory
+          const aiParticipant = campaign.participants.find(p => p.id === tank.id)
+          if (aiParticipant) {
+            weaponType = selectAIWeaponFromInventory(
+              aiParticipant.currentLevel,
+              tank,
+              playerTankForAI,
+              aiParticipant.weaponInventory
+            )
+            // Consume the weapon from campaign inventory
+            if (weaponType !== 'standard') {
+              campaignUseWeapon(tank.id, weaponType)
+            }
+          }
+        } else {
+          // Free play mode: AI has infinite basic weapons
+          weaponType = selectAIWeapon(currentState.aiDifficulty, tank, playerTankForAI)
+        }
       }
 
       const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, canvasWidth, weaponType)
@@ -294,9 +362,20 @@ function App() {
         const currentAmmo = currentState.weaponAmmo[weaponType] ?? 0
         console.log('[App] Firing weapon:', weaponType, 'currentAmmo:', currentAmmo)
         actions.decrementAmmo(weaponType)
-        // Also consume from persistent inventory
-        const consumed = consumeWeapon(weaponType)
-        console.log('[App] consumeWeapon returned:', consumed)
+
+        // Consume from appropriate inventory
+        if (isCampaignMode) {
+          // Campaign mode: consume from campaign inventory
+          const player = getPlayer()
+          if (player) {
+            const consumed = campaignUseWeapon(player.id, weaponType)
+            console.log('[App] campaignUseWeapon returned:', consumed)
+          }
+        } else {
+          // Free play mode: consume from user inventory
+          const consumed = consumeWeapon(weaponType)
+          console.log('[App] consumeWeapon returned:', consumed)
+        }
 
         // Auto-switch to standard when weapon is depleted
         if (currentAmmo <= 1) {
@@ -319,7 +398,7 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allTanksReady])
 
-  const handleStartGame = () => {
+  const handleFreePlay = () => {
     // Skip name entry if user already exists (only show on browser refresh)
     if (userData) {
       actions.setPhase('config')
@@ -327,6 +406,37 @@ function App() {
       actions.setPhase('playerName')
     }
   }
+
+  const handleNewCampaign = (length: CampaignLength) => {
+    // Start a new campaign - need to get player name first if not exists
+    if (userData) {
+      // Go to config screen to set up campaign parameters
+      actions.setPhase('config')
+    } else {
+      actions.setPhase('playerName')
+    }
+    // Store the campaign length to use after config is complete
+    // We'll create the campaign when config is complete
+    pendingCampaignLengthRef.current = length
+  }
+
+  const handleResumeCampaign = () => {
+    // Resume existing campaign - go directly to weapon shop
+    if (resumeCampaign()) {
+      // Campaign resumed, skip config and go to weapon shop
+      if (campaign) {
+        // Apply campaign config to game state
+        actions.setTerrainSize(campaign.config.terrainSize)
+        actions.setEnemyCount(campaign.config.enemyCount)
+        actions.setPlayerColor(campaign.config.playerColor)
+        actions.setAIDifficulty(campaign.config.aiDifficulty)
+      }
+      actions.setPhase('weaponShop')
+    }
+  }
+
+  // Track pending campaign length for when config is complete
+  const pendingCampaignLengthRef = useRef<CampaignLength | null>(null)
 
   const handlePlayerNameSubmit = (name: string) => {
     // Create or update user with the entered name
@@ -342,6 +452,20 @@ function App() {
   const handleConfigComplete = (config: GameConfig) => {
     // Reset AI state for new game (target persistence and shot history)
     resetAIState()
+
+    // Check if this is a new campaign
+    const pendingLength = pendingCampaignLengthRef.current
+    if (pendingLength && userData) {
+      // Create the campaign with selected config
+      const campaignConfig = {
+        terrainSize: config.terrainSize,
+        enemyCount: config.enemyCount,
+        playerColor: config.playerColor,
+        aiDifficulty: config.aiDifficulty,
+      }
+      startNewCampaign(pendingLength, campaignConfig, userData.profile.username)
+      pendingCampaignLengthRef.current = null
+    }
 
     // Get terrain dimensions from selected size
     const terrainConfig = TERRAIN_SIZES[config.terrainSize]
@@ -369,23 +493,99 @@ function App() {
   }
 
   const handleWeaponConfirm = (weapon: WeaponType) => {
-    // Read fresh inventory from localStorage to avoid stale closure issues
-    // (purchases made in WeaponShop might not be reflected in the captured weaponInventory)
-    const freshInventory = getWeaponInventory() ?? { standard: Infinity }
-    console.log('[handleWeaponConfirm] fresh inventory from localStorage:', freshInventory)
-    actions.setWeaponAmmo({
-      ...freshInventory,
-      standard: Infinity,
-    })
+    if (isCampaignMode) {
+      // Campaign mode: use campaign inventory
+      const player = getPlayer()
+      const campaignInventory = player?.weaponInventory ?? { standard: Infinity }
+      console.log('[handleWeaponConfirm] campaign inventory:', campaignInventory)
+      actions.setWeaponAmmo({
+        ...campaignInventory,
+        standard: Infinity,
+      })
+
+      // AI shopping phase - each AI buys weapons
+      performAIShopping()
+
+      // Initialize game with campaign participants
+      initializeCampaignGame()
+    } else {
+      // Free play mode: use user inventory
+      const freshInventory = getWeaponInventory() ?? { standard: Infinity }
+      console.log('[handleWeaponConfirm] free play inventory from localStorage:', freshInventory)
+      actions.setWeaponAmmo({
+        ...freshInventory,
+        standard: Infinity,
+      })
+    }
+
     actions.setSelectedWeapon(weapon)
     // Generate initial wind for the game
     actions.setWind(generateInitialWind())
     actions.setPhase('playing')
   }
 
+  // Perform AI shopping for campaign mode
+  const performAIShopping = () => {
+    const aiParticipants = getAIParticipants()
+    for (const aiParticipant of aiParticipants) {
+      const purchases = decideAIPurchases(
+        aiParticipant.currentLevel,
+        aiParticipant.balance,
+        aiParticipant.weaponInventory
+      )
+      for (const purchase of purchases) {
+        campaignPurchaseWeapon(aiParticipant.id, purchase.weaponType)
+      }
+    }
+  }
+
+  // Initialize game with campaign participant inventories
+  const initializeCampaignGame = () => {
+    if (!campaign) return
+
+    // Reset AI state for new game
+    resetAIState()
+
+    // Get terrain dimensions from campaign config
+    const terrainConfig = TERRAIN_SIZES[campaign.config.terrainSize]
+
+    // Initialize game with terrain and tanks
+    const { terrain, tanks } = initializeGame({
+      canvasWidth: terrainConfig.width,
+      canvasHeight: terrainConfig.height,
+      playerColor: campaign.config.playerColor,
+      enemyCount: campaign.config.enemyCount,
+    })
+
+    // Set terrain and tanks in game state
+    actions.setTerrain(terrain)
+    actions.initializeTanks(tanks)
+  }
+
   const handlePlayAgain = () => {
-    // Reset game state and go directly to config screen (skip loading/name entry)
-    actions.resetToConfig()
+    if (isCampaignMode) {
+      // Campaign mode: abandon and go to loading screen
+      abandonCampaign()
+      actions.resetGame()
+    } else {
+      // Free play mode: go directly to config screen
+      actions.resetToConfig()
+    }
+  }
+
+  // Handle continuing from campaign leaderboard
+  const handleCampaignContinue = () => {
+    if (isCampaignComplete()) {
+      // Campaign is finished - abandon and go to loading screen
+      abandonCampaign()
+      actions.resetGame()
+    } else {
+      // Advance to next game
+      advanceToNextGame()
+
+      // Reset game state but keep campaign config, go to weapon shop
+      actions.resetToCampaignWeaponShop()
+    }
   }
 
   // In simultaneous mode, player always controls their own tank
@@ -556,6 +756,15 @@ function App() {
             const victimName = tank.id === 'player' ? 'Player' : `AI (${tank.color})`
             const moneyEarned = proj.tankId === 'player' ? calculateKillReward(state.aiDifficulty) : 0
             console.log(`[Kill] ${attackerName} destroyed ${victimName}${moneyEarned > 0 ? ` - Earned $${moneyEarned}` : ''}`)
+
+            // Record kill/death in campaign mode
+            if (isCampaignMode) {
+              recordKill(proj.tankId)
+              recordDeath(tank.id)
+              // Track kills for game earnings calculation
+              const currentKills = gameKillsRef.current.get(proj.tankId) ?? 0
+              gameKillsRef.current.set(proj.tankId, currentKills + 1)
+            }
 
             // Create money animation if player earned money from this kill
             if (moneyEarned > 0) {
@@ -833,7 +1042,13 @@ function App() {
   }
 
   if (state.phase === 'loading') {
-    return <LoadingScreen onStart={handleStartGame} />
+    return (
+      <LoadingScreen
+        onFreePlay={handleFreePlay}
+        onNewCampaign={handleNewCampaign}
+        onResumeCampaign={handleResumeCampaign}
+      />
+    )
   }
 
   if (state.phase === 'playerName') {
@@ -847,13 +1062,26 @@ function App() {
   if (state.phase === 'weaponShop') {
     return (
       <div className="app weapon-shop-screen">
-        <WeaponShop onConfirm={handleWeaponConfirm} />
+        <WeaponShop onConfirm={handleWeaponConfirm} campaignMode={isCampaignMode} />
       </div>
     )
   }
 
   if (state.phase === 'gameover') {
     return <GameOverScreen winner={state.winner} onPlayAgain={handlePlayAgain} />
+  }
+
+  if (state.phase === 'campaignLeaderboard' && campaign) {
+    const player = getPlayer()
+    return (
+      <CampaignLeaderboard
+        participants={campaign.participants}
+        currentGame={getCurrentGame()}
+        totalGames={getTotalGames()}
+        onContinue={handleCampaignContinue}
+        playerId={player?.id}
+      />
+    )
   }
 
   // Get canvas dimensions from selected terrain size

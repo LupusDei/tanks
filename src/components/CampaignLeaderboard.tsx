@@ -1,5 +1,5 @@
 import { AI_DIFFICULTY_CONFIGS, getChevronCount, getStarCount } from '../engine/ai';
-import type { CampaignParticipant, CampaignLength, AIDifficulty } from '../types/game';
+import type { CampaignParticipant, AIDifficulty } from '../types/game';
 import { MagnetizeButton } from './MagnetizeButton';
 import './CampaignLeaderboard.css';
 
@@ -9,7 +9,7 @@ interface CampaignLeaderboardProps {
   /** Current game number (1-indexed) */
   currentGame: number;
   /** Total number of games in campaign */
-  totalGames: CampaignLength;
+  totalGames: number;
   /** Callback when Continue button is clicked */
   onContinue: () => void;
   /** ID of the player participant for highlighting */

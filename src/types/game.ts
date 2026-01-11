@@ -3,7 +3,7 @@ import type { WeaponType, DestructionCategory } from '../engine/weapons';
 // Re-export WeaponType and DestructionCategory for convenience
 export type { WeaponType, DestructionCategory };
 
-export type GamePhase = 'loading' | 'playerName' | 'config' | 'weaponShop' | 'playing' | 'gameover';
+export type GamePhase = 'loading' | 'playerName' | 'config' | 'weaponShop' | 'playing' | 'gameover' | 'campaignLeaderboard';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple' | 'cyan' | 'pink' | 'white' | 'brown';
 
@@ -113,6 +113,7 @@ export interface GameActions {
   setWinner: (tankId: string) => void;
   resetGame: () => void;
   resetToConfig: () => void;
+  resetToCampaignWeaponShop: () => void;
   setPlayerColor: (color: TankColor) => void;
   setAIDifficulty: (difficulty: AIDifficulty) => void;
   setTerrainSize: (size: TerrainSize) => void;

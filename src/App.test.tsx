@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import App from './App'
 import { GameProvider } from './context/GameContext'
 import { UserProvider } from './context/UserContext'
+import { CampaignProvider } from './context/CampaignContext'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -26,7 +27,9 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
 function renderWithProvider(ui: React.ReactElement) {
   return render(
     <UserProvider>
-      <GameProvider>{ui}</GameProvider>
+      <CampaignProvider>
+        <GameProvider>{ui}</GameProvider>
+      </CampaignProvider>
     </UserProvider>
   )
 }

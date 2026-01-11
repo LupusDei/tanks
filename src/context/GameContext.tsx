@@ -157,6 +157,19 @@ export function GameProvider({ children }: GameProviderProps) {
     });
   }, []);
 
+  // Reset game state but go to weapon shop (for campaign mode - keeps locked config)
+  const resetToCampaignWeaponShop = useCallback(() => {
+    setState((prev) => ({
+      ...initialState,
+      phase: 'weaponShop',
+      // Preserve campaign-locked configuration
+      terrainSize: prev.terrainSize,
+      enemyCount: prev.enemyCount,
+      playerColor: prev.playerColor,
+      aiDifficulty: prev.aiDifficulty,
+    }));
+  }, []);
+
   const setPlayerColor = useCallback((color: TankColor) => {
     setState((prev) => ({ ...prev, playerColor: color }));
   }, []);
@@ -218,6 +231,7 @@ export function GameProvider({ children }: GameProviderProps) {
     setWinner,
     resetGame,
     resetToConfig,
+    resetToCampaignWeaponShop,
     setPlayerColor,
     setAIDifficulty,
     setTerrainSize,

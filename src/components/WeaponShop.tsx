@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
+import { useCampaign } from '../context/CampaignContext';
 import {
   type WeaponType,
   WEAPON_TYPES,
@@ -9,10 +10,41 @@ import {
 interface WeaponShopProps {
   onConfirm: (weapon: WeaponType) => void;
   onCancel?: () => void;
+  /** Whether this is a campaign mode shop (uses campaign balance) */
+  campaignMode?: boolean;
 }
 
-export function WeaponShop({ onConfirm, onCancel }: WeaponShopProps) {
-  const { balance, purchaseWeapon, getWeaponCount } = useUser();
+export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: WeaponShopProps) {
+  const { balance: userBalance, purchaseWeapon: userPurchaseWeapon, getWeaponCount: userGetWeaponCount } = useUser();
+  const { getPlayer, purchaseWeapon: campaignPurchaseWeapon } = useCampaign();
+
+  // Get balance and weapon functions based on mode
+  const player = campaignMode ? getPlayer() : null;
+  const balance = campaignMode ? (player?.balance ?? 0) : userBalance;
+
+  // In campaign mode, use campaign weapon inventory; otherwise use user inventory
+  const getWeaponCount = useCallback((weaponType: WeaponType): number => {
+    if (campaignMode && player) {
+      return player.weaponInventory[weaponType] ?? 0;
+    }
+    return userGetWeaponCount(weaponType);
+  }, [campaignMode, player, userGetWeaponCount]);
+
+  // Purchase weapon using appropriate method
+  const purchaseWeapon = useCallback((weaponType: WeaponType, qty: number): boolean => {
+    if (campaignMode && player) {
+      // Campaign mode: purchase for campaign participant
+      let success = true;
+      for (let i = 0; i < qty; i++) {
+        if (!campaignPurchaseWeapon(player.id, weaponType)) {
+          success = false;
+          break;
+        }
+      }
+      return success;
+    }
+    return userPurchaseWeapon(weaponType, qty);
+  }, [campaignMode, player, campaignPurchaseWeapon, userPurchaseWeapon]);
 
   // Track quantities to purchase for each weapon type
   const [purchaseQtys, setPurchaseQtys] = useState<Partial<Record<WeaponType, number>>>({});
