@@ -17,6 +17,7 @@ import { useUser } from './context/UserContext'
 import { useCampaign } from './context/CampaignContext'
 import {
   initializeGame,
+  applyArmorToTanks,
   renderTank,
   createProjectileState,
   getProjectilePosition,
@@ -66,7 +67,7 @@ import {
   type MoneyAnimationState,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, AIDifficulty, CampaignLength } from './types/game'
-import { getWeaponInventory, loadActiveCampaign } from './services/userDatabase'
+import { getWeaponInventory, getArmorInventory, loadActiveCampaign } from './services/userDatabase'
 import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings } from './engine/ai'
 
 interface GameConfig {
@@ -83,7 +84,7 @@ const TANK_WHEEL_RADIUS = 6
 
 function App() {
   const { state, actions } = useGame()
-  const { userData, createNewUser, recordGame, consumeWeapon } = useUser()
+  const { userData, createNewUser, recordGame, consumeWeapon, clearArmor } = useUser()
   const {
     campaign,
     isCampaignMode,
@@ -102,6 +103,7 @@ function App() {
     isCampaignComplete,
     getCurrentGame,
     getTotalGames,
+    clearAllArmor,
   } = useCampaign()
 
   // Array of active projectiles for simultaneous firing
@@ -143,6 +145,9 @@ function App() {
           }
         }
 
+        // Clear armor for all campaign participants (armor is consumed after each game)
+        clearAllArmor()
+
         // Transition to campaign leaderboard
         actions.setPhase('campaignLeaderboard')
       } else {
@@ -161,6 +166,9 @@ function App() {
           turnsPlayed: state.currentTurn,
           playerColor: state.playerColor!,
         })
+
+        // Clear armor (armor is consumed after each game)
+        clearArmor()
       }
     }
 
@@ -169,7 +177,7 @@ function App() {
       gameRecordedRef.current = false
       gameKillsRef.current.clear()
     }
-  }, [state.phase, state.winner, state.tanks, state.enemyCount, state.terrainSize, state.aiDifficulty, state.currentTurn, state.playerColor, recordGame, isCampaignMode, recordGameEnd, campaign, updateBalance, actions])
+  }, [state.phase, state.winner, state.tanks, state.enemyCount, state.terrainSize, state.aiDifficulty, state.currentTurn, state.playerColor, recordGame, isCampaignMode, recordGameEnd, campaign, updateBalance, actions, clearArmor, clearAllArmor])
 
   // Track whether AI tanks are currently processing their shots
   const aiProcessingRef = useRef(false)
@@ -507,7 +515,7 @@ function App() {
       // AI shopping phase - each AI buys weapons
       performAIShopping()
 
-      // Initialize game with campaign participants
+      // Initialize game with campaign participants (includes armor application)
       initializeCampaignGame()
     } else {
       // Free play mode: use user inventory
@@ -517,6 +525,14 @@ function App() {
         ...freshInventory,
         standard: Infinity,
       })
+
+      // Apply armor to player tank (only player has armor in free play)
+      const playerArmor = getArmorInventory()
+      if (Object.keys(playerArmor).length > 0) {
+        const armorMap = new Map([['player', playerArmor]])
+        const tanksWithArmor = applyArmorToTanks(state.tanks, armorMap)
+        actions.initializeTanks(tanksWithArmor)
+      }
     }
 
     actions.setSelectedWeapon(weapon)
@@ -542,25 +558,46 @@ function App() {
 
   // Initialize game with campaign participant inventories
   const initializeCampaignGame = () => {
-    if (!campaign) return
+    // Re-read campaign from localStorage for fresh data
+    const freshCampaign = loadActiveCampaign()
+    if (!freshCampaign) return
 
     // Reset AI state for new game
     resetAIState()
 
     // Get terrain dimensions from campaign config
-    const terrainConfig = TERRAIN_SIZES[campaign.config.terrainSize]
+    const terrainConfig = TERRAIN_SIZES[freshCampaign.config.terrainSize]
 
     // Initialize game with terrain and tanks
     const { terrain, tanks } = initializeGame({
       canvasWidth: terrainConfig.width,
       canvasHeight: terrainConfig.height,
-      playerColor: campaign.config.playerColor,
-      enemyCount: campaign.config.enemyCount,
+      playerColor: freshCampaign.config.playerColor,
+      enemyCount: freshCampaign.config.enemyCount,
     })
+
+    // Build armor map from campaign participants
+    // Map tank IDs to their armor inventories
+    const armorMap = new Map<string, typeof freshCampaign.participants[0]['armorInventory']>()
+
+    // Player tank ID is 'player', AI tank IDs are 'enemy-1', 'enemy-2', etc.
+    const player = freshCampaign.participants.find(p => p.isPlayer)
+    if (player) {
+      armorMap.set('player', player.armorInventory ?? {})
+    }
+
+    // AI participants - match by index (enemy-1, enemy-2, etc.)
+    const aiParticipants = freshCampaign.participants.filter(p => !p.isPlayer)
+    aiParticipants.forEach((ai, index) => {
+      armorMap.set(`enemy-${index + 1}`, ai.armorInventory ?? {})
+    })
+
+    // Apply armor to all tanks
+    const tanksWithArmor = applyArmorToTanks(tanks, armorMap)
 
     // Set terrain and tanks in game state
     actions.setTerrain(terrain)
-    actions.initializeTanks(tanks)
+    actions.initializeTanks(tanksWithArmor)
   }
 
   const handlePlayAgain = () => {
@@ -754,7 +791,9 @@ function App() {
           // Check if this damage will kill the tank
           const willKill = tank.health > 0 && tank.health - damage <= 0
 
-          actions.damageTank(tank.id, damage, proj.weaponType)
+          // Explosion damage is splash damage (not direct hit)
+          // Energy shield absorbs splash damage unless it's EMP
+          actions.damageTank(tank.id, damage, proj.weaponType, false)
 
           // Apply stun effect for EMP weapons (only if tank is still alive)
           if (weaponConfig.stunTurns && weaponConfig.stunTurns > 0 && !willKill) {

@@ -1668,6 +1668,137 @@ p {
   text-align: center;
 }
 
+/* Armory Section Titles */
+.weapon-shop__section-title {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #00ff88;
+  margin: 0.8rem 0 0.4rem 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #444;
+}
+
+.weapon-shop__section-title:first-of-type {
+  margin-top: 0.3rem;
+}
+
+/* Armor Section Styles */
+.weapon-shop__armor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.weapon-shop__armor-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.5rem 0.6rem;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.weapon-shop__armor-item:hover {
+  border-color: #666;
+  background: #333;
+}
+
+.weapon-shop__armor-item--selected {
+  border-color: #4488ff;
+  background: rgba(68, 136, 255, 0.1);
+  box-shadow: 0 0 10px rgba(68, 136, 255, 0.2);
+}
+
+.weapon-shop__armor-item--owned {
+  border-color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+  opacity: 0.8;
+}
+
+.weapon-shop__armor-item--unaffordable {
+  opacity: 0.5;
+}
+
+.weapon-shop__armor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.weapon-shop__armor-name {
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.weapon-shop__armor-cost {
+  font-family: monospace;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #ffcc00;
+}
+
+.weapon-shop__armor-description {
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #888;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.weapon-shop__armor-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.3rem;
+}
+
+.weapon-shop__armor-btn {
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 0.25rem 0.6rem;
+  background: #444;
+  color: #fff;
+  border: 1px solid #666;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.weapon-shop__armor-btn:hover:not(:disabled) {
+  background: #555;
+  border-color: #888;
+}
+
+.weapon-shop__armor-btn--selected {
+  background: #4488ff;
+  border-color: #66aaff;
+}
+
+.weapon-shop__armor-btn--selected:hover {
+  background: #3377ee;
+}
+
+.weapon-shop__armor-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.weapon-shop__armor-owned-badge {
+  font-family: monospace;
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #00ff88;
+}
+
 /* Weapon Shop Summary Section */
 .weapon-shop__summary {
   background: rgba(0, 0, 0, 0.3);

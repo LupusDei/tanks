@@ -2,6 +2,29 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { GameProvider } from './GameContext';
 import { useGame } from './useGame';
+import type { TankState } from '../types/game';
+
+// Helper to create a mock tank with all required fields
+function createMockTank(overrides: Partial<TankState> = {}): TankState {
+  return {
+    id: 'test',
+    position: { x: 100, y: 200 },
+    health: 100,
+    maxHealth: 100,
+    shieldHp: 0,
+    maxShieldHp: 0,
+    armorType: null,
+    angle: 45,
+    power: 50,
+    color: '#ff0000',
+    isActive: true,
+    queuedShot: null,
+    isReady: false,
+    killedByWeapon: null,
+    stunTurnsRemaining: 0,
+    ...overrides,
+  };
+}
 
 describe('GameContext', () => {
   it('provides initial game state', () => {
@@ -43,19 +66,7 @@ describe('GameContext', () => {
       wrapper: GameProvider,
     });
 
-    const mockTank = {
-      id: 'tank1',
-      position: { x: 100, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#ff0000',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
+    const mockTank = createMockTank({ id: 'tank1' });
 
     // Initially there are no tanks
     expect(result.current.state.tanks).toEqual([]);
@@ -75,33 +86,8 @@ describe('GameContext', () => {
       wrapper: GameProvider,
     });
 
-    const tank1 = {
-      id: 'tank1',
-      position: { x: 100, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#ff0000',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
-
-    const tank2 = {
-      id: 'tank2',
-      position: { x: 300, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#0000ff',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
+    const tank1 = createMockTank({ id: 'tank1' });
+    const tank2 = createMockTank({ id: 'tank2', position: { x: 300, y: 200 }, color: '#0000ff' });
 
     act(() => {
       result.current.actions.initializeTanks([tank1, tank2]);
@@ -120,33 +106,8 @@ describe('GameContext', () => {
       wrapper: GameProvider,
     });
 
-    const tank1 = {
-      id: 'tank1',
-      position: { x: 100, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#ff0000',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
-
-    const tank2 = {
-      id: 'tank2',
-      position: { x: 300, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#0000ff',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
+    const tank1 = createMockTank({ id: 'tank1' });
+    const tank2 = createMockTank({ id: 'tank2', position: { x: 300, y: 200 }, color: '#0000ff' });
 
     act(() => {
       result.current.actions.initializeTanks([tank1, tank2]);
@@ -166,33 +127,8 @@ describe('GameContext', () => {
       wrapper: GameProvider,
     });
 
-    const tank1 = {
-      id: 'tank1',
-      position: { x: 100, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#ff0000',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
-
-    const tank2 = {
-      id: 'tank2',
-      position: { x: 300, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#0000ff',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
+    const tank1 = createMockTank({ id: 'tank1' });
+    const tank2 = createMockTank({ id: 'tank2', position: { x: 300, y: 200 }, color: '#0000ff' });
 
     act(() => {
       result.current.actions.initializeTanks([tank1, tank2]);
@@ -213,33 +149,8 @@ describe('GameContext', () => {
       wrapper: GameProvider,
     });
 
-    const tank1 = {
-      id: 'tank1',
-      position: { x: 100, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#ff0000',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
-
-    const tank2 = {
-      id: 'tank2',
-      position: { x: 300, y: 200 },
-      health: 100,
-      angle: 45,
-      power: 50,
-      color: '#0000ff',
-      isActive: true,
-      queuedShot: null,
-      isReady: false,
-      killedByWeapon: null,
-      stunTurnsRemaining: 0,
-    };
+    const tank1 = createMockTank({ id: 'tank1' });
+    const tank2 = createMockTank({ id: 'tank2', position: { x: 300, y: 200 }, color: '#0000ff' });
 
     act(() => {
       result.current.actions.initializeTanks([tank1, tank2]);

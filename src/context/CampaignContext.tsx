@@ -6,6 +6,7 @@ import type {
   CampaignConfig,
   AIDifficulty,
   WeaponType,
+  ArmorType,
 } from '../types/game';
 import {
   loadActiveCampaign,
@@ -18,9 +19,12 @@ import {
   purchaseCampaignWeapon,
   consumeCampaignWeapon,
   updateCampaignParticipantBalance,
+  purchaseCampaignArmor,
+  hasCampaignArmor,
+  clearAllCampaignArmor,
 } from '../services/userDatabase';
 import { getRandomGeneralNames } from '../data/legendaryGenerals';
-import { WEAPONS } from '../engine/weapons';
+import { WEAPONS, ARMORS } from '../engine/weapons';
 
 interface CampaignContextValue {
   /** The current campaign state, or null if not in campaign mode */
@@ -61,6 +65,14 @@ interface CampaignContextValue {
   purchaseWeapon: (participantId: string, weaponType: WeaponType) => boolean;
   /** Use a weapon from a participant's inventory. Returns true if successful */
   useWeapon: (participantId: string, weaponType: WeaponType) => boolean;
+
+  // Armor actions
+  /** Purchase armor for a participant. Returns true if successful */
+  purchaseArmor: (participantId: string, armorType: ArmorType) => boolean;
+  /** Check if a participant owns specific armor */
+  hasArmor: (participantId: string, armorType: ArmorType) => boolean;
+  /** Clear all armor from all participants (called after each game) */
+  clearAllArmor: () => void;
 
   // Campaign status
   /** Check if the campaign is complete */
@@ -203,6 +215,32 @@ export function CampaignProvider({ children }: { children: React.ReactNode }) {
     return success;
   }, []);
 
+  const purchaseArmorCallback = useCallback((participantId: string, armorType: ArmorType): boolean => {
+    const armor = ARMORS[armorType];
+    const success = purchaseCampaignArmor(participantId, armorType, armor.cost);
+    if (success) {
+      // Reload campaign state to reflect changes
+      const updated = loadActiveCampaign();
+      if (updated) {
+        setCampaign(updated);
+      }
+    }
+    return success;
+  }, []);
+
+  const hasArmorCallback = useCallback((participantId: string, armorType: ArmorType): boolean => {
+    return hasCampaignArmor(participantId, armorType);
+  }, []);
+
+  const clearAllArmorCallback = useCallback(() => {
+    clearAllCampaignArmor();
+    // Reload campaign state to reflect changes
+    const updated = loadActiveCampaign();
+    if (updated) {
+      setCampaign(updated);
+    }
+  }, []);
+
   const isCampaignCompleteCallback = useCallback((): boolean => {
     if (!campaign) return false;
     return campaign.currentGame > campaign.length;
@@ -233,6 +271,9 @@ export function CampaignProvider({ children }: { children: React.ReactNode }) {
     updateBalance,
     purchaseWeapon: purchaseWeaponCallback,
     useWeapon: useWeaponCallback,
+    purchaseArmor: purchaseArmorCallback,
+    hasArmor: hasArmorCallback,
+    clearAllArmor: clearAllArmorCallback,
     isCampaignComplete: isCampaignCompleteCallback,
     getCurrentGame,
     getTotalGames,

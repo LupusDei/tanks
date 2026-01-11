@@ -55,7 +55,8 @@
       "Bash(git fetch:*)",
       "Bash(git merge-base:*)",
       "Skill(beads:epic)",
-      "Bash(bd epic add:*)"
+      "Bash(bd epic add:*)",
+      "Bash(bd label:*)"
     ]
   }
 }

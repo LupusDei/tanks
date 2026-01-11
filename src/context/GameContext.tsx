@@ -81,18 +81,41 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, terrain }));
   }, []);
 
-  const damageTank = useCallback((tankId: string, damage: number, weaponType?: WeaponType) => {
+  const damageTank = useCallback((tankId: string, damage: number, weaponType?: WeaponType, isDirectHit?: boolean) => {
     setState((prev) => {
       const updatedTanks = prev.tanks.map((tank) => {
         if (tank.id !== tankId) return tank;
 
-        const newHealth = Math.max(0, tank.health - damage);
+        let remainingDamage = damage;
+        let newShieldHp = tank.shieldHp;
+        let newHealth = tank.health;
+
+        // EMP completely destroys shields (in addition to its normal damage and stun)
+        if (weaponType === 'emp') {
+          newShieldHp = 0;
+        }
+
+        // Shield only absorbs splash/explosion damage, not direct hits
+        // Shield also doesn't apply to EMP (EMP destroys shield and damages through it)
+        const shieldApplies = !isDirectHit && weaponType !== 'emp' && newShieldHp > 0;
+
+        if (shieldApplies) {
+          // Shield absorbs damage first
+          const shieldAbsorption = Math.min(newShieldHp, remainingDamage);
+          newShieldHp -= shieldAbsorption;
+          remainingDamage -= shieldAbsorption;
+        }
+
+        // Apply remaining damage to health
+        newHealth = Math.max(0, tank.health - remainingDamage);
+
         const wasAlive = tank.health > 0;
         const nowDead = newHealth <= 0;
 
         return {
           ...tank,
           health: newHealth,
+          shieldHp: newShieldHp,
           // Track the killing weapon if this damage killed the tank
           killedByWeapon: wasAlive && nowDead && weaponType ? weaponType : tank.killedByWeapon,
         };

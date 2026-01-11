@@ -102,6 +102,7 @@ describe('userDatabase', () => {
         stats: { gamesPlayed: 0, gamesWon: 0, gamesLost: 0, totalKills: 0, winRate: 0, balance: STARTING_MONEY },
         recentGames: [],
         weaponInventory: { standard: Infinity },
+        armorInventory: {},
       };
 
       saveUserData(mockData);
@@ -666,6 +667,7 @@ describe('userDatabase', () => {
         stats: { gamesPlayed: 10, gamesWon: 5, gamesLost: 5, totalKills: 15, winRate: 50, balance: 2000 },
         recentGames: [],
         weaponInventory: { standard: Infinity, heavy_artillery: 3 },
+        armorInventory: {},
       };
       localStorageMock.setItem('tanks_user_data', JSON.stringify(legacyData));
 

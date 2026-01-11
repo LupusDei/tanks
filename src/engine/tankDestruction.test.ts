@@ -14,6 +14,10 @@ function createMockTank(overrides: Partial<TankState> = {}): TankState {
     id: 'test-tank',
     position: { x: 400, y: 100 },
     health: 0, // Dead tank
+    maxHealth: 100,
+    shieldHp: 0,
+    maxShieldHp: 0,
+    armorType: null,
     angle: 45,
     power: 50,
     color: 'red',

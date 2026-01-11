@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import type { UserData, UserStats, WeaponInventory, WeaponType } from '../types/game';
+import type { UserData, UserStats, WeaponInventory, WeaponType, ArmorInventory, ArmorType } from '../types/game';
 import {
   loadUserData,
   createUser,
@@ -9,9 +9,11 @@ import {
   spendMoney,
   addWeapon,
   removeWeapon,
+  purchaseArmor as purchaseArmorDb,
+  clearArmorInventory,
   type GameEndParams,
 } from '../services/userDatabase';
-import { getWeaponConfig } from '../engine/weapons';
+import { getWeaponConfig, getArmorConfig } from '../engine/weapons';
 
 interface UserContextValue {
   userData: UserData | null;
@@ -20,6 +22,7 @@ interface UserContextValue {
   username: string | null;
   balance: number;
   weaponInventory: WeaponInventory;
+  armorInventory: ArmorInventory;
   createNewUser: (username: string) => void;
   changeUsername: (newUsername: string) => void;
   recordGame: (params: GameEndParams) => void;
@@ -28,6 +31,9 @@ interface UserContextValue {
   purchaseWeapon: (weaponType: WeaponType, quantity: number) => boolean;
   consumeWeapon: (weaponType: WeaponType) => boolean;
   getWeaponCount: (weaponType: WeaponType) => number;
+  purchaseArmor: (armorType: ArmorType) => boolean;
+  hasArmor: (armorType: ArmorType) => boolean;
+  clearArmor: () => void;
 }
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -136,8 +142,35 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return userData?.weaponInventory?.[weaponType] ?? 0;
   }, [userData]);
 
+  const purchaseArmorFn = useCallback((armorType: ArmorType): boolean => {
+    const armor = getArmorConfig(armorType);
+    const success = purchaseArmorDb(armorType, armor.cost);
+    if (success) {
+      // Reload user data to get updated state
+      const updated = loadUserData();
+      if (updated) {
+        setUserData(updated);
+      }
+    }
+    return success;
+  }, []);
+
+  const hasArmorFn = useCallback((armorType: ArmorType): boolean => {
+    return userData?.armorInventory?.[armorType] === true;
+  }, [userData]);
+
+  const clearArmorFn = useCallback(() => {
+    clearArmorInventory();
+    // Reload user data to get updated state
+    const updated = loadUserData();
+    if (updated) {
+      setUserData(updated);
+    }
+  }, []);
+
   // Get weapon inventory with fallback
   const currentInventory: WeaponInventory = userData?.weaponInventory ?? { standard: Infinity };
+  const currentArmorInventory: ArmorInventory = userData?.armorInventory ?? {};
 
   const value: UserContextValue = {
     userData,
@@ -146,6 +179,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     username: userData?.profile.username ?? null,
     balance: userData?.stats.balance ?? 0,
     weaponInventory: currentInventory,
+    armorInventory: currentArmorInventory,
     createNewUser,
     changeUsername,
     recordGame,
@@ -154,6 +188,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     purchaseWeapon,
     consumeWeapon,
     getWeaponCount: getWeaponCountFn,
+    purchaseArmor: purchaseArmorFn,
+    hasArmor: hasArmorFn,
+    clearArmor: clearArmorFn,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

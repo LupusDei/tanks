@@ -27,6 +27,10 @@ const createMockTank = (overrides: Partial<TankState> = {}): TankState => ({
   id: 'test-tank',
   position: { x: 100, y: 200 }, // World coordinates
   health: 100,
+  maxHealth: 100,
+  shieldHp: 0,
+  maxShieldHp: 0,
+  armorType: null,
   angle: -45, // UI angle: 45° right of up (aiming toward right)
   power: 50,
   color: 'red',

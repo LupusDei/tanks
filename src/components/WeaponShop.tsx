@@ -5,7 +5,9 @@ import {
   type WeaponType,
   WEAPON_TYPES,
   WEAPONS,
+  ARMORS,
 } from '../engine/weapons';
+import { ARMOR_TYPES, type ArmorType } from '../types/game';
 
 interface WeaponShopProps {
   onConfirm: (weapon: WeaponType) => void;
@@ -15,8 +17,19 @@ interface WeaponShopProps {
 }
 
 export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: WeaponShopProps) {
-  const { balance: userBalance, purchaseWeapon: userPurchaseWeapon, getWeaponCount: userGetWeaponCount } = useUser();
-  const { getPlayer, purchaseWeapon: campaignPurchaseWeapon } = useCampaign();
+  const {
+    balance: userBalance,
+    purchaseWeapon: userPurchaseWeapon,
+    getWeaponCount: userGetWeaponCount,
+    purchaseArmor: userPurchaseArmor,
+    hasArmor: userHasArmor,
+  } = useUser();
+  const {
+    getPlayer,
+    purchaseWeapon: campaignPurchaseWeapon,
+    purchaseArmor: campaignPurchaseArmor,
+    hasArmor: campaignHasArmor,
+  } = useCampaign();
 
   // Get balance and weapon functions based on mode
   const player = campaignMode ? getPlayer() : null;
@@ -46,17 +59,46 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
     return userPurchaseWeapon(weaponType, qty);
   }, [campaignMode, player, campaignPurchaseWeapon, userPurchaseWeapon]);
 
+  // Check if armor is already owned
+  const hasArmor = useCallback((armorType: ArmorType): boolean => {
+    if (campaignMode && player) {
+      return campaignHasArmor(player.id, armorType);
+    }
+    return userHasArmor(armorType);
+  }, [campaignMode, player, campaignHasArmor, userHasArmor]);
+
+  // Purchase armor using appropriate method
+  const purchaseArmor = useCallback((armorType: ArmorType): boolean => {
+    if (campaignMode && player) {
+      return campaignPurchaseArmor(player.id, armorType);
+    }
+    return userPurchaseArmor(armorType);
+  }, [campaignMode, player, campaignPurchaseArmor, userPurchaseArmor]);
+
   // Track quantities to purchase for each weapon type
   const [purchaseQtys, setPurchaseQtys] = useState<Partial<Record<WeaponType, number>>>({});
 
-  // Calculate total cost of all pending purchases
+  // Track armor selections (true = selected for purchase)
+  const [armorSelections, setArmorSelections] = useState<Partial<Record<ArmorType, boolean>>>({});
+
+  // Calculate total cost of all pending purchases (weapons + armor)
   const totalCost = useMemo(() => {
-    return Object.entries(purchaseQtys).reduce((sum, [weaponType, qty]) => {
+    // Sum weapon costs
+    const weaponCost = Object.entries(purchaseQtys).reduce((sum, [weaponType, qty]) => {
       if (!qty || qty <= 0) return sum;
       const weapon = WEAPONS[weaponType as WeaponType];
       return sum + weapon.cost * qty;
     }, 0);
-  }, [purchaseQtys]);
+
+    // Sum armor costs
+    const armorCost = Object.entries(armorSelections).reduce((sum, [armorType, selected]) => {
+      if (!selected) return sum;
+      const armor = ARMORS[armorType as ArmorType];
+      return sum + armor.cost;
+    }, 0);
+
+    return weaponCost + armorCost;
+  }, [purchaseQtys, armorSelections]);
 
   // Calculate balance after purchase
   const balanceAfter = balance - totalCost;
@@ -107,6 +149,29 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
     }));
   };
 
+  // Check if armor can be afforded
+  const canAffordArmor = (armorType: ArmorType): boolean => {
+    const armor = ARMORS[armorType];
+    return balanceAfter >= armor.cost;
+  };
+
+  // Toggle armor selection
+  const handleArmorToggle = (armorType: ArmorType) => {
+    const isCurrentlySelected = armorSelections[armorType] ?? false;
+    const isOwned = hasArmor(armorType);
+
+    // Can't toggle if already owned
+    if (isOwned) return;
+
+    // Can't select if can't afford (unless deselecting)
+    if (!isCurrentlySelected && !canAffordArmor(armorType)) return;
+
+    setArmorSelections(prev => ({
+      ...prev,
+      [armorType]: !isCurrentlySelected,
+    }));
+  };
+
   const handleConfirm = () => {
     // Purchase all selected weapons
     for (const [weaponType, qty] of Object.entries(purchaseQtys)) {
@@ -120,6 +185,17 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
       }
     }
 
+    // Purchase all selected armor
+    for (const [armorType, selected] of Object.entries(armorSelections)) {
+      if (selected) {
+        const success = purchaseArmor(armorType as ArmorType);
+        if (!success) {
+          console.error(`Failed to purchase armor ${armorType}`);
+          return;
+        }
+      }
+    }
+
     // Proceed with standard weapon as default selection
     onConfirm('standard');
   };
@@ -128,10 +204,12 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
 
   return (
     <div className="weapon-shop" data-testid="weapon-shop">
-      {/* Main content area with title and scrollable weapons */}
+      {/* Main content area with title and scrollable items */}
       <div className="weapon-shop__main">
-        <h2 className="weapon-shop__title">Weapon Shop</h2>
+        <h2 className="weapon-shop__title">Armory</h2>
 
+        {/* Weapons Section */}
+        <h3 className="weapon-shop__section-title">Weapons</h3>
         <div className="weapon-shop__weapons">
           {WEAPON_TYPES.map((weaponType) => {
             const weapon = WEAPONS[weaponType];
@@ -191,6 +269,45 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
                         +
                       </button>
                     </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Armor Section */}
+        <h3 className="weapon-shop__section-title">Armor</h3>
+        <div className="weapon-shop__armor">
+          {ARMOR_TYPES.map((armorType) => {
+            const armor = ARMORS[armorType];
+            const isOwned = hasArmor(armorType);
+            const isSelected = armorSelections[armorType] ?? false;
+            const cantAfford = !isOwned && !isSelected && balance < armor.cost;
+
+            return (
+              <div
+                key={armorType}
+                className={`weapon-shop__armor-item ${isSelected ? 'weapon-shop__armor-item--selected' : ''} ${isOwned ? 'weapon-shop__armor-item--owned' : ''} ${cantAfford ? 'weapon-shop__armor-item--unaffordable' : ''}`}
+                data-testid={`armor-${armorType}`}
+              >
+                <div className="weapon-shop__armor-header">
+                  <span className="weapon-shop__armor-name">{armor.name}</span>
+                  <span className="weapon-shop__armor-cost">${armor.cost}</span>
+                </div>
+                <p className="weapon-shop__armor-description">{armor.description}</p>
+                <div className="weapon-shop__armor-actions">
+                  {isOwned ? (
+                    <span className="weapon-shop__armor-owned-badge">Owned</span>
+                  ) : (
+                    <button
+                      className={`weapon-shop__armor-btn ${isSelected ? 'weapon-shop__armor-btn--selected' : ''}`}
+                      onClick={() => handleArmorToggle(armorType)}
+                      disabled={cantAfford && !isSelected}
+                      data-testid={`armor-btn-${armorType}`}
+                    >
+                      {isSelected ? 'Remove' : 'Add'}
+                    </button>
                   )}
                 </div>
               </div>

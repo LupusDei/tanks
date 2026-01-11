@@ -360,3 +360,96 @@ export function calculateGameEarnings(
     : LOSS_CONSOLATION;
   return killReward + endBonus;
 }
+
+// ============================================================================
+// ARMOR CONFIGURATIONS
+// ============================================================================
+
+import type { ArmorType } from '../types/game';
+
+/**
+ * Configuration for an armor type.
+ */
+export interface ArmorConfig {
+  /** Unique identifier for the armor */
+  id: ArmorType;
+  /** Display name shown in UI */
+  name: string;
+  /** Description of the armor's effects */
+  description: string;
+  /** Cost to purchase */
+  cost: number;
+  /** HP bonus multiplier (0.5 = 50% more HP, 1.0 = 100% more HP) */
+  hpBonus: number;
+  /** Whether this armor provides shield HP instead of regular HP */
+  isShield: boolean;
+  /** Visual layer count for rendering (1 or 2 for plating) */
+  visualLayers: number;
+}
+
+/**
+ * Light Plating - provides 50% more HP.
+ * Shows 1 extra armor layer on tank.
+ */
+export const ARMOR_LIGHT_PLATING: ArmorConfig = {
+  id: 'light_plating',
+  name: 'Light Plating',
+  description: 'Adds 50% more HP. Shows an extra armor layer on your tank.',
+  cost: 200,
+  hpBonus: 0.5,
+  isShield: false,
+  visualLayers: 1,
+};
+
+/**
+ * Heavy Plating - provides 100% more HP.
+ * Shows 2 extra armor layers on tank.
+ */
+export const ARMOR_HEAVY_PLATING: ArmorConfig = {
+  id: 'heavy_plating',
+  name: 'Heavy Plating',
+  description: 'Adds 100% more HP. Shows 2 extra armor layers on your tank.',
+  cost: 350,
+  hpBonus: 1.0,
+  isShield: false,
+  visualLayers: 2,
+};
+
+/**
+ * Energy Shield - provides 100 shield HP that only absorbs explosion/fire damage.
+ * Direct hits bypass the shield. EMP completely destroys shields.
+ * Shows as blue glow around tank with separate blue health bar.
+ */
+export const ARMOR_ENERGY_SHIELD: ArmorConfig = {
+  id: 'energy_shield',
+  name: 'Energy Shield',
+  description: 'Adds 100 shield HP (absorbs explosions/fire only). Direct hits bypass. EMP destroys all shields.',
+  cost: 300,
+  hpBonus: 1.0, // 100 shield HP
+  isShield: true,
+  visualLayers: 0,
+};
+
+/**
+ * All available armors indexed by their type.
+ */
+export const ARMORS: Record<ArmorType, ArmorConfig> = {
+  light_plating: ARMOR_LIGHT_PLATING,
+  heavy_plating: ARMOR_HEAVY_PLATING,
+  energy_shield: ARMOR_ENERGY_SHIELD,
+};
+
+/**
+ * Get armor configuration by type.
+ */
+export function getArmorConfig(armorType: ArmorType): ArmorConfig {
+  return ARMORS[armorType];
+}
+
+/**
+ * Check if a player can afford an armor.
+ */
+export function canAffordArmor(balance: number, armorType: ArmorType): boolean {
+  const armor = getArmorConfig(armorType);
+  return balance >= armor.cost;
+}

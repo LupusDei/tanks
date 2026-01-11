@@ -37,7 +37,13 @@ export {
   type RenderTankOptions,
 } from './tank';
 
-export { initializeGame, type GameInitConfig, type GameInitResult } from './game';
+export {
+  initializeGame,
+  applyArmorToTank,
+  applyArmorToTanks,
+  type GameInitConfig,
+  type GameInitResult,
+} from './game';
 
 export {
   getBarrelTipPosition,

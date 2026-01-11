@@ -14,6 +14,7 @@ const createParticipant = (overrides: Partial<CampaignParticipant> = {}): Campai
   wins: 0,
   currentLevel: 'veteran',
   weaponInventory: { standard: Infinity },
+  armorInventory: {},
   color: 'red',
   ...overrides,
 });

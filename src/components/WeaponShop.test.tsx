@@ -67,7 +67,7 @@ describe('WeaponShop', () => {
       renderWithUser(<WeaponShop onConfirm={onConfirm} />);
 
       expect(screen.getByTestId('weapon-shop')).toBeInTheDocument();
-      expect(screen.getByText('Weapon Shop')).toBeInTheDocument();
+      expect(screen.getByText('Armory')).toBeInTheDocument();
       expect(screen.getByTestId('weapon-shop-balance')).toBeInTheDocument();
       // Balance appears in both balance display and "balance after" summary
       const balanceElements = screen.getAllByText(`$${STARTING_MONEY}`);

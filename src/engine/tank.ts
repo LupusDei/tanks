@@ -63,7 +63,7 @@ export function renderTank(
   options: RenderTankOptions = {}
 ): void {
   const { dimensions = DEFAULT_DIMENSIONS, isCurrentTurn = false, chevronCount = 0, starCount = 0, name } = options;
-  const { position, angle, color, health, stunTurnsRemaining } = tank;
+  const { position, angle, color, health, stunTurnsRemaining, armorType, shieldHp, maxShieldHp } = tank;
   const isStunned = stunTurnsRemaining > 0;
   const { bodyWidth, bodyHeight, turretLength, turretWidth, wheelRadius } = dimensions;
 
@@ -182,6 +182,11 @@ export function renderTank(
 
   // Draw dust/dirt particles around tracks
   renderGroundDust(ctx, bodyWidth, bodyHeight, wheelRadius);
+
+  // Draw Energy Shield glow effect (if equipped)
+  if (shieldHp > 0) {
+    renderShieldGlow(ctx, bodyWidth, bodyHeight, wheelRadius, shieldHp, maxShieldHp);
+  }
 
   // Track assembly - positioned BELOW the hull
   const trackYOffset = bodyHeight / 2 + wheelRadius * 0.5; // Tracks sit below hull
@@ -332,6 +337,12 @@ export function renderTank(
     ctx.fill();
   }
 
+  // Draw armor plating layers (if equipped)
+  const armorLayerCount = armorType === 'heavy_plating' ? 2 : armorType === 'light_plating' ? 1 : 0;
+  if (armorLayerCount > 0) {
+    renderArmorLayers(ctx, armorLayerCount, bodyWidth, bodyHeight);
+  }
+
   // Draw rank insignia on tank body (centered)
   if (chevronCount > 0) {
     renderChevrons(ctx, chevronCount);
@@ -379,20 +390,49 @@ export function renderTank(
   ctx.arc(0, cupolaY, cupolaRadius, Math.PI, 0);
   ctx.fill();
 
-  // Draw health bar if not at full health (positioned above tank)
-  if (health < 100) {
-    const healthBarWidth = bodyWidth;
-    const healthBarHeight = 4;
-    // Position above the dome
-    const healthBarY = turretY - domeRadius - 8;
+  // Draw health bars (positioned above tank)
+  const healthBarWidth = bodyWidth;
+  const healthBarHeight = 4;
+  const hasShield = maxShieldHp > 0;
+  const showHealthBar = health < tank.maxHealth || hasShield;
 
-    // Background
+  if (showHealthBar) {
+    // Position above the dome - if shield exists, stack them
+    const shieldBarY = turretY - domeRadius - 8;
+    const healthBarY = hasShield ? shieldBarY + healthBarHeight + 2 : shieldBarY;
+
+    // Draw shield bar first (above health bar) if tank has shield capability
+    if (hasShield) {
+      // Shield bar background
+      ctx.fillStyle = '#223366';
+      ctx.fillRect(-healthBarWidth / 2, shieldBarY, healthBarWidth, healthBarHeight);
+
+      // Shield bar fill (blue)
+      if (shieldHp > 0) {
+        const shieldPercent = Math.max(0, shieldHp) / maxShieldHp;
+        // Pulsing glow effect for active shield
+        const pulseIntensity = Math.sin(Date.now() * 0.005) * 0.2 + 0.8;
+        ctx.fillStyle = `rgba(68, 136, 255, ${pulseIntensity})`;
+        ctx.fillRect(-healthBarWidth / 2, shieldBarY, healthBarWidth * shieldPercent, healthBarHeight);
+
+        // Shield bar highlight
+        ctx.fillStyle = `rgba(136, 200, 255, ${pulseIntensity * 0.6})`;
+        ctx.fillRect(-healthBarWidth / 2, shieldBarY, healthBarWidth * shieldPercent, 1);
+      }
+
+      // Shield bar border
+      ctx.strokeStyle = '#4488ff';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(-healthBarWidth / 2, shieldBarY, healthBarWidth, healthBarHeight);
+    }
+
+    // Health bar background
     ctx.fillStyle = '#333';
     ctx.fillRect(-healthBarWidth / 2, healthBarY, healthBarWidth, healthBarHeight);
 
     // Health fill
-    const healthPercent = Math.max(0, health) / 100;
-    const healthColor = health > 50 ? '#44ff44' : health > 25 ? '#ffff44' : '#ff4444';
+    const healthPercent = Math.max(0, health) / tank.maxHealth;
+    const healthColor = healthPercent > 0.5 ? '#44ff44' : healthPercent > 0.25 ? '#ffff44' : '#ff4444';
     ctx.fillStyle = healthColor;
     ctx.fillRect(-healthBarWidth / 2, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
   }
@@ -462,6 +502,10 @@ export function createInitialTanks(
     id: 'player',
     position: playerPosition,
     health: 100,
+    maxHealth: 100,
+    shieldHp: 0,
+    maxShieldHp: 0,
+    armorType: null,
     angle: -45, // Aiming right (toward enemies)
     power: 50,
     color: playerColor,
@@ -498,6 +542,10 @@ export function createInitialTanks(
       id: `enemy-${i + 1}`,
       position: enemyPosition,
       health: 100,
+      maxHealth: 100,
+      shieldHp: 0,
+      maxShieldHp: 0,
+      armorType: null,
       angle: 45, // Aiming left (toward player)
       power: 50,
       color: enemyColors[i]!,
@@ -629,6 +677,87 @@ function createDomeGradient(
   gradient.addColorStop(1, shadow);
 
   return gradient;
+}
+
+/**
+ * Render armor plating layers on tank body.
+ * Light Plating shows 1 layer, Heavy Plating shows 2 layers.
+ */
+function renderArmorLayers(
+  ctx: CanvasRenderingContext2D,
+  layerCount: number,
+  bodyWidth: number,
+  bodyHeight: number
+): void {
+  if (layerCount <= 0) return;
+
+  const armorColor = '#8888aa'; // Steel gray color for armor plates
+  const highlightColor = lightenColor(armorColor, 0.4);
+  const shadowColor = darkenColor(armorColor, 0.3);
+
+  // Draw each armor layer as a plate around the tank hull
+  for (let i = 0; i < layerCount; i++) {
+    const offset = (i + 1) * 3; // Each layer is 3 pixels further out
+    const plateWidth = bodyWidth + offset * 2;
+    const plateHeight = bodyHeight + offset;
+
+    ctx.save();
+
+    // Armor plate outline (semi-transparent to show tank underneath)
+    ctx.strokeStyle = armorColor;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.8 - i * 0.2; // Outer layers slightly more transparent
+
+    // Draw armored plate as a rectangle with beveled corners
+    const cornerSize = 4;
+    ctx.beginPath();
+    ctx.moveTo(-plateWidth / 2 + cornerSize, -plateHeight / 2);
+    ctx.lineTo(plateWidth / 2 - cornerSize, -plateHeight / 2);
+    ctx.lineTo(plateWidth / 2, -plateHeight / 2 + cornerSize);
+    ctx.lineTo(plateWidth / 2, plateHeight / 2 - cornerSize);
+    ctx.lineTo(plateWidth / 2 - cornerSize, plateHeight / 2);
+    ctx.lineTo(-plateWidth / 2 + cornerSize, plateHeight / 2);
+    ctx.lineTo(-plateWidth / 2, plateHeight / 2 - cornerSize);
+    ctx.lineTo(-plateWidth / 2, -plateHeight / 2 + cornerSize);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Highlight on top edge
+    ctx.strokeStyle = highlightColor;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.6 - i * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(-plateWidth / 2 + cornerSize + 2, -plateHeight / 2 + 1);
+    ctx.lineTo(plateWidth / 2 - cornerSize - 2, -plateHeight / 2 + 1);
+    ctx.stroke();
+
+    // Shadow on bottom edge
+    ctx.strokeStyle = shadowColor;
+    ctx.beginPath();
+    ctx.moveTo(-plateWidth / 2 + cornerSize + 2, plateHeight / 2 - 1);
+    ctx.lineTo(plateWidth / 2 - cornerSize - 2, plateHeight / 2 - 1);
+    ctx.stroke();
+
+    // Add rivets on corners for the first (innermost) layer
+    if (i === 0) {
+      ctx.fillStyle = shadowColor;
+      ctx.globalAlpha = 0.7;
+      const rivetRadius = 1.5;
+      const rivetPositions: Array<[number, number]> = [
+        [-plateWidth / 2 + cornerSize + 2, -plateHeight / 2 + 3],
+        [plateWidth / 2 - cornerSize - 2, -plateHeight / 2 + 3],
+        [-plateWidth / 2 + cornerSize + 2, plateHeight / 2 - 3],
+        [plateWidth / 2 - cornerSize - 2, plateHeight / 2 - 3],
+      ];
+      for (const [rx, ry] of rivetPositions) {
+        ctx.beginPath();
+        ctx.arc(rx, ry, rivetRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
 }
 
 /**
@@ -779,6 +908,72 @@ function renderGroundDust(
   ctx.moveTo(bodyWidth / 2 + 4, bodyHeight / 2 + wheelRadius);
   ctx.lineTo(bodyWidth / 2 + 8, bodyHeight / 2 + wheelRadius + 3);
   ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Render energy shield glow effect around a tank.
+ * Creates a pulsing blue aura indicating active shield protection.
+ */
+function renderShieldGlow(
+  ctx: CanvasRenderingContext2D,
+  bodyWidth: number,
+  bodyHeight: number,
+  wheelRadius: number,
+  shieldHp: number,
+  maxShieldHp: number
+): void {
+  ctx.save();
+
+  // Shield intensity based on remaining HP
+  const shieldIntensity = shieldHp / maxShieldHp;
+
+  // Pulsing animation
+  const time = Date.now() * 0.003;
+  const pulse = Math.sin(time) * 0.15 + 0.85;
+
+  // Calculate glow radius based on tank size
+  const glowRadius = Math.max(bodyWidth, bodyHeight + wheelRadius * 2) * 0.8;
+
+  // Outer glow (larger, softer)
+  const outerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius * 1.3);
+  outerGlow.addColorStop(0, `rgba(68, 136, 255, ${0.15 * shieldIntensity * pulse})`);
+  outerGlow.addColorStop(0.5, `rgba(68, 136, 255, ${0.08 * shieldIntensity * pulse})`);
+  outerGlow.addColorStop(1, 'rgba(68, 136, 255, 0)');
+  ctx.fillStyle = outerGlow;
+  ctx.beginPath();
+  ctx.ellipse(0, bodyHeight / 4, glowRadius * 1.3, glowRadius * 0.9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner glow (brighter core)
+  const innerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius * 0.7);
+  innerGlow.addColorStop(0, `rgba(136, 200, 255, ${0.2 * shieldIntensity * pulse})`);
+  innerGlow.addColorStop(0.6, `rgba(68, 136, 255, ${0.1 * shieldIntensity * pulse})`);
+  innerGlow.addColorStop(1, 'rgba(68, 136, 255, 0)');
+  ctx.fillStyle = innerGlow;
+  ctx.beginPath();
+  ctx.ellipse(0, bodyHeight / 4, glowRadius * 0.7, glowRadius * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Shield edge shimmer particles
+  const particleCount = 6;
+  const baseRadius = glowRadius * 0.6;
+  ctx.fillStyle = `rgba(136, 200, 255, ${0.5 * shieldIntensity * pulse})`;
+  ctx.shadowColor = '#88ccff';
+  ctx.shadowBlur = 4;
+
+  for (let i = 0; i < particleCount; i++) {
+    const angle = (i / particleCount) * Math.PI * 2 + time * 0.5;
+    const radiusVariation = Math.sin(time * 2 + i) * 5;
+    const px = Math.cos(angle) * (baseRadius + radiusVariation);
+    const py = Math.sin(angle) * (baseRadius * 0.7 + radiusVariation * 0.5) + bodyHeight / 4;
+    const particleSize = 1.5 + Math.sin(time * 3 + i * 0.7) * 0.5;
+
+    ctx.beginPath();
+    ctx.arc(px, py, particleSize * shieldIntensity, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.restore();
 }

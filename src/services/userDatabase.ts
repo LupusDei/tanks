@@ -7,6 +7,8 @@ import type {
   AIDifficulty,
   TankColor,
   WeaponInventory,
+  ArmorInventory,
+  ArmorType,
   CampaignState,
   CampaignParticipant,
   CampaignLength,
@@ -56,6 +58,10 @@ function createDefaultWeaponInventory(): WeaponInventory {
   };
 }
 
+function createDefaultArmorInventory(): ArmorInventory {
+  return {};
+}
+
 function createDefaultUserData(username: string): UserData {
   return {
     profile: {
@@ -66,6 +72,7 @@ function createDefaultUserData(username: string): UserData {
     stats: createDefaultStats(),
     recentGames: [],
     weaponInventory: createDefaultWeaponInventory(),
+    armorInventory: createDefaultArmorInventory(),
   };
 }
 
@@ -583,6 +590,7 @@ export function createCampaignParticipant(
     wins: 0,
     currentLevel: startingLevel,
     weaponInventory: createCampaignWeaponInventory(),
+    armorInventory: {},
     color,
   };
 }
@@ -860,4 +868,153 @@ export function consumeCampaignWeapon(
   participant.weaponInventory[weaponType] = currentCount - 1;
   saveActiveCampaign(campaign);
   return true;
+}
+
+// ============================================================================
+// ARMOR INVENTORY FUNCTIONS
+// ============================================================================
+
+/**
+ * Migrate armor inventory for existing users.
+ * Ensures armorInventory exists.
+ */
+function migrateArmorInventory(userData: UserData): void {
+  if (!userData.armorInventory) {
+    userData.armorInventory = {};
+  }
+}
+
+/**
+ * Check if user owns a specific armor type.
+ */
+export function hasArmor(armorType: ArmorType): boolean {
+  const userData = loadUserData();
+  if (!userData) return false;
+
+  migrateArmorInventory(userData);
+  return userData.armorInventory[armorType] === true;
+}
+
+/**
+ * Purchase armor for the user.
+ * Each armor type can only be purchased once per game.
+ * Returns true if purchase was successful.
+ */
+export function purchaseArmor(armorType: ArmorType, cost: number): boolean {
+  const userData = loadUserData();
+  if (!userData) return false;
+
+  migrateArmorInventory(userData);
+
+  // Check if already owned
+  if (userData.armorInventory[armorType]) {
+    return false; // Already owned
+  }
+
+  // Check if can afford
+  if (userData.stats.balance < cost) {
+    return false; // Insufficient funds
+  }
+
+  // Purchase
+  userData.stats.balance -= cost;
+  userData.armorInventory[armorType] = true;
+
+  saveUserData(userData);
+  return true;
+}
+
+/**
+ * Get the full armor inventory.
+ * Returns empty object if no user.
+ */
+export function getArmorInventory(): ArmorInventory {
+  const userData = loadUserData();
+  if (!userData) return {};
+
+  migrateArmorInventory(userData);
+  return userData.armorInventory;
+}
+
+/**
+ * Clear all armor from user's inventory.
+ * Called after each game ends.
+ */
+export function clearArmorInventory(): void {
+  const userData = loadUserData();
+  if (!userData) return;
+
+  userData.armorInventory = {};
+  saveUserData(userData);
+}
+
+// ============================================================================
+// CAMPAIGN ARMOR FUNCTIONS
+// ============================================================================
+
+/**
+ * Purchase armor for a campaign participant.
+ * Each armor type can only be purchased once per game.
+ * Returns true if purchase was successful.
+ */
+export function purchaseCampaignArmor(
+  participantId: string,
+  armorType: ArmorType,
+  cost: number
+): boolean {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return false;
+
+  const participant = campaign.participants.find(p => p.id === participantId);
+  if (!participant) return false;
+
+  // Ensure armorInventory exists
+  if (!participant.armorInventory) {
+    participant.armorInventory = {};
+  }
+
+  // Check if already owned
+  if (participant.armorInventory[armorType]) {
+    return false; // Already owned
+  }
+
+  // Check if can afford
+  if (participant.balance < cost) {
+    return false; // Insufficient funds
+  }
+
+  // Purchase
+  participant.balance -= cost;
+  participant.armorInventory[armorType] = true;
+
+  saveActiveCampaign(campaign);
+  return true;
+}
+
+/**
+ * Check if a campaign participant owns a specific armor type.
+ */
+export function hasCampaignArmor(participantId: string, armorType: ArmorType): boolean {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return false;
+
+  const participant = campaign.participants.find(p => p.id === participantId);
+  if (!participant) return false;
+
+  return participant.armorInventory?.[armorType] === true;
+}
+
+/**
+ * Clear all armor from all campaign participants.
+ * Called after each game ends.
+ */
+export function clearAllCampaignArmor(): void {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return;
+
+  for (const participant of campaign.participants) {
+    participant.armorInventory = {};
+  }
+
+  saveActiveCampaign(campaign);
 }

@@ -3,6 +3,25 @@ import type { WeaponType, DestructionCategory } from '../engine/weapons';
 // Re-export WeaponType and DestructionCategory for convenience
 export type { WeaponType, DestructionCategory };
 
+// ============================================================================
+// Armor Types
+// ============================================================================
+
+/**
+ * Available armor types that can be purchased in the Armory.
+ * Armor provides HP bonuses for the next game and is consumed after each game.
+ */
+export type ArmorType = 'light_plating' | 'heavy_plating' | 'energy_shield';
+
+/** All available armor types for iteration */
+export const ARMOR_TYPES: ArmorType[] = ['light_plating', 'heavy_plating', 'energy_shield'];
+
+/**
+ * Armor inventory tracking purchased armor.
+ * Each armor type can only be purchased once per game.
+ */
+export type ArmorInventory = Partial<Record<ArmorType, boolean>>;
+
 export type GamePhase = 'loading' | 'playerName' | 'config' | 'weaponShop' | 'playing' | 'gameover' | 'campaignLeaderboard';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple' | 'cyan' | 'pink' | 'white' | 'brown';
@@ -61,6 +80,14 @@ export interface TankState {
   id: string;
   position: Position;
   health: number;
+  /** Maximum health (100 base, increased by armor) */
+  maxHealth: number;
+  /** Energy shield HP (absorbs explosion/fire damage only) */
+  shieldHp: number;
+  /** Maximum shield HP */
+  maxShieldHp: number;
+  /** Active armor type for visual rendering (null if no armor) */
+  armorType: ArmorType | null;
   angle: number;
   power: number;
   color: string;
@@ -107,7 +134,11 @@ export interface GameActions {
   incrementTurn: () => void;
   updateTank: (tankId: string, updates: Partial<TankState>) => void;
   setTerrain: (terrain: TerrainData) => void;
-  damageTank: (tankId: string, damage: number, weaponType?: WeaponType) => void;
+  /**
+   * Apply damage to a tank.
+   * @param isDirectHit - If true, damage bypasses energy shield. If false (splash), shield absorbs first.
+   */
+  damageTank: (tankId: string, damage: number, weaponType?: WeaponType, isDirectHit?: boolean) => void;
   stunTank: (tankId: string, turns: number) => void;
   decrementStuns: () => void;
   setWinner: (tankId: string) => void;
@@ -166,6 +197,8 @@ export interface UserData {
   recentGames: GameRecord[];
   /** Owned weapons and their quantities. Standard is always Infinity. */
   weaponInventory: WeaponInventory;
+  /** Owned armor for next game. Cleared after each game. */
+  armorInventory: ArmorInventory;
 }
 
 // ============================================================================
@@ -206,6 +239,8 @@ export interface CampaignParticipant {
   currentLevel: AIDifficulty;
   /** Weapon inventory for this participant */
   weaponInventory: WeaponInventory;
+  /** Armor inventory for this participant. Cleared after each game. */
+  armorInventory: ArmorInventory;
   /** Tank color assigned for this campaign */
   color: TankColor;
 }
