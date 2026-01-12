@@ -56,7 +56,12 @@
       "Bash(git merge-base:*)",
       "Skill(beads:epic)",
       "Bash(bd epic add:*)",
-      "Bash(bd label:*)"
+      "Bash(bd label:*)",
+      "Bash(brew list:*)",
+      "Bash(brew install:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/generate-sounds.sh:*)"
     ]
   }
 }
