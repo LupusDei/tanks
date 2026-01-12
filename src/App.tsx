@@ -106,7 +106,7 @@ function App() {
     getTotalGames,
     clearAllArmor,
   } = useCampaign()
-  const { playMusic, crossfadeMusic } = useAudio()
+  const { playMusic, crossfadeMusic, playWeaponFire } = useAudio()
 
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
@@ -415,6 +415,9 @@ function App() {
 
       const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, canvasWidth, weaponType)
       newProjectiles.push(projectile)
+
+      // Play weapon fire sound
+      playWeaponFire(weaponType)
 
       // Decrement ammo when player fires a non-standard weapon
       if (tank.id === 'player' && weaponType !== 'standard') {
