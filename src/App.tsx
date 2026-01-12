@@ -210,6 +210,23 @@ function App() {
     }
   }, [shouldAIQueue])
 
+  // Auto-skip player's turn when stunned
+  useEffect(() => {
+    if (state.phase !== 'playing' || isProjectileActive || isExplosionActive) return
+
+    const player = state.tanks.find((t) => t.id === 'player')
+    if (!player || player.health <= 0 || player.isReady) return
+
+    // If player is stunned, auto-skip their turn
+    if (player.stunTurnsRemaining > 0) {
+      actions.updateTank('player', {
+        queuedShot: null,
+        isReady: true,
+        stunTurnsRemaining: player.stunTurnsRemaining - 1,
+      })
+    }
+  }, [state.phase, state.tanks, isProjectileActive, isExplosionActive, actions])
+
   // AI queueing effect - triggers when player queues their shot or player is dead
   useEffect(() => {
     // Only process when conditions met and we haven't started processing
@@ -221,9 +238,11 @@ function App() {
     const currentState = stateRef.current
     const aliveTanks = currentState.tanks.filter((t) => t.health > 0)
     const aiTanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady && t.stunTurnsRemaining === 0)
+    const stunnedAITanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady && t.stunTurnsRemaining > 0)
 
     // Need at least 2 alive tanks for combat to continue
-    if (aliveTanks.length < 2 || aiTanks.length === 0) {
+    // Also need either non-stunned AI tanks OR stunned AI tanks to process
+    if (aliveTanks.length < 2 || (aiTanks.length === 0 && stunnedAITanks.length === 0)) {
       return
     }
 
@@ -232,7 +251,6 @@ function App() {
 
     // Mark stunned AI tanks as ready immediately (they skip their turn but don't hold up the round)
     // Also decrement their stun counter since they're "consuming" their stun turn
-    const stunnedAITanks = currentState.tanks.filter((t) => t.id !== 'player' && t.health > 0 && !t.isReady && t.stunTurnsRemaining > 0)
     for (const stunnedTank of stunnedAITanks) {
       actions.updateTank(stunnedTank.id, {
         queuedShot: null,
@@ -241,7 +259,7 @@ function App() {
       })
     }
 
-    // Calculate and queue shots for all AI tanks simultaneously
+    // Calculate and queue shots for all non-stunned AI tanks simultaneously
     for (const aiTank of aiTanks) {
       // Select target with persistence (sticks with same target unless dead or better opportunity)
       const target = selectTargetWithPersistence(aiTank, aliveTanks)
