@@ -95,6 +95,8 @@ describe('AudioManager', () => {
       expect(prefs.sfxVolume).toBe(0.8);
       expect(prefs.uiVolume).toBe(0.6);
       expect(prefs.muted).toBe(false);
+      expect(prefs.musicMuted).toBe(false);
+      expect(prefs.sfxMuted).toBe(false);
     });
 
     it('should load preferences from localStorage', () => {
@@ -156,6 +158,66 @@ describe('AudioManager', () => {
 
       audioManager.setMuted(false);
       expect(audioManager.isMuted()).toBe(false);
+    });
+
+    it('should toggle music mute state', async () => {
+      await audioManager.initialize();
+
+      expect(audioManager.isMusicMuted()).toBe(false);
+
+      audioManager.toggleMusicMute();
+      expect(audioManager.isMusicMuted()).toBe(true);
+
+      audioManager.toggleMusicMute();
+      expect(audioManager.isMusicMuted()).toBe(false);
+    });
+
+    it('should set music mute state directly', async () => {
+      await audioManager.initialize();
+
+      audioManager.setMusicMuted(true);
+      expect(audioManager.isMusicMuted()).toBe(true);
+
+      audioManager.setMusicMuted(false);
+      expect(audioManager.isMusicMuted()).toBe(false);
+    });
+
+    it('should toggle sfx mute state', async () => {
+      await audioManager.initialize();
+
+      expect(audioManager.isSfxMuted()).toBe(false);
+
+      audioManager.toggleSfxMute();
+      expect(audioManager.isSfxMuted()).toBe(true);
+
+      audioManager.toggleSfxMute();
+      expect(audioManager.isSfxMuted()).toBe(false);
+    });
+
+    it('should set sfx mute state directly', async () => {
+      await audioManager.initialize();
+
+      audioManager.setSfxMuted(true);
+      expect(audioManager.isSfxMuted()).toBe(true);
+
+      audioManager.setSfxMuted(false);
+      expect(audioManager.isSfxMuted()).toBe(false);
+    });
+
+    it('should persist music and sfx mute state', async () => {
+      await audioManager.initialize();
+
+      audioManager.setMusicMuted(true);
+      audioManager.setSfxMuted(true);
+
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'tanks_audio_prefs',
+        expect.stringContaining('"musicMuted":true')
+      );
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'tanks_audio_prefs',
+        expect.stringContaining('"sfxMuted":true')
+      );
     });
   });
 
