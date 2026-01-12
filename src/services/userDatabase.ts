@@ -775,7 +775,8 @@ export function recordCampaignDeath(victimId: string): void {
 
 /**
  * Record the end of a campaign game.
- * Updates wins, games played, and advances to next game.
+ * Updates wins, games played, and advances currentGame counter.
+ * This makes isCampaignComplete() return true after the final game.
  */
 export function recordCampaignGameEnd(winnerId: string): void {
   const campaign = loadActiveCampaign();
@@ -792,24 +793,25 @@ export function recordCampaignGameEnd(winnerId: string): void {
     winner.wins += 1;
   }
 
+  // Advance currentGame counter so isCampaignComplete() works correctly
+  // This is safe because the leaderboard checks currentGame > length
+  campaign.currentGame += 1;
+
   saveActiveCampaign(campaign);
 }
 
 /**
- * Advance to the next game in the campaign.
+ * Check if we can continue to the next game in the campaign.
  * Returns false if campaign is complete.
+ * Note: currentGame is already advanced by recordCampaignGameEnd().
  */
 export function advanceCampaignGame(): boolean {
   const campaign = loadActiveCampaign();
   if (!campaign) return false;
 
-  if (campaign.currentGame >= campaign.length) {
-    return false; // Campaign complete
-  }
-
-  campaign.currentGame += 1;
-  saveActiveCampaign(campaign);
-  return true;
+  // Campaign is complete when currentGame exceeds length
+  // (recordCampaignGameEnd increments currentGame after each game)
+  return campaign.currentGame <= campaign.length;
 }
 
 /**

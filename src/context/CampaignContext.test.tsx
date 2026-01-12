@@ -263,7 +263,7 @@ describe('CampaignContext', () => {
   });
 
   describe('advanceToNextGame', () => {
-    it('should increment current game', () => {
+    it('should return true when more games remain', () => {
       const { result } = renderHook(() => useCampaign(), { wrapper });
 
       act(() => {
@@ -272,11 +272,14 @@ describe('CampaignContext', () => {
 
       expect(result.current.getCurrentGame()).toBe(1);
 
+      // recordGameEnd increments currentGame, advanceToNextGame just checks if we can continue
       act(() => {
-        result.current.advanceToNextGame();
+        const player = result.current.getPlayer();
+        result.current.recordGameEnd(player!.id);
       });
 
       expect(result.current.getCurrentGame()).toBe(2);
+      expect(result.current.advanceToNextGame()).toBe(true);
     });
 
     it('should return false when campaign is complete', () => {
@@ -286,15 +289,17 @@ describe('CampaignContext', () => {
         result.current.startNewCampaign(3, defaultConfig, 'TestPlayer');
       });
 
-      // Advance through all games
-      let canAdvance = true;
+      // Play all 3 games by calling recordGameEnd for each
       act(() => {
-        result.current.advanceToNextGame(); // 1 -> 2
-        result.current.advanceToNextGame(); // 2 -> 3
-        canAdvance = result.current.advanceToNextGame(); // 3 -> should fail
+        const player = result.current.getPlayer();
+        result.current.recordGameEnd(player!.id); // Game 1 ends
+        result.current.recordGameEnd(player!.id); // Game 2 ends
+        result.current.recordGameEnd(player!.id); // Game 3 ends
       });
 
-      expect(canAdvance).toBe(false);
+      // After final game, currentGame > length
+      expect(result.current.getCurrentGame()).toBe(4);
+      expect(result.current.advanceToNextGame()).toBe(false);
     });
   });
 
@@ -459,14 +464,24 @@ describe('CampaignContext', () => {
 
       expect(result.current.isCampaignComplete()).toBe(false);
 
-      // Advance through all games
+      // Play games 1 and 2
       act(() => {
-        result.current.advanceToNextGame(); // 1 -> 2
-        result.current.advanceToNextGame(); // 2 -> 3
+        const player = result.current.getPlayer();
+        result.current.recordGameEnd(player!.id); // Game 1 ends, currentGame -> 2
+        result.current.recordGameEnd(player!.id); // Game 2 ends, currentGame -> 3
       });
 
-      // Still on game 3, not complete
+      // On game 3, not complete yet
       expect(result.current.isCampaignComplete()).toBe(false);
+
+      // Play game 3 (final)
+      act(() => {
+        const player = result.current.getPlayer();
+        result.current.recordGameEnd(player!.id); // Game 3 ends, currentGame -> 4
+      });
+
+      // Now complete
+      expect(result.current.isCampaignComplete()).toBe(true);
     });
   });
 });

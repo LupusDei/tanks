@@ -363,42 +363,54 @@ describe('Campaign Integration', () => {
   });
 
   describe('Game Flow', () => {
-    it('advances to next game correctly', () => {
-      createNewCampaign(5, defaultConfig, 'TestPlayer', aiNames);
+    it('advances to next game correctly via recordCampaignGameEnd', () => {
+      const campaign = createNewCampaign(5, defaultConfig, 'TestPlayer', aiNames);
+      const player = getPlayer(campaign.participants)!;
 
       expect(loadActiveCampaign()?.currentGame).toBe(1);
 
-      advanceCampaignGame();
+      // recordCampaignGameEnd increments currentGame
+      recordCampaignGameEnd(player.id);
       expect(loadActiveCampaign()?.currentGame).toBe(2);
 
-      advanceCampaignGame();
+      recordCampaignGameEnd(player.id);
       expect(loadActiveCampaign()?.currentGame).toBe(3);
     });
 
     it('tracks correct game count for 3-game campaign', () => {
-      createNewCampaign(3, defaultConfig, 'TestPlayer', aiNames);
+      const campaign = createNewCampaign(3, defaultConfig, 'TestPlayer', aiNames);
+      const player = getPlayer(campaign.participants)!;
 
       expect(loadActiveCampaign()?.currentGame).toBe(1);
-      advanceCampaignGame(); // 1 -> 2
-      expect(loadActiveCampaign()?.currentGame).toBe(2);
-      advanceCampaignGame(); // 2 -> 3
-      expect(loadActiveCampaign()?.currentGame).toBe(3);
 
-      // At game 3 (final game), cannot advance further
-      const success = advanceCampaignGame();
-      expect(success).toBe(false);
-      expect(loadActiveCampaign()?.currentGame).toBe(3); // Still at 3
+      // Game 1 ends
+      recordCampaignGameEnd(player.id);
+      expect(loadActiveCampaign()?.currentGame).toBe(2);
+      expect(advanceCampaignGame()).toBe(true); // Can continue to game 2
+
+      // Game 2 ends
+      recordCampaignGameEnd(player.id);
+      expect(loadActiveCampaign()?.currentGame).toBe(3);
+      expect(advanceCampaignGame()).toBe(true); // Can continue to game 3
+
+      // Game 3 ends (final game)
+      recordCampaignGameEnd(player.id);
+      expect(loadActiveCampaign()?.currentGame).toBe(4); // Past the end
+      expect(advanceCampaignGame()).toBe(false); // Cannot continue
     });
 
     it('returns false when trying to advance past final game', () => {
-      createNewCampaign(3, defaultConfig, 'TestPlayer', aiNames);
+      const campaign = createNewCampaign(3, defaultConfig, 'TestPlayer', aiNames);
+      const player = getPlayer(campaign.participants)!;
 
-      advanceCampaignGame(); // 1 -> 2
-      advanceCampaignGame(); // 2 -> 3
-      const successAtEnd = advanceCampaignGame(); // 3 -> ? (should fail)
+      // Play all 3 games
+      recordCampaignGameEnd(player.id); // Game 1 ends
+      recordCampaignGameEnd(player.id); // Game 2 ends
+      recordCampaignGameEnd(player.id); // Game 3 ends
 
-      expect(successAtEnd).toBe(false);
-      expect(loadActiveCampaign()?.currentGame).toBe(3);
+      // After final game, currentGame > length
+      expect(loadActiveCampaign()?.currentGame).toBe(4);
+      expect(advanceCampaignGame()).toBe(false);
     });
   });
 
@@ -440,13 +452,12 @@ describe('Campaign Integration', () => {
       // Game 1
       recordCampaignKill(player.id);
       recordCampaignDeath(firstAI.id);
-      recordCampaignGameEnd(player.id);
-      advanceCampaignGame();
+      recordCampaignGameEnd(player.id); // Also advances currentGame
 
       // Game 2
       recordCampaignKill(secondAI.id);
       recordCampaignDeath(player.id);
-      recordCampaignGameEnd(secondAI.id);
+      recordCampaignGameEnd(secondAI.id); // Also advances currentGame
 
       const restored = loadActiveCampaign();
       expect(getPlayer(restored!.participants)?.kills).toBe(1);
