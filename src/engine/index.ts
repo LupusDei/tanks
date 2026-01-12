@@ -172,3 +172,12 @@ export {
   renderMoneyAnimation,
   type MoneyAnimationState,
 } from './moneyAnimation';
+
+export {
+  createWindParticleSystem,
+  updateWindParticles,
+  renderWindParticles,
+  resetWindParticles,
+  type WindParticle,
+  type WindParticleSystemState,
+} from './windParticles';

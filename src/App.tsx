@@ -61,11 +61,15 @@ import {
   updateMoneyAnimation,
   renderMoneyAnimation,
   isMoneyAnimationComplete,
+  createWindParticleSystem,
+  updateWindParticles,
+  renderWindParticles,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
   type TankDestructionState,
   type MoneyAnimationState,
+  type WindParticleSystemState,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, AIDifficulty, CampaignLength } from './types/game'
 import { getWeaponInventory, getArmorInventory, loadActiveCampaign } from './services/userDatabase'
@@ -116,6 +120,8 @@ function App() {
   const destructionsRef = useRef<TankDestructionState[]>([])
   // Array of active money earned animations
   const moneyAnimationsRef = useRef<MoneyAnimationState[]>([])
+  // Wind particle system state
+  const windParticlesRef = useRef<WindParticleSystemState | null>(null)
   const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
@@ -762,6 +768,26 @@ function App() {
     // Clear canvas with dark background
     ctx.fillStyle = '#1a1a1a'
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+
+    // Calculate delta time for wind particles
+    const currentTimeForWind = performance.now()
+    const windDeltaTime = currentTimeForWind - lastFrameTimeRef.current
+
+    // Initialize wind particle system if needed or dimensions changed
+    if (!windParticlesRef.current ||
+        windParticlesRef.current.canvasWidth !== ctx.canvas.width ||
+        windParticlesRef.current.canvasHeight !== ctx.canvas.height) {
+      windParticlesRef.current = createWindParticleSystem(ctx.canvas.width, ctx.canvas.height)
+    }
+
+    // Update and render wind particles (before terrain, so they appear in background)
+    windParticlesRef.current = updateWindParticles(
+      windParticlesRef.current,
+      state.wind,
+      currentTimeForWind,
+      windDeltaTime
+    )
+    renderWindParticles(ctx, windParticlesRef.current)
 
     // Render terrain if available
     if (terrain) {
