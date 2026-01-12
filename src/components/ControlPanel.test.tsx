@@ -1,6 +1,16 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ControlPanel } from './ControlPanel'
+import * as hooks from '../hooks'
+
+// Mock useIsMobile hook
+vi.mock('../hooks', async () => {
+  const actual = await vi.importActual('../hooks')
+  return {
+    ...actual,
+    useIsMobile: vi.fn(() => false),
+  }
+})
 
 describe('ControlPanel', () => {
   const defaultProps = {
@@ -197,5 +207,68 @@ describe('ControlPanel', () => {
     screen.getByTestId('fire-button').click()
 
     expect(onFire).toHaveBeenCalledTimes(1)
+  })
+
+  describe('fit screen button', () => {
+    beforeEach(() => {
+      vi.mocked(hooks.useIsMobile).mockReturnValue(false)
+    })
+
+    it('does not render fit button on desktop', () => {
+      vi.mocked(hooks.useIsMobile).mockReturnValue(false)
+
+      const onFitScreen = vi.fn()
+      render(<ControlPanel {...defaultProps} onFitScreen={onFitScreen} />)
+
+      expect(screen.queryByTestId('fit-screen-btn')).not.toBeInTheDocument()
+    })
+
+    it('renders fit button on mobile when onFitScreen is provided', () => {
+      vi.mocked(hooks.useIsMobile).mockReturnValue(true)
+
+      const onFitScreen = vi.fn()
+      render(<ControlPanel {...defaultProps} onFitScreen={onFitScreen} />)
+
+      expect(screen.getByTestId('fit-screen-btn')).toBeInTheDocument()
+    })
+
+    it('does not render fit button on mobile when onFitScreen is not provided', () => {
+      vi.mocked(hooks.useIsMobile).mockReturnValue(true)
+
+      render(<ControlPanel {...defaultProps} />)
+
+      expect(screen.queryByTestId('fit-screen-btn')).not.toBeInTheDocument()
+    })
+
+    it('calls onFitScreen when fit button is clicked', () => {
+      vi.mocked(hooks.useIsMobile).mockReturnValue(true)
+
+      const onFitScreen = vi.fn()
+      render(<ControlPanel {...defaultProps} onFitScreen={onFitScreen} />)
+
+      screen.getByTestId('fit-screen-btn').click()
+
+      expect(onFitScreen).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows zoom out icon when not fitted', () => {
+      vi.mocked(hooks.useIsMobile).mockReturnValue(true)
+
+      render(<ControlPanel {...defaultProps} onFitScreen={vi.fn()} isFittedToScreen={false} />)
+
+      const btn = screen.getByTestId('fit-screen-btn')
+      expect(btn).toHaveTextContent('⊖')
+      expect(btn).not.toHaveClass('control-panel__fit-btn--active')
+    })
+
+    it('shows zoom in icon and active style when fitted', () => {
+      vi.mocked(hooks.useIsMobile).mockReturnValue(true)
+
+      render(<ControlPanel {...defaultProps} onFitScreen={vi.fn()} isFittedToScreen={true} />)
+
+      const btn = screen.getByTestId('fit-screen-btn')
+      expect(btn).toHaveTextContent('⊕')
+      expect(btn).toHaveClass('control-panel__fit-btn--active')
+    })
   })
 })

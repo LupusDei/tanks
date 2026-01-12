@@ -125,6 +125,7 @@ function App() {
   const lastFrameTimeRef = useRef<number>(performance.now())
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
+  const [isFittedToScreen, setIsFittedToScreen] = useState(false)
   const gameRecordedRef = useRef(false)
 
   // Track kills during the current game for campaign earnings
@@ -726,6 +727,11 @@ function App() {
     })
   }
 
+  // Toggle fit-to-screen mode for mobile devices
+  const handleFitScreen = useCallback(() => {
+    setIsFittedToScreen(prev => !prev)
+  }, [])
+
   // Handle canvas click to cycle AI difficulty when clicking on any enemy tank
   const handleCanvasClick = useCallback((canvasX: number, canvasY: number) => {
     // Only allow clicking during player's turn and not during projectile/explosion animation
@@ -1224,8 +1230,25 @@ function App() {
   // Get canvas dimensions from selected terrain size
   const terrainConfig = TERRAIN_SIZES[state.terrainSize]
 
+  // Calculate fit-to-screen scale factor
+  // Frame border width matches GameContainer's FRAME_BORDER_WIDTH
+  const FRAME_BORDER = 60
+  const gameContainerWidth = terrainConfig.width + FRAME_BORDER * 2
+  const gameContainerHeight = terrainConfig.height + FRAME_BORDER * 2
+  // Use slightly smaller viewport area to leave room for UI controls
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : gameContainerWidth
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight * 0.85 : gameContainerHeight
+  const fitScale = Math.min(
+    viewportWidth / gameContainerWidth,
+    viewportHeight / gameContainerHeight,
+    1 // Never scale up
+  )
+
   return (
-    <div className="app">
+    <div
+      className={`app${isFittedToScreen ? ' app--fitted' : ''}`}
+      style={isFittedToScreen ? { '--fit-scale': fitScale } as React.CSSProperties : undefined}
+    >
       <GameContainer
         canvasWidth={terrainConfig.width}
         canvasHeight={terrainConfig.height}
@@ -1254,6 +1277,8 @@ function App() {
             onFire={handleFire}
             enabled={!playerTank.isReady}
             isQueued={playerTank.isReady}
+            onFitScreen={handleFitScreen}
+            isFittedToScreen={isFittedToScreen}
           />
         </>
       )}

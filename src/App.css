@@ -8,6 +8,12 @@
   text-align: center;
 }
 
+/* Fit-to-screen mode for mobile devices */
+.app--fitted .game-container {
+  transform: scale(var(--fit-scale, 1));
+  transform-origin: center center;
+}
+
 /* Game container with metal background */
 .game-container {
   display: flex;
@@ -639,6 +645,43 @@ p {
   border-radius: 2px;
   font-family: monospace;
   font-size: 0.5rem;
+}
+
+/* Fit to screen button (mobile only) */
+.control-panel__fit-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #666;
+  background: rgba(60, 60, 60, 0.9);
+  color: #ccc;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  align-self: center;
+}
+
+.control-panel__fit-btn:hover {
+  background: rgba(80, 80, 80, 0.9);
+  border-color: #888;
+}
+
+.control-panel__fit-btn:active {
+  transform: scale(0.95);
+}
+
+.control-panel__fit-btn--active {
+  border-color: #00ff88;
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.15);
+}
+
+.control-panel__fit-btn--active:hover {
+  background: rgba(0, 255, 136, 0.25);
+  border-color: #00ff88;
 }
 
 /* Value container for desktop layout (value + bar stacked) */
