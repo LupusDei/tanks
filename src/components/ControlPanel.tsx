@@ -179,7 +179,7 @@ export function ControlPanel({
           </div>
         )}
 
-        {isMobile && onFitScreen && (
+        {onFitScreen && (
           <button
             className={`control-panel__fit-btn${isFittedToScreen ? ' control-panel__fit-btn--active' : ''}`}
             onClick={onFitScreen}
