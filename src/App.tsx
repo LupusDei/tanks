@@ -15,6 +15,7 @@ import {
 import { useGame } from './context/useGame'
 import { useUser } from './context/UserContext'
 import { useCampaign } from './context/CampaignContext'
+import { useAudio } from './context/AudioContext'
 import {
   initializeGame,
   applyArmorToTanks,
@@ -105,6 +106,7 @@ function App() {
     getTotalGames,
     clearAllArmor,
   } = useCampaign()
+  const { playMusic, crossfadeMusic } = useAudio()
 
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
@@ -178,6 +180,37 @@ function App() {
       gameKillsRef.current.clear()
     }
   }, [state.phase, state.winner, state.tanks, state.enemyCount, state.terrainSize, state.aiDifficulty, state.currentTurn, state.playerColor, recordGame, isCampaignMode, recordGameEnd, campaign, updateBalance, actions, clearArmor, clearAllArmor])
+
+  // Background music based on game phase
+  useEffect(() => {
+    switch (state.phase) {
+      case 'loading':
+      case 'playerName':
+      case 'config':
+      case 'weaponShop':
+        // Menu/config screens use menu music
+        playMusic('menu')
+        break
+      case 'playing':
+        // Gameplay uses gameplay music
+        crossfadeMusic('gameplay', 1000)
+        break
+      case 'gameover':
+      case 'campaignLeaderboard': {
+        // Determine if player won
+        let playerWon = false
+        if (isCampaignMode) {
+          const player = getPlayer()
+          playerWon = state.winner === player?.id
+        } else {
+          playerWon = state.winner === 'player'
+        }
+        // Play victory or defeat music
+        playMusic(playerWon ? 'victory' : 'defeat')
+        break
+      }
+    }
+  }, [state.phase, state.winner, isCampaignMode, getPlayer, playMusic, crossfadeMusic])
 
   // Track whether AI tanks are currently processing their shots
   const aiProcessingRef = useRef(false)

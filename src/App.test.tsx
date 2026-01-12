@@ -4,6 +4,7 @@ import App from './App'
 import { GameProvider } from './context/GameContext'
 import { UserProvider } from './context/UserContext'
 import { CampaignProvider } from './context/CampaignContext'
+import { AudioProvider } from './context/AudioContext'
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -26,11 +27,13 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
 
 function renderWithProvider(ui: React.ReactElement) {
   return render(
-    <UserProvider>
-      <CampaignProvider>
-        <GameProvider>{ui}</GameProvider>
-      </CampaignProvider>
-    </UserProvider>
+    <AudioProvider>
+      <UserProvider>
+        <CampaignProvider>
+          <GameProvider>{ui}</GameProvider>
+        </CampaignProvider>
+      </UserProvider>
+    </AudioProvider>
   )
 }
 
