@@ -10,6 +10,16 @@ interface ControlPanelProps {
   enabled?: boolean
   /** Whether the player's shot is queued and waiting for others */
   isQueued?: boolean
+  /** Current fuel level (0-100) */
+  fuel?: number
+  /** Maximum fuel capacity (always 100) */
+  maxFuel?: number
+  /** Handler for moving tank left */
+  onMoveLeft?: () => void
+  /** Handler for moving tank right */
+  onMoveRight?: () => void
+  /** Whether movement is currently allowed (not queued, has fuel, not moving) */
+  canMove?: boolean
 }
 
 const ANGLE_STEP = 1
@@ -29,6 +39,11 @@ export function ControlPanel({
   onFire,
   enabled = true,
   isQueued = false,
+  fuel = 0,
+  maxFuel = 100,
+  onMoveLeft,
+  onMoveRight,
+  canMove = false,
 }: ControlPanelProps) {
   const isMobile = useIsMobile()
 
@@ -93,9 +108,23 @@ export function ControlPanel({
           event.preventDefault()
           onFire()
           break
+        case 'q':
+        case 'Q':
+          event.preventDefault()
+          if (canMove && onMoveLeft) {
+            onMoveLeft()
+          }
+          break
+        case 'e':
+        case 'E':
+          event.preventDefault()
+          if (canMove && onMoveRight) {
+            onMoveRight()
+          }
+          break
       }
     },
-    [angle, power, onAngleChange, onPowerChange, onFire, clampAngle, clampPower]
+    [angle, power, onAngleChange, onPowerChange, onFire, clampAngle, clampPower, canMove, onMoveLeft, onMoveRight]
   )
 
   useKeyboard({
@@ -107,6 +136,8 @@ export function ControlPanel({
   const anglePercentage = (Math.abs(angle) / MAX_ANGLE) * 100
   const angleDirection = angle >= 0 ? 'left' : 'right'
   const powerPercentage = ((power - MIN_POWER) / (MAX_POWER - MIN_POWER)) * 100
+  const fuelPercentage = maxFuel > 0 ? (fuel / maxFuel) * 100 : 0
+  const hasFuel = fuel > 0
 
   return (
     <div className={`control-panel ${isMobile ? 'control-panel--mobile' : ''}`} data-testid="control-panel">
@@ -206,6 +237,53 @@ export function ControlPanel({
             </div>
           )}
         </div>
+
+        {/* Fuel Control - only shown if maxFuel > 0 */}
+        {maxFuel > 0 && (
+          <div className={`control-panel__control control-panel__control--fuel ${!hasFuel ? 'control-panel__control--empty' : ''}`}>
+            <div className="control-panel__label control-panel__label--fuel">Fuel</div>
+            <div className="control-panel__display">
+              {isMobile && (
+                <button
+                  className="control-panel__touch-btn control-panel__touch-btn--fuel"
+                  onClick={onMoveLeft}
+                  disabled={!canMove}
+                  aria-label="Move tank left"
+                  data-testid="move-left-btn"
+                >
+                  ◀
+                </button>
+              )}
+              <div className="control-panel__value" data-testid="fuel-value">
+                {fuel}%
+              </div>
+              {!isMobile && (
+                <div className="control-panel__bar">
+                  <div
+                    className="control-panel__bar-fill control-panel__bar-fill--fuel"
+                    style={{ width: `${fuelPercentage}%` }}
+                  />
+                </div>
+              )}
+              {isMobile && (
+                <button
+                  className="control-panel__touch-btn control-panel__touch-btn--fuel"
+                  onClick={onMoveRight}
+                  disabled={!canMove}
+                  aria-label="Move tank right"
+                  data-testid="move-right-btn"
+                >
+                  ▶
+                </button>
+              )}
+            </div>
+            {!isMobile && (
+              <div className="control-panel__keys">
+                <kbd>Q</kbd> <kbd>E</kbd>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <button

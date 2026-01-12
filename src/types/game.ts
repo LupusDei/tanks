@@ -22,6 +22,25 @@ export const ARMOR_TYPES: ArmorType[] = ['light_plating', 'heavy_plating', 'ener
  */
 export type ArmorInventory = Partial<Record<ArmorType, boolean>>;
 
+// ============================================================================
+// Consumable Types
+// ============================================================================
+
+/**
+ * Available consumable types that can be purchased in the Armory.
+ * Consumables are used once per game (like armor).
+ */
+export type ConsumableType = 'gas_can';
+
+/** All available consumable types for iteration */
+export const CONSUMABLE_TYPES: ConsumableType[] = ['gas_can'];
+
+/**
+ * Consumable inventory tracking purchased quantities.
+ * Gas cans can be purchased up to 4 times per game.
+ */
+export type ConsumableInventory = Partial<Record<ConsumableType, number>>;
+
 export type GamePhase = 'loading' | 'playerName' | 'config' | 'weaponShop' | 'playing' | 'gameover' | 'campaignLeaderboard';
 
 export type TankColor = 'red' | 'blue' | 'green' | 'yellow' | 'orange' | 'purple' | 'cyan' | 'pink' | 'white' | 'brown';
@@ -100,6 +119,18 @@ export interface TankState {
   killedByWeapon: WeaponType | null;
   /** Number of turns remaining that this tank is stunned (0 = not stunned) */
   stunTurnsRemaining: number;
+  /** Current fuel level (0-100, where 25 = 1 gas can) */
+  fuel: number;
+  /** Maximum fuel capacity (always 100) */
+  maxFuel: number;
+  /** Whether the tank is currently moving (animation in progress) */
+  isMoving: boolean;
+  /** Target X position for movement animation */
+  moveTargetX: number | null;
+  /** Timestamp when movement animation started */
+  moveStartTime: number | null;
+  /** Starting X position for movement animation */
+  moveStartX: number | null;
 }
 
 export interface TerrainData {
@@ -153,6 +184,10 @@ export interface GameActions {
   setWeaponAmmo: (ammo: Partial<Record<WeaponType, number>>) => void;
   decrementAmmo: (weapon: WeaponType) => void;
   setWind: (wind: number) => void;
+  /** Start tank movement animation to target X position */
+  startTankMove: (tankId: string, targetX: number, fuelCost: number) => void;
+  /** Complete tank movement animation and update final position */
+  completeTankMove: (tankId: string, finalX: number, finalY: number) => void;
 }
 
 // User and Statistics Types
@@ -199,6 +234,8 @@ export interface UserData {
   weaponInventory: WeaponInventory;
   /** Owned armor for next game. Cleared after each game. */
   armorInventory: ArmorInventory;
+  /** Owned consumables for next game. Cleared after each game. */
+  consumableInventory: ConsumableInventory;
 }
 
 // ============================================================================
@@ -241,6 +278,8 @@ export interface CampaignParticipant {
   weaponInventory: WeaponInventory;
   /** Armor inventory for this participant. Cleared after each game. */
   armorInventory: ArmorInventory;
+  /** Consumable inventory for this participant. Cleared after each game. */
+  consumableInventory: ConsumableInventory;
   /** Tank color assigned for this campaign */
   color: TankColor;
 }

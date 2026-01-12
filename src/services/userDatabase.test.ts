@@ -103,6 +103,7 @@ describe('userDatabase', () => {
         recentGames: [],
         weaponInventory: { standard: Infinity },
         armorInventory: {},
+        consumableInventory: {},
       };
 
       saveUserData(mockData);
@@ -668,6 +669,7 @@ describe('userDatabase', () => {
         recentGames: [],
         weaponInventory: { standard: Infinity, heavy_artillery: 3 },
         armorInventory: {},
+        consumableInventory: {},
       };
       localStorageMock.setItem('tanks_user_data', JSON.stringify(legacyData));
 

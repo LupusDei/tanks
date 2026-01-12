@@ -238,6 +238,12 @@ describe('tank', () => {
         isReady: false,
         killedByWeapon: null,
         stunTurnsRemaining: 0,
+        fuel: 0,
+        maxFuel: 100,
+        isMoving: false,
+        moveTargetX: null,
+        moveStartTime: null,
+        moveStartX: null,
       };
     });
 

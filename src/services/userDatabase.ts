@@ -9,13 +9,14 @@ import type {
   WeaponInventory,
   ArmorInventory,
   ArmorType,
+  ConsumableInventory,
   CampaignState,
   CampaignParticipant,
   CampaignLength,
   CampaignConfig,
 } from '../types/game';
 import { CAMPAIGN_STARTING_BALANCE } from '../types/game';
-import { STARTING_MONEY, calculateGameEarnings, type WeaponType } from '../engine/weapons';
+import { STARTING_MONEY, calculateGameEarnings, GAS_CAN_MAX, type WeaponType } from '../engine/weapons';
 
 // Storage keys
 const PLAYERS_DB_KEY = 'tanks_players_db';
@@ -62,6 +63,10 @@ function createDefaultArmorInventory(): ArmorInventory {
   return {};
 }
 
+function createDefaultConsumableInventory(): ConsumableInventory {
+  return {};
+}
+
 function createDefaultUserData(username: string): UserData {
   return {
     profile: {
@@ -73,6 +78,7 @@ function createDefaultUserData(username: string): UserData {
     recentGames: [],
     weaponInventory: createDefaultWeaponInventory(),
     armorInventory: createDefaultArmorInventory(),
+    consumableInventory: createDefaultConsumableInventory(),
   };
 }
 
@@ -591,6 +597,7 @@ export function createCampaignParticipant(
     currentLevel: startingLevel,
     weaponInventory: createCampaignWeaponInventory(),
     armorInventory: {},
+    consumableInventory: {},
     color,
   };
 }
@@ -1016,6 +1023,157 @@ export function clearAllCampaignArmor(): void {
 
   for (const participant of campaign.participants) {
     participant.armorInventory = {};
+  }
+
+  saveActiveCampaign(campaign);
+}
+
+// ============================================================================
+// CONSUMABLE INVENTORY FUNCTIONS (Gas Cans)
+// ============================================================================
+
+/**
+ * Migrate consumable inventory for existing users.
+ * Ensures consumableInventory exists.
+ */
+function migrateConsumableInventory(userData: UserData): void {
+  if (!userData.consumableInventory) {
+    userData.consumableInventory = {};
+  }
+}
+
+/**
+ * Get the count of gas cans in the user's inventory.
+ * Returns 0 if not owned.
+ */
+export function getGasCanCount(): number {
+  const userData = loadUserData();
+  if (!userData) return 0;
+
+  migrateConsumableInventory(userData);
+  return userData.consumableInventory.gas_can ?? 0;
+}
+
+/**
+ * Purchase gas cans for the user.
+ * Returns true if purchase was successful.
+ */
+export function purchaseGasCan(cost: number): boolean {
+  const userData = loadUserData();
+  if (!userData) return false;
+
+  migrateConsumableInventory(userData);
+
+  const currentCount = userData.consumableInventory.gas_can ?? 0;
+
+  // Check if at max
+  if (currentCount >= GAS_CAN_MAX) {
+    return false; // Already at max
+  }
+
+  // Check if can afford
+  if (userData.stats.balance < cost) {
+    return false; // Insufficient funds
+  }
+
+  // Purchase
+  userData.stats.balance -= cost;
+  userData.consumableInventory.gas_can = currentCount + 1;
+
+  saveUserData(userData);
+  return true;
+}
+
+/**
+ * Get the full consumable inventory.
+ * Returns empty object if no user.
+ */
+export function getConsumableInventory(): ConsumableInventory {
+  const userData = loadUserData();
+  if (!userData) return {};
+
+  migrateConsumableInventory(userData);
+  return userData.consumableInventory;
+}
+
+/**
+ * Clear all consumables from user's inventory.
+ * Called after each game ends.
+ */
+export function clearConsumableInventory(): void {
+  const userData = loadUserData();
+  if (!userData) return;
+
+  userData.consumableInventory = {};
+  saveUserData(userData);
+}
+
+// ============================================================================
+// CAMPAIGN CONSUMABLE FUNCTIONS
+// ============================================================================
+
+/**
+ * Get gas can count for a campaign participant.
+ */
+export function getCampaignGasCanCount(participantId: string): number {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return 0;
+
+  const participant = campaign.participants.find(p => p.id === participantId);
+  if (!participant) return 0;
+
+  return participant.consumableInventory?.gas_can ?? 0;
+}
+
+/**
+ * Purchase gas cans for a campaign participant.
+ * Returns true if purchase was successful.
+ */
+export function purchaseCampaignGasCan(
+  participantId: string,
+  cost: number
+): boolean {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return false;
+
+  const participant = campaign.participants.find(p => p.id === participantId);
+  if (!participant) return false;
+
+  // Ensure consumableInventory exists
+  if (!participant.consumableInventory) {
+    participant.consumableInventory = {};
+  }
+
+  const currentCount = participant.consumableInventory.gas_can ?? 0;
+
+  // Check if at max
+  if (currentCount >= GAS_CAN_MAX) {
+    return false; // Already at max
+  }
+
+  // Check if can afford
+  if (participant.balance < cost) {
+    return false; // Insufficient funds
+  }
+
+  // Purchase
+  participant.balance -= cost;
+  participant.consumableInventory.gas_can = currentCount + 1;
+
+  saveActiveCampaign(campaign);
+  return true;
+}
+
+/**
+ * Clear all consumables from all campaign participants.
+ * Called after each game ends.
+ */
+export function clearAllCampaignConsumables(): void {
+  const campaign = loadActiveCampaign();
+  if (!campaign) return;
+
+  for (const participant of campaign.participants) {
+    participant.consumableInventory = {};
   }
 
   saveActiveCampaign(campaign);

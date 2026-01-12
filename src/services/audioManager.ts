@@ -328,7 +328,7 @@ class AudioManager {
 
       source.start(0);
       return source;
-    } catch (error) {
+    } catch {
       // Sound failed to load - fail silently
       return null;
     }

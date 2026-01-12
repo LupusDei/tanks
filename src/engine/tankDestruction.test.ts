@@ -26,6 +26,12 @@ function createMockTank(overrides: Partial<TankState> = {}): TankState {
     isReady: false,
     killedByWeapon: 'heavy_artillery', // Explosive weapon by default
     stunTurnsRemaining: 0,
+    fuel: 0,
+    maxFuel: 100,
+    isMoving: false,
+    moveTargetX: null,
+    moveStartTime: null,
+    moveStartX: null,
     ...overrides,
   };
 }
