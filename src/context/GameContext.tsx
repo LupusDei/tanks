@@ -251,7 +251,7 @@ export function GameProvider({ children }: GameProviderProps) {
               ...tank,
               isMoving: true,
               moveTargetX: targetX,
-              moveStartTime: Date.now(),
+              moveStartTime: performance.now(),
               moveStartX: tank.position.x,
               fuel: Math.max(0, tank.fuel - fuelCost),
             }
