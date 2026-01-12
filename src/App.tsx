@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
+  AudioControls,
   ControlPanel,
   GameConfigScreen,
   GameContainer,
@@ -1255,6 +1256,7 @@ function App() {
         onRender={handleRender}
         onClick={handleCanvasClick}
       />
+      <AudioControls position="top-right" />
       <TurnIndicator
         turnNumber={state.currentTurn}
         playerAlive={playerIsAlive ?? false}

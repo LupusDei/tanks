@@ -44,6 +44,8 @@ export interface AudioPreferences {
   sfxVolume: number; // 0-1
   uiVolume: number; // 0-1
   muted: boolean;
+  musicMuted: boolean;
+  sfxMuted: boolean;
 }
 
 // Default audio preferences
@@ -53,6 +55,8 @@ const DEFAULT_PREFERENCES: AudioPreferences = {
   sfxVolume: 0.8,
   uiVolume: 0.6,
   muted: false,
+  musicMuted: false,
+  sfxMuted: false,
 };
 
 // Sound definition interface
@@ -249,8 +253,9 @@ class AudioManager {
 
     const masterVol = this.preferences.muted ? 0 : this.preferences.masterVolume;
     this.masterGain.gain.value = masterVol;
-    this.musicGain.gain.value = this.preferences.musicVolume;
-    this.sfxGain.gain.value = this.preferences.sfxVolume;
+    // Apply category-specific mutes
+    this.musicGain.gain.value = this.preferences.musicMuted ? 0 : this.preferences.musicVolume;
+    this.sfxGain.gain.value = this.preferences.sfxMuted ? 0 : this.preferences.sfxVolume;
     this.uiGain.gain.value = this.preferences.uiVolume;
   }
 
@@ -616,6 +621,58 @@ class AudioManager {
     this.preferences.muted = muted;
     this.applyPreferences();
     this.savePreferences();
+  }
+
+  /**
+   * Toggle music mute state.
+   */
+  toggleMusicMute(): boolean {
+    this.preferences.musicMuted = !this.preferences.musicMuted;
+    this.applyPreferences();
+    this.savePreferences();
+    return this.preferences.musicMuted;
+  }
+
+  /**
+   * Set music mute state.
+   */
+  setMusicMuted(muted: boolean): void {
+    this.preferences.musicMuted = muted;
+    this.applyPreferences();
+    this.savePreferences();
+  }
+
+  /**
+   * Check if music is muted.
+   */
+  isMusicMuted(): boolean {
+    return this.preferences.musicMuted;
+  }
+
+  /**
+   * Toggle sound effects mute state.
+   */
+  toggleSfxMute(): boolean {
+    this.preferences.sfxMuted = !this.preferences.sfxMuted;
+    this.applyPreferences();
+    this.savePreferences();
+    return this.preferences.sfxMuted;
+  }
+
+  /**
+   * Set sound effects mute state.
+   */
+  setSfxMuted(muted: boolean): void {
+    this.preferences.sfxMuted = muted;
+    this.applyPreferences();
+    this.savePreferences();
+  }
+
+  /**
+   * Check if sound effects are muted.
+   */
+  isSfxMuted(): boolean {
+    return this.preferences.sfxMuted;
   }
 
   /**

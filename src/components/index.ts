@@ -1,4 +1,5 @@
 export { AngleControl } from './AngleControl'
+export { AudioControls } from './AudioControls'
 export { CampaignLeaderboard } from './CampaignLeaderboard'
 export { Canvas } from './Canvas'
 export type { CanvasProps } from './Canvas'

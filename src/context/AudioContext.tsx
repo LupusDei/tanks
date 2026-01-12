@@ -6,6 +6,8 @@ export interface AudioContextValue {
   // State
   isReady: boolean;
   isMuted: boolean;
+  isMusicMuted: boolean;
+  isSfxMuted: boolean;
   preferences: AudioPreferences;
 
   // Music controls
@@ -36,6 +38,10 @@ export interface AudioContextValue {
   setUiVolume: (volume: number) => void;
   toggleMute: () => void;
   setMuted: (muted: boolean) => void;
+  toggleMusicMute: () => void;
+  setMusicMuted: (muted: boolean) => void;
+  toggleSfxMute: () => void;
+  setSfxMuted: (muted: boolean) => void;
 }
 
 const AudioContext = createContext<AudioContextValue | null>(null);
@@ -47,6 +53,8 @@ interface AudioProviderProps {
 export function AudioProvider({ children }: AudioProviderProps) {
   const [isReady, setIsReady] = useState(false);
   const [isMuted, setIsMutedState] = useState(audioManager.isMuted());
+  const [isMusicMuted, setIsMusicMutedState] = useState(audioManager.isMusicMuted());
+  const [isSfxMuted, setIsSfxMutedState] = useState(audioManager.isSfxMuted());
   const [preferences, setPreferences] = useState<AudioPreferences>(audioManager.getPreferences());
   const initAttempted = useRef(false);
 
@@ -60,6 +68,8 @@ export function AudioProvider({ children }: AudioProviderProps) {
       setIsReady(audioManager.isReady());
       setPreferences(audioManager.getPreferences());
       setIsMutedState(audioManager.isMuted());
+      setIsMusicMutedState(audioManager.isMusicMuted());
+      setIsSfxMutedState(audioManager.isSfxMuted());
 
       // Remove listeners after initialization
       window.removeEventListener('click', handleInteraction);
@@ -174,9 +184,35 @@ export function AudioProvider({ children }: AudioProviderProps) {
     setPreferences(audioManager.getPreferences());
   }, []);
 
+  const toggleMusicMute = useCallback(() => {
+    const newMuted = audioManager.toggleMusicMute();
+    setIsMusicMutedState(newMuted);
+    setPreferences(audioManager.getPreferences());
+  }, []);
+
+  const setMusicMuted = useCallback((muted: boolean) => {
+    audioManager.setMusicMuted(muted);
+    setIsMusicMutedState(muted);
+    setPreferences(audioManager.getPreferences());
+  }, []);
+
+  const toggleSfxMute = useCallback(() => {
+    const newMuted = audioManager.toggleSfxMute();
+    setIsSfxMutedState(newMuted);
+    setPreferences(audioManager.getPreferences());
+  }, []);
+
+  const setSfxMuted = useCallback((muted: boolean) => {
+    audioManager.setSfxMuted(muted);
+    setIsSfxMutedState(muted);
+    setPreferences(audioManager.getPreferences());
+  }, []);
+
   const value: AudioContextValue = {
     isReady,
     isMuted,
+    isMusicMuted,
+    isSfxMuted,
     preferences,
     playMusic,
     stopMusic,
@@ -199,6 +235,10 @@ export function AudioProvider({ children }: AudioProviderProps) {
     setUiVolume,
     toggleMute,
     setMuted,
+    toggleMusicMute,
+    setMusicMuted,
+    toggleSfxMute,
+    setSfxMuted,
   };
 
   return <AudioContext.Provider value={value}>{children}</AudioContext.Provider>;

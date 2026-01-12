@@ -9,12 +9,16 @@ vi.mock('../services/audioManager', () => ({
     initialize: vi.fn(async () => {}),
     isReady: vi.fn(() => true),
     isMuted: vi.fn(() => false),
+    isMusicMuted: vi.fn(() => false),
+    isSfxMuted: vi.fn(() => false),
     getPreferences: vi.fn(() => ({
       masterVolume: 0.7,
       musicVolume: 0.5,
       sfxVolume: 0.8,
       uiVolume: 0.6,
       muted: false,
+      musicMuted: false,
+      sfxMuted: false,
     })),
     playMusic: vi.fn(),
     stopMusic: vi.fn(),
@@ -37,6 +41,10 @@ vi.mock('../services/audioManager', () => ({
     setUiVolume: vi.fn(),
     toggleMute: vi.fn(() => true),
     setMuted: vi.fn(),
+    toggleMusicMute: vi.fn(() => true),
+    setMusicMuted: vi.fn(),
+    toggleSfxMute: vi.fn(() => true),
+    setSfxMuted: vi.fn(),
   },
 }));
 
