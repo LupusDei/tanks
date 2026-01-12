@@ -611,6 +611,40 @@ p {
   background: linear-gradient(90deg, #ff8800 0%, #ff6600 100%);
 }
 
+.control-panel__bar-fill--fuel {
+  background: linear-gradient(90deg, #00ccff 0%, #0088cc 100%);
+}
+
+.control-panel__label--fuel {
+  color: #00ccff;
+}
+
+.control-panel__control--fuel {
+  /* Fuel control styles */
+}
+
+.control-panel__control--empty .control-panel__bar-fill--fuel {
+  background: linear-gradient(90deg, #444 0%, #333 100%);
+}
+
+.control-panel__control--empty .control-panel__label--fuel {
+  color: #666;
+}
+
+.control-panel__touch-btn--fuel {
+  background: linear-gradient(135deg, #00ccff 0%, #0088cc 100%);
+}
+
+.control-panel__touch-btn--fuel:active:not(:disabled) {
+  background: linear-gradient(135deg, #00ddff 0%, #00aadd 100%);
+}
+
+.control-panel__touch-btn--fuel:disabled {
+  background: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
 .control-panel__keys {
   font-size: 0.55rem;
   color: #555;

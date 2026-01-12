@@ -241,6 +241,44 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, wind }));
   }, []);
 
+  // Start tank movement animation
+  const startTankMove = useCallback((tankId: string, targetX: number, fuelCost: number) => {
+    setState((prev) => ({
+      ...prev,
+      tanks: prev.tanks.map((tank) =>
+        tank.id === tankId
+          ? {
+              ...tank,
+              isMoving: true,
+              moveTargetX: targetX,
+              moveStartTime: Date.now(),
+              moveStartX: tank.position.x,
+              fuel: Math.max(0, tank.fuel - fuelCost),
+            }
+          : tank
+      ),
+    }));
+  }, []);
+
+  // Complete tank movement and update final position
+  const completeTankMove = useCallback((tankId: string, finalX: number, finalY: number) => {
+    setState((prev) => ({
+      ...prev,
+      tanks: prev.tanks.map((tank) =>
+        tank.id === tankId
+          ? {
+              ...tank,
+              isMoving: false,
+              moveTargetX: null,
+              moveStartTime: null,
+              moveStartX: null,
+              position: { x: finalX, y: finalY },
+            }
+          : tank
+      ),
+    }));
+  }, []);
+
   const actions: GameActions = {
     setPhase,
     initializeTanks,
@@ -263,6 +301,8 @@ export function GameProvider({ children }: GameProviderProps) {
     setWeaponAmmo,
     decrementAmmo,
     setWind,
+    startTankMove,
+    completeTankMove,
   };
 
   return (

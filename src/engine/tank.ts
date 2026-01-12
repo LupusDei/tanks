@@ -496,7 +496,8 @@ function getEnemyColors(playerColor: TankColor, count: EnemyCount): TankColor[] 
 export function createInitialTanks(
   terrain: TerrainData,
   playerColor: TankColor,
-  enemyCount: EnemyCount
+  enemyCount: EnemyCount,
+  playerFuel: number = 0
 ): TankState[] {
   const tanks: TankState[] = [];
 
@@ -520,6 +521,12 @@ export function createInitialTanks(
     isReady: false,
     killedByWeapon: null,
     stunTurnsRemaining: 0,
+    fuel: playerFuel,
+    maxFuel: 100,
+    isMoving: false,
+    moveTargetX: null,
+    moveStartTime: null,
+    moveStartX: null,
   });
 
   // Get colors for enemies
@@ -560,6 +567,12 @@ export function createInitialTanks(
       isReady: false,
       killedByWeapon: null,
       stunTurnsRemaining: 0,
+      fuel: 0, // AI tanks don't use fuel
+      maxFuel: 100,
+      isMoving: false,
+      moveTargetX: null,
+      moveStartTime: null,
+      moveStartX: null,
     });
   }
 

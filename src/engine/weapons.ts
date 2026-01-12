@@ -453,3 +453,71 @@ export function canAffordArmor(balance: number, armorType: ArmorType): boolean {
   const armor = getArmorConfig(armorType);
   return balance >= armor.cost;
 }
+
+// ============================================================================
+// CONSUMABLE CONFIGURATIONS (Gas Cans)
+// ============================================================================
+
+import type { ConsumableType } from '../types/game';
+
+/**
+ * Configuration for a consumable type.
+ */
+export interface ConsumableConfig {
+  /** Unique identifier for the consumable */
+  id: ConsumableType;
+  /** Display name shown in UI */
+  name: string;
+  /** Description of the consumable's effects */
+  description: string;
+  /** Cost to purchase one unit */
+  cost: number;
+  /** Maximum number that can be purchased per game */
+  maxOwned: number;
+  /** Fuel value provided by one gas can (0-100) */
+  fuelValue: number;
+}
+
+/** Cost per gas can */
+export const GAS_CAN_COST = 50;
+
+/** Maximum gas cans purchasable (4 = 100% fuel) */
+export const GAS_CAN_MAX = 4;
+
+/** Fuel provided per gas can (25% of max) */
+export const GAS_CAN_FUEL_VALUE = 25;
+
+/**
+ * Gas Can - provides fuel for tank movement.
+ * Each can provides 25% fuel, allowing movement of 25% of Large terrain.
+ */
+export const CONSUMABLE_GAS_CAN: ConsumableConfig = {
+  id: 'gas_can',
+  name: 'Gas Can',
+  description: 'Adds 25% fuel for tank movement. Press Q/E to move. Max 4.',
+  cost: GAS_CAN_COST,
+  maxOwned: GAS_CAN_MAX,
+  fuelValue: GAS_CAN_FUEL_VALUE,
+};
+
+/**
+ * All available consumables indexed by their type.
+ */
+export const CONSUMABLES: Record<ConsumableType, ConsumableConfig> = {
+  gas_can: CONSUMABLE_GAS_CAN,
+};
+
+/**
+ * Get consumable configuration by type.
+ */
+export function getConsumableConfig(consumableType: ConsumableType): ConsumableConfig {
+  return CONSUMABLES[consumableType];
+}
+
+/**
+ * Check if a player can afford a consumable.
+ */
+export function canAffordConsumable(balance: number, consumableType: ConsumableType): boolean {
+  const consumable = getConsumableConfig(consumableType);
+  return balance >= consumable.cost;
+}

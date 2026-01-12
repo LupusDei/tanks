@@ -134,10 +134,19 @@ export {
   calculateWinBonus,
   calculateGameEarnings,
   getDestructionCategory,
+  // Consumable configurations
+  GAS_CAN_COST,
+  GAS_CAN_MAX,
+  GAS_CAN_FUEL_VALUE,
+  CONSUMABLE_GAS_CAN,
+  CONSUMABLES,
+  getConsumableConfig,
+  canAffordConsumable,
   // Types
   type WeaponType,
   type WeaponConfig,
   type DestructionCategory,
+  type ConsumableConfig,
 } from './weapons';
 
 export {
@@ -181,3 +190,16 @@ export {
   type WindParticle,
   type WindParticleSystemState,
 } from './windParticles';
+
+export {
+  MOVEMENT_ANIMATION_DURATION,
+  LARGE_TERRAIN_WIDTH,
+  TANK_BODY_WIDTH,
+  getMaxMovementDistance,
+  calculateFuelCost,
+  checkTankCollision,
+  calculateMovementTarget,
+  easeInOutQuad,
+  getAnimatedPosition,
+  getFinalPosition,
+} from './movement';

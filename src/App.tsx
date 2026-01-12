@@ -64,6 +64,10 @@ import {
   createWindParticleSystem,
   updateWindParticles,
   renderWindParticles,
+  calculateMovementTarget,
+  getAnimatedPosition,
+  getFinalPosition,
+  GAS_CAN_FUEL_VALUE,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -72,7 +76,15 @@ import {
   type WindParticleSystemState,
 } from './engine'
 import { TankColor, TerrainSize, TERRAIN_SIZES, EnemyCount, AIDifficulty, CampaignLength } from './types/game'
-import { getWeaponInventory, getArmorInventory, loadActiveCampaign } from './services/userDatabase'
+import {
+  getWeaponInventory,
+  getArmorInventory,
+  loadActiveCampaign,
+  getGasCanCount,
+  getCampaignGasCanCount,
+  clearConsumableInventory,
+  clearAllCampaignConsumables,
+} from './services/userDatabase'
 import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings } from './engine/ai'
 
 interface GameConfig {
@@ -589,11 +601,28 @@ function App() {
 
       // Apply armor to player tank (only player has armor in free play)
       const playerArmor = getArmorInventory()
+      let updatedTanks = state.tanks
       if (Object.keys(playerArmor).length > 0) {
         const armorMap = new Map([['player', playerArmor]])
-        const tanksWithArmor = applyArmorToTanks(state.tanks, armorMap)
-        actions.initializeTanks(tanksWithArmor)
+        updatedTanks = applyArmorToTanks(state.tanks, armorMap)
       }
+
+      // Apply fuel from gas cans to player tank
+      const gasCanCount = getGasCanCount()
+      const playerFuel = gasCanCount * GAS_CAN_FUEL_VALUE
+      if (playerFuel > 0) {
+        updatedTanks = updatedTanks.map(tank =>
+          tank.id === 'player' ? { ...tank, fuel: playerFuel } : tank
+        )
+      }
+
+      // Update tanks if armor or fuel was applied
+      if (Object.keys(playerArmor).length > 0 || playerFuel > 0) {
+        actions.initializeTanks(updatedTanks)
+      }
+
+      // Clear consumables after applying them (they're single-use per game)
+      clearConsumableInventory()
     }
 
     actions.setSelectedWeapon(weapon)
@@ -654,11 +683,25 @@ function App() {
     })
 
     // Apply armor to all tanks
-    const tanksWithArmor = applyArmorToTanks(tanks, armorMap)
+    let updatedTanks = applyArmorToTanks(tanks, armorMap)
+
+    // Apply fuel from gas cans to player tank (campaign mode)
+    if (player) {
+      const gasCanCount = getCampaignGasCanCount(player.id)
+      const playerFuel = gasCanCount * GAS_CAN_FUEL_VALUE
+      if (playerFuel > 0) {
+        updatedTanks = updatedTanks.map(tank =>
+          tank.id === 'player' ? { ...tank, fuel: playerFuel } : tank
+        )
+      }
+    }
+
+    // Clear all campaign consumables after applying them
+    clearAllCampaignConsumables()
 
     // Set terrain and tanks in game state
     actions.setTerrain(terrain)
-    actions.initializeTanks(tanksWithArmor)
+    actions.initializeTanks(updatedTanks)
   }
 
   const handlePlayAgain = () => {
@@ -732,7 +775,44 @@ function App() {
     setIsFittedToScreen(prev => !prev)
   }, [])
 
-  // Handle canvas click to cycle AI difficulty when clicking on any enemy tank
+  // Handle tank movement
+  const handleMoveLeft = useCallback(() => {
+    const playerTank = state.tanks.find((t) => t.id === 'player')
+    if (!playerTank || !state.terrain) return
+    if (playerTank.fuel <= 0 || playerTank.isReady || playerTank.isMoving) return
+
+    const { targetX, fuelCost } = calculateMovementTarget(
+      playerTank,
+      'left',
+      state.tanks,
+      state.terrain
+    )
+
+    // Only move if there's actual distance to travel
+    if (Math.abs(targetX - playerTank.position.x) > 1 && fuelCost > 0) {
+      actions.startTankMove('player', targetX, fuelCost)
+    }
+  }, [state.tanks, state.terrain, actions])
+
+  const handleMoveRight = useCallback(() => {
+    const playerTank = state.tanks.find((t) => t.id === 'player')
+    if (!playerTank || !state.terrain) return
+    if (playerTank.fuel <= 0 || playerTank.isReady || playerTank.isMoving) return
+
+    const { targetX, fuelCost } = calculateMovementTarget(
+      playerTank,
+      'right',
+      state.tanks,
+      state.terrain
+    )
+
+    // Only move if there's actual distance to travel
+    if (Math.abs(targetX - playerTank.position.x) > 1 && fuelCost > 0) {
+      actions.startTankMove('player', targetX, fuelCost)
+    }
+  }, [state.tanks, state.terrain, actions])
+
+  // Handle canvas click to cycle AI difficulty when clicking on any enemy tank, or click-to-move
   const handleCanvasClick = useCallback((canvasX: number, canvasY: number) => {
     // Only allow clicking during player's turn and not during projectile/explosion animation
     if (state.phase !== 'playing' || isProjectileActive || isExplosionActive) return
@@ -766,7 +846,28 @@ function App() {
         return // Only handle one click
       }
     }
-  }, [state.phase, state.tanks, state.aiDifficulty, state.terrainSize, isProjectileActive, isExplosionActive, actions])
+
+    // Click-to-move: if click wasn't on an enemy tank, try to move player tank toward click
+    const playerTank = state.tanks.find((t) => t.id === 'player')
+    if (!playerTank || !state.terrain) return
+    if (playerTank.fuel <= 0 || playerTank.isReady || playerTank.isMoving) return
+
+    // Determine direction based on click position relative to player tank
+    const direction = canvasX < playerTank.position.x ? 'left' : 'right'
+
+    const { targetX, fuelCost } = calculateMovementTarget(
+      playerTank,
+      direction,
+      state.tanks,
+      state.terrain,
+      canvasX // Pass click X as target hint
+    )
+
+    // Only move if there's actual distance to travel
+    if (Math.abs(targetX - playerTank.position.x) > 1 && fuelCost > 0) {
+      actions.startTankMove('player', targetX, fuelCost)
+    }
+  }, [state.phase, state.tanks, state.terrain, state.aiDifficulty, state.terrainSize, isProjectileActive, isExplosionActive, actions])
 
   const handleRender = (ctx: CanvasRenderingContext2D) => {
     const { terrain, tanks } = state
@@ -816,6 +917,8 @@ function App() {
     // Render tanks (skip dead tanks and those with active destruction animations)
     const hasActiveProjectiles = projectilesRef.current.some((p) => p.isActive)
     const destroyedTankIds = new Set(destructionsRef.current.filter(d => d.isActive).map(d => d.tankId))
+    const currentAnimTime = performance.now()
+
     for (const tank of tanks) {
       // Skip rendering dead tanks
       if (tank.health <= 0) {
@@ -842,7 +945,28 @@ function App() {
         tankName = userData.profile.username
       }
 
-      renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount, name: tankName })
+      // Handle movement animation - render at interpolated position
+      if (tank.isMoving && tank.moveTargetX !== null && tank.moveStartTime !== null && tank.moveStartX !== null && terrain) {
+        const animResult = getAnimatedPosition(
+          tank.moveStartX,
+          tank.moveTargetX,
+          terrain,
+          tank.moveStartTime,
+          currentAnimTime
+        )
+
+        // Create a temporary tank with animated position for rendering
+        const animatedTank = { ...tank, position: animResult.position }
+        renderTank(ctx, animatedTank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount, name: tankName })
+
+        // Check if animation is complete and update state
+        if (animResult.complete) {
+          const finalPos = getFinalPosition(tank.moveTargetX, terrain)
+          actions.completeTankMove(tank.id, finalPos.x, finalPos.y)
+        }
+      } else {
+        renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount, name: tankName })
+      }
     }
 
     const currentTime = performance.now()
@@ -1277,6 +1401,11 @@ function App() {
             onFire={handleFire}
             enabled={!playerTank.isReady}
             isQueued={playerTank.isReady}
+            fuel={playerTank.fuel}
+            maxFuel={playerTank.maxFuel}
+            onMoveLeft={handleMoveLeft}
+            onMoveRight={handleMoveRight}
+            canMove={!playerTank.isReady && playerTank.fuel > 0 && !playerTank.isMoving}
             onFitScreen={handleFitScreen}
             isFittedToScreen={isFittedToScreen}
           />

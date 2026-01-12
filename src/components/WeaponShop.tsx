@@ -6,8 +6,16 @@ import {
   WEAPON_TYPES,
   WEAPONS,
   ARMORS,
+  CONSUMABLE_GAS_CAN,
+  GAS_CAN_MAX,
 } from '../engine/weapons';
 import { ARMOR_TYPES, type ArmorType } from '../types/game';
+import {
+  getGasCanCount,
+  purchaseGasCan,
+  getCampaignGasCanCount,
+  purchaseCampaignGasCan,
+} from '../services/userDatabase';
 
 interface WeaponShopProps {
   onConfirm: (weapon: WeaponType) => void;
@@ -81,7 +89,18 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
   // Track armor selections (true = selected for purchase)
   const [armorSelections, setArmorSelections] = useState<Partial<Record<ArmorType, boolean>>>({});
 
-  // Calculate total cost of all pending purchases (weapons + armor)
+  // Track gas can purchase quantity
+  const [gasCanQty, setGasCanQty] = useState(0);
+
+  // Get currently owned gas cans
+  const ownedGasCans = useMemo(() => {
+    if (campaignMode && player) {
+      return getCampaignGasCanCount(player.id);
+    }
+    return getGasCanCount();
+  }, [campaignMode, player]);
+
+  // Calculate total cost of all pending purchases (weapons + armor + consumables)
   const totalCost = useMemo(() => {
     // Sum weapon costs
     const weaponCost = Object.entries(purchaseQtys).reduce((sum, [weaponType, qty]) => {
@@ -97,8 +116,11 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
       return sum + armor.cost;
     }, 0);
 
-    return weaponCost + armorCost;
-  }, [purchaseQtys, armorSelections]);
+    // Sum gas can costs
+    const gasCanCost = gasCanQty * CONSUMABLE_GAS_CAN.cost;
+
+    return weaponCost + armorCost + gasCanCost;
+  }, [purchaseQtys, armorSelections, gasCanQty]);
 
   // Calculate balance after purchase
   const balanceAfter = balance - totalCost;
@@ -172,6 +194,21 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
     }));
   };
 
+  // Gas can handlers
+  const totalGasCans = ownedGasCans + gasCanQty;
+  const canIncreaseGasCans = totalGasCans < GAS_CAN_MAX && balanceAfter >= CONSUMABLE_GAS_CAN.cost;
+  const canDecreaseGasCans = gasCanQty > 0;
+
+  const handleGasCanIncrement = () => {
+    if (!canIncreaseGasCans) return;
+    setGasCanQty(prev => prev + 1);
+  };
+
+  const handleGasCanDecrement = () => {
+    if (!canDecreaseGasCans) return;
+    setGasCanQty(prev => prev - 1);
+  };
+
   const handleConfirm = () => {
     // Purchase all selected weapons
     for (const [weaponType, qty] of Object.entries(purchaseQtys)) {
@@ -193,6 +230,20 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
           console.error(`Failed to purchase armor ${armorType}`);
           return;
         }
+      }
+    }
+
+    // Purchase all selected gas cans
+    for (let i = 0; i < gasCanQty; i++) {
+      let success: boolean;
+      if (campaignMode && player) {
+        success = purchaseCampaignGasCan(player.id, CONSUMABLE_GAS_CAN.cost);
+      } else {
+        success = purchaseGasCan(CONSUMABLE_GAS_CAN.cost);
+      }
+      if (!success) {
+        console.error(`Failed to purchase gas can ${i + 1}`);
+        return;
       }
     }
 
@@ -313,6 +364,53 @@ export function WeaponShop({ onConfirm, onCancel, campaignMode = false }: Weapon
               </div>
             );
           })}
+        </div>
+
+        {/* Consumables Section */}
+        <h3 className="weapon-shop__section-title">Consumables</h3>
+        <div className="weapon-shop__consumables">
+          <div
+            className={`weapon-shop__consumable-item ${gasCanQty > 0 ? 'weapon-shop__consumable-item--selected' : ''} ${!canIncreaseGasCans && gasCanQty === 0 ? 'weapon-shop__consumable-item--unaffordable' : ''}`}
+            data-testid="consumable-gas_can"
+          >
+            <div className="weapon-shop__consumable-header">
+              <span className="weapon-shop__consumable-name">{CONSUMABLE_GAS_CAN.name}</span>
+              <span className="weapon-shop__consumable-cost">${CONSUMABLE_GAS_CAN.cost}</span>
+            </div>
+            <p className="weapon-shop__consumable-description">{CONSUMABLE_GAS_CAN.description}</p>
+            <div className="weapon-shop__consumable-inventory">
+              <span className="weapon-shop__owned" data-testid="owned-gas_can">
+                Owned: {ownedGasCans}/{GAS_CAN_MAX}
+              </span>
+              <div className="weapon-shop__quantity-controls">
+                <button
+                  className="weapon-shop__qty-btn weapon-shop__qty-btn--minus"
+                  onClick={handleGasCanDecrement}
+                  disabled={!canDecreaseGasCans}
+                  data-testid="qty-minus-gas_can"
+                  aria-label="Decrease gas can quantity"
+                >
+                  −
+                </button>
+                <span className="weapon-shop__qty-value" data-testid="qty-gas_can">
+                  {gasCanQty}
+                </span>
+                <button
+                  className="weapon-shop__qty-btn weapon-shop__qty-btn--plus"
+                  onClick={handleGasCanIncrement}
+                  disabled={!canIncreaseGasCans}
+                  data-testid="qty-plus-gas_can"
+                  aria-label="Increase gas can quantity"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="weapon-shop__consumable-fuel">
+              <span className="weapon-shop__fuel-label">Fuel after purchase:</span>
+              <span className="weapon-shop__fuel-value">{totalGasCans * CONSUMABLE_GAS_CAN.fuelValue}%</span>
+            </div>
+          </div>
         </div>
       </div>
 
