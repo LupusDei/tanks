@@ -77,10 +77,10 @@ export function renderTank(
   ctx.save();
   ctx.translate(canvasX, canvasY);
 
-  // Draw tank name indicator with triangle (below tank)
+  // Draw tank name indicator with triangle (below tank, after health/shield bars)
   if (name) {
     ctx.save();
-    const nameY = bodyHeight / 2 + wheelRadius + 12;
+    const nameY = bodyHeight / 2 + wheelRadius + 18;
     const arrowHeight = 8;
     const arrowWidth = 8;
     const arrowColor = isCurrentTurn ? '#ffff00' : 'rgba(255, 255, 255, 0.7)';
@@ -129,7 +129,7 @@ export function renderTank(
   } else if (isCurrentTurn) {
     // Only draw arrow indicator if no name but is current turn
     ctx.save();
-    const arrowY = bodyHeight / 2 + wheelRadius + 12;
+    const arrowY = bodyHeight / 2 + wheelRadius + 18;
     const arrowHeight = 12;
     const arrowWidth = 10;
 
@@ -390,18 +390,34 @@ export function renderTank(
   ctx.arc(0, cupolaY, cupolaRadius, Math.PI, 0);
   ctx.fill();
 
-  // Draw health bars (positioned above tank)
+  // Draw health and shield bars (positioned below tank)
   const healthBarWidth = bodyWidth;
   const healthBarHeight = 4;
   const hasShield = maxShieldHp > 0;
-  const showHealthBar = health < tank.maxHealth || hasShield;
+  const showHealthBar = health < tank.maxHealth; // Only show when damaged
 
-  if (showHealthBar) {
-    // Position above the dome - if shield exists, stack them
-    const shieldBarY = turretY - domeRadius - 8;
-    const healthBarY = hasShield ? shieldBarY + healthBarHeight + 2 : shieldBarY;
+  // Position below the tank body
+  const barsStartY = bodyHeight / 2 + wheelRadius + 3;
 
-    // Draw shield bar first (above health bar) if tank has shield capability
+  if (hasShield || showHealthBar) {
+    // Calculate positions - health bar first, then shield below
+    const healthBarY = barsStartY;
+    const shieldBarY = showHealthBar ? healthBarY + healthBarHeight + 2 : healthBarY;
+
+    // Draw health bar only when damaged
+    if (showHealthBar) {
+      // Health bar background
+      ctx.fillStyle = '#333';
+      ctx.fillRect(-healthBarWidth / 2, healthBarY, healthBarWidth, healthBarHeight);
+
+      // Health fill
+      const healthPercent = Math.max(0, health) / tank.maxHealth;
+      const healthColor = healthPercent > 0.5 ? '#44ff44' : healthPercent > 0.25 ? '#ffff44' : '#ff4444';
+      ctx.fillStyle = healthColor;
+      ctx.fillRect(-healthBarWidth / 2, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
+    }
+
+    // Draw shield bar if tank has shield capability
     if (hasShield) {
       // Shield bar background
       ctx.fillStyle = '#223366';
@@ -425,16 +441,6 @@ export function renderTank(
       ctx.lineWidth = 0.5;
       ctx.strokeRect(-healthBarWidth / 2, shieldBarY, healthBarWidth, healthBarHeight);
     }
-
-    // Health bar background
-    ctx.fillStyle = '#333';
-    ctx.fillRect(-healthBarWidth / 2, healthBarY, healthBarWidth, healthBarHeight);
-
-    // Health fill
-    const healthPercent = Math.max(0, health) / tank.maxHealth;
-    const healthColor = healthPercent > 0.5 ? '#44ff44' : healthPercent > 0.25 ? '#ffff44' : '#ff4444';
-    ctx.fillStyle = healthColor;
-    ctx.fillRect(-healthBarWidth / 2, healthBarY, healthBarWidth * healthPercent, healthBarHeight);
   }
 
   // Draw stun effect if tank is stunned
