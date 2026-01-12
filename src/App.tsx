@@ -106,7 +106,7 @@ function App() {
     getTotalGames,
     clearAllArmor,
   } = useCampaign()
-  const { playMusic, crossfadeMusic, playWeaponFire, playExplosion } = useAudio()
+  const { playMusic, crossfadeMusic, playWeaponFire, playExplosion, playTankDestruction } = useAudio()
 
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
@@ -886,6 +886,8 @@ function App() {
             const destruction = createTankDestruction(killedTank, ctx.canvas.height, currentTime)
             if (destruction) {
               destructionsRef.current = [...destructionsRef.current, destruction]
+              // Play tank destruction sound
+              playTankDestruction()
             }
           }
         }
