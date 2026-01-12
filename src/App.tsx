@@ -106,7 +106,7 @@ function App() {
     getTotalGames,
     clearAllArmor,
   } = useCampaign()
-  const { playMusic, crossfadeMusic, playWeaponFire } = useAudio()
+  const { playMusic, crossfadeMusic, playWeaponFire, playExplosion } = useAudio()
 
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
@@ -831,6 +831,9 @@ function App() {
       const newExplosion = createExplosion(landingPos, currentTime, blastRadius, explosionType)
       explosionsRef.current = [...explosionsRef.current, newExplosion]
       setIsExplosionActive(true)
+
+      // Play explosion sound based on size and weapon type
+      playExplosion(blastRadius, proj.weaponType as WeaponType)
 
       // Apply crater for Bunker Buster weapon
       if (weaponConfig.craterRadius && terrain) {
