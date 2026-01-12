@@ -942,30 +942,30 @@ function renderShieldGlow(
   // Calculate glow radius based on tank size
   const glowRadius = Math.max(bodyWidth, bodyHeight + wheelRadius * 2) * 0.8;
 
-  // Outer glow (larger, softer)
+  // Outer glow (larger, softer) - 50% more visible
   const outerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius * 1.3);
-  outerGlow.addColorStop(0, `rgba(68, 136, 255, ${0.15 * shieldIntensity * pulse})`);
-  outerGlow.addColorStop(0.5, `rgba(68, 136, 255, ${0.08 * shieldIntensity * pulse})`);
+  outerGlow.addColorStop(0, `rgba(68, 136, 255, ${0.225 * shieldIntensity * pulse})`);
+  outerGlow.addColorStop(0.5, `rgba(68, 136, 255, ${0.12 * shieldIntensity * pulse})`);
   outerGlow.addColorStop(1, 'rgba(68, 136, 255, 0)');
   ctx.fillStyle = outerGlow;
   ctx.beginPath();
   ctx.ellipse(0, bodyHeight / 4, glowRadius * 1.3, glowRadius * 0.9, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Inner glow (brighter core)
+  // Inner glow (brighter core) - 50% more visible
   const innerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius * 0.7);
-  innerGlow.addColorStop(0, `rgba(136, 200, 255, ${0.2 * shieldIntensity * pulse})`);
-  innerGlow.addColorStop(0.6, `rgba(68, 136, 255, ${0.1 * shieldIntensity * pulse})`);
+  innerGlow.addColorStop(0, `rgba(136, 200, 255, ${0.3 * shieldIntensity * pulse})`);
+  innerGlow.addColorStop(0.6, `rgba(68, 136, 255, ${0.15 * shieldIntensity * pulse})`);
   innerGlow.addColorStop(1, 'rgba(68, 136, 255, 0)');
   ctx.fillStyle = innerGlow;
   ctx.beginPath();
   ctx.ellipse(0, bodyHeight / 4, glowRadius * 0.7, glowRadius * 0.5, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Shield edge shimmer particles
+  // Shield edge shimmer particles - 33% larger orbit
   const particleCount = 6;
-  const baseRadius = glowRadius * 0.6;
-  ctx.fillStyle = `rgba(136, 200, 255, ${0.5 * shieldIntensity * pulse})`;
+  const baseRadius = glowRadius * 0.8;
+  ctx.fillStyle = `rgba(136, 200, 255, ${0.75 * shieldIntensity * pulse})`;
   ctx.shadowColor = '#88ccff';
   ctx.shadowBlur = 4;
 
