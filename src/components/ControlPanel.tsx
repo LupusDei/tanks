@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useKeyboard, useIsMobile } from '../hooks'
+import { useKeyboard, useIsMobile, usePressAndHold } from '../hooks'
 
 interface ControlPanelProps {
   angle: number
@@ -42,22 +42,34 @@ export function ControlPanel({
     []
   )
 
-  // Touch control handlers - use 1% increments for fine control
-  const handleAngleIncrease = useCallback(() => {
-    onAngleChange(clampAngle(angle + ANGLE_STEP))
-  }, [angle, onAngleChange, clampAngle])
+  // Press-and-hold handlers for all buttons (works on both desktop and mobile)
+  const angleIncreaseHandlers = usePressAndHold({
+    onPress: useCallback(() => {
+      onAngleChange(clampAngle(angle + ANGLE_STEP))
+    }, [angle, onAngleChange, clampAngle]),
+    enabled: enabled && angle < MAX_ANGLE,
+  })
 
-  const handleAngleDecrease = useCallback(() => {
-    onAngleChange(clampAngle(angle - ANGLE_STEP))
-  }, [angle, onAngleChange, clampAngle])
+  const angleDecreaseHandlers = usePressAndHold({
+    onPress: useCallback(() => {
+      onAngleChange(clampAngle(angle - ANGLE_STEP))
+    }, [angle, onAngleChange, clampAngle]),
+    enabled: enabled && angle > MIN_ANGLE,
+  })
 
-  const handlePowerIncrease = useCallback(() => {
-    onPowerChange(clampPower(power + POWER_STEP))
-  }, [power, onPowerChange, clampPower])
+  const powerIncreaseHandlers = usePressAndHold({
+    onPress: useCallback(() => {
+      onPowerChange(clampPower(power + POWER_STEP))
+    }, [power, onPowerChange, clampPower]),
+    enabled: enabled && power < MAX_POWER,
+  })
 
-  const handlePowerDecrease = useCallback(() => {
-    onPowerChange(clampPower(power - POWER_STEP))
-  }, [power, onPowerChange, clampPower])
+  const powerDecreaseHandlers = usePressAndHold({
+    onPress: useCallback(() => {
+      onPowerChange(clampPower(power - POWER_STEP))
+    }, [power, onPowerChange, clampPower]),
+    enabled: enabled && power > MIN_POWER,
+  })
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -114,40 +126,38 @@ export function ControlPanel({
         <div className="control-panel__control control-panel__control--angle">
           <div className="control-panel__label">Angle</div>
           <div className="control-panel__display">
-            {isMobile && (
-              <button
-                className="control-panel__touch-btn control-panel__touch-btn--angle"
-                onClick={handleAngleIncrease}
-                disabled={!enabled || angle >= MAX_ANGLE}
-                aria-label="Increase angle left"
-                data-testid="angle-increase-btn"
-              >
-                ◀
-              </button>
-            )}
-            <div className="control-panel__value" data-testid="angle-value">
-              {Math.abs(angle)}° {angle !== 0 && (angle > 0 ? 'L' : 'R')}
-            </div>
-            {!isMobile && (
-              <div className="control-panel__bar control-panel__bar--angle">
-                <div className="control-panel__bar-center" />
-                <div
-                  className={`control-panel__bar-fill control-panel__bar-fill--angle control-panel__bar-fill--${angleDirection}`}
-                  style={{ width: `${anglePercentage / 2}%` }}
-                />
+            <button
+              className="control-panel__touch-btn control-panel__touch-btn--angle"
+              disabled={!enabled || angle >= MAX_ANGLE}
+              aria-label="Increase angle left"
+              data-testid="angle-increase-btn"
+              {...angleIncreaseHandlers}
+            >
+              ◀
+            </button>
+            <div className="control-panel__value-container">
+              <div className="control-panel__value" data-testid="angle-value">
+                {Math.abs(angle)}° {angle !== 0 && (angle > 0 ? 'L' : 'R')}
               </div>
-            )}
-            {isMobile && (
-              <button
-                className="control-panel__touch-btn control-panel__touch-btn--angle"
-                onClick={handleAngleDecrease}
-                disabled={!enabled || angle <= MIN_ANGLE}
-                aria-label="Increase angle right"
-                data-testid="angle-decrease-btn"
-              >
-                ▶
-              </button>
-            )}
+              {!isMobile && (
+                <div className="control-panel__bar control-panel__bar--angle">
+                  <div className="control-panel__bar-center" />
+                  <div
+                    className={`control-panel__bar-fill control-panel__bar-fill--angle control-panel__bar-fill--${angleDirection}`}
+                    style={{ width: `${anglePercentage / 2}%` }}
+                  />
+                </div>
+              )}
+            </div>
+            <button
+              className="control-panel__touch-btn control-panel__touch-btn--angle"
+              disabled={!enabled || angle <= MIN_ANGLE}
+              aria-label="Increase angle right"
+              data-testid="angle-decrease-btn"
+              {...angleDecreaseHandlers}
+            >
+              ▶
+            </button>
           </div>
           {!isMobile && (
             <div className="control-panel__keys">
@@ -166,39 +176,37 @@ export function ControlPanel({
         <div className="control-panel__control control-panel__control--power">
           <div className="control-panel__label control-panel__label--power">Power</div>
           <div className="control-panel__display">
-            {isMobile && (
-              <button
-                className="control-panel__touch-btn control-panel__touch-btn--power"
-                onClick={handlePowerDecrease}
-                disabled={!enabled || power <= MIN_POWER}
-                aria-label="Decrease power"
-                data-testid="power-decrease-btn"
-              >
-                −
-              </button>
-            )}
-            <div className="control-panel__value" data-testid="power-value">
-              {power}%
-            </div>
-            {!isMobile && (
-              <div className="control-panel__bar">
-                <div
-                  className="control-panel__bar-fill control-panel__bar-fill--power"
-                  style={{ width: `${powerPercentage}%` }}
-                />
+            <button
+              className="control-panel__touch-btn control-panel__touch-btn--power"
+              disabled={!enabled || power <= MIN_POWER}
+              aria-label="Decrease power"
+              data-testid="power-decrease-btn"
+              {...powerDecreaseHandlers}
+            >
+              −
+            </button>
+            <div className="control-panel__value-container">
+              <div className="control-panel__value" data-testid="power-value">
+                {power}%
               </div>
-            )}
-            {isMobile && (
-              <button
-                className="control-panel__touch-btn control-panel__touch-btn--power"
-                onClick={handlePowerIncrease}
-                disabled={!enabled || power >= MAX_POWER}
-                aria-label="Increase power"
-                data-testid="power-increase-btn"
-              >
-                +
-              </button>
-            )}
+              {!isMobile && (
+                <div className="control-panel__bar">
+                  <div
+                    className="control-panel__bar-fill control-panel__bar-fill--power"
+                    style={{ width: `${powerPercentage}%` }}
+                  />
+                </div>
+              )}
+            </div>
+            <button
+              className="control-panel__touch-btn control-panel__touch-btn--power"
+              disabled={!enabled || power >= MAX_POWER}
+              aria-label="Increase power"
+              data-testid="power-increase-btn"
+              {...powerIncreaseHandlers}
+            >
+              +
+            </button>
           </div>
           {!isMobile && (
             <div className="control-panel__keys">
