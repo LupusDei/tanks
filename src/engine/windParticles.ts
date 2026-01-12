@@ -8,8 +8,11 @@ import { MAX_WIND } from './wind';
 /** Maximum number of active particles */
 const MAX_PARTICLES = 60;
 
-/** Particle lifetime in milliseconds */
-const PARTICLE_LIFETIME_MS = 4000;
+/** Minimum particle lifetime in milliseconds */
+const MIN_PARTICLE_LIFETIME_MS = 2000;
+
+/** Maximum particle lifetime in milliseconds */
+const MAX_PARTICLE_LIFETIME_MS = 5000;
 
 /** Base particle speed multiplier (pixels per second per m/s of wind) */
 const SPEED_MULTIPLIER = 3.5;
@@ -37,6 +40,10 @@ export interface WindParticle {
   vy: number;
   /** Time when particle was created */
   spawnTime: number;
+  /** Particle's individual lifetime in ms (randomized per particle) */
+  lifetime: number;
+  /** Base opacity before fade (stored for fade calculation) */
+  baseOpacity: number;
   /** Particle opacity (0-1) */
   opacity: number;
   /** Particle size (radius in pixels) */
@@ -106,11 +113,13 @@ function spawnParticle(
 
   // Subtle opacity with variance, stronger wind = slightly more visible
   // Base opacity increased by 50% for better visibility
-  const baseOpacity = 0.12 + windStrength * 0.18;
-  const opacity = baseOpacity * (0.6 + Math.random() * 0.8);
+  const baseOpacity = (0.12 + windStrength * 0.18) * (0.6 + Math.random() * 0.8);
 
   // Small size with variance
   const size = 0.8 + Math.random() * 1.2;
+
+  // Random lifetime for staggered disappearance
+  const lifetime = MIN_PARTICLE_LIFETIME_MS + Math.random() * (MAX_PARTICLE_LIFETIME_MS - MIN_PARTICLE_LIFETIME_MS);
 
   return {
     x,
@@ -118,7 +127,9 @@ function spawnParticle(
     vx,
     vy,
     spawnTime: currentTime,
-    opacity,
+    lifetime,
+    baseOpacity,
+    opacity: baseOpacity,
     size,
     trace: [],
   };
@@ -167,8 +178,8 @@ export function updateWindParticles(
   for (const particle of [...state.particles, ...newParticles]) {
     const age = currentTime - particle.spawnTime;
 
-    // Remove expired particles
-    if (age >= PARTICLE_LIFETIME_MS) {
+    // Remove expired particles (using individual lifetime)
+    if (age >= particle.lifetime) {
       continue;
     }
 
@@ -194,9 +205,9 @@ export function updateWindParticles(
     const newX = particle.x + particle.vx * deltaSeconds;
     const newY = particle.y + particle.vy * deltaSeconds;
 
-    // Fade out near end of life
-    const lifeProgress = age / PARTICLE_LIFETIME_MS;
-    const fadeStart = 0.6;
+    // Fade out near end of life (using individual lifetime)
+    const lifeProgress = age / particle.lifetime;
+    const fadeStart = 0.5;
     const fadeFactor = lifeProgress > fadeStart
       ? 1 - (lifeProgress - fadeStart) / (1 - fadeStart)
       : 1;
@@ -205,7 +216,7 @@ export function updateWindParticles(
       ...particle,
       x: newX,
       y: newY,
-      opacity: particle.opacity * fadeFactor,
+      opacity: particle.baseOpacity * fadeFactor,
       trace: newTrace,
     });
   }
