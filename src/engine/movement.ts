@@ -13,8 +13,8 @@ import { getInterpolatedHeightAt } from './terrain';
 // MOVEMENT CONSTANTS
 // ============================================================================
 
-/** Animation duration for tank movement in milliseconds */
-export const MOVEMENT_ANIMATION_DURATION = 500;
+/** Tank movement speed as percentage of terrain width per second */
+export const MOVEMENT_SPEED_PERCENT_PER_SECOND = 2;
 
 /** Reference terrain width for fuel calculations (Large terrain) */
 export const LARGE_TERRAIN_WIDTH = 1280;
@@ -210,8 +210,25 @@ export function easeInOutQuad(t: number): number {
 }
 
 /**
+ * Calculate animation duration based on distance and terrain width.
+ * Speed is defined as percentage of terrain per second.
+ *
+ * @param distance - Distance to travel in pixels
+ * @param terrainWidth - Width of terrain in pixels
+ * @returns Duration in milliseconds
+ */
+export function calculateAnimationDuration(distance: number, terrainWidth: number): number {
+  // Speed = MOVEMENT_SPEED_PERCENT_PER_SECOND% of terrain per second
+  // Duration = distance / speed
+  const speedPixelsPerSecond = (MOVEMENT_SPEED_PERCENT_PER_SECOND / 100) * terrainWidth;
+  const durationSeconds = Math.abs(distance) / speedPixelsPerSecond;
+  return durationSeconds * 1000;
+}
+
+/**
  * Get the interpolated position during movement animation.
  * Tank follows terrain height as it moves.
+ * Speed is ~2% of terrain width per second.
  *
  * @param startX - Starting X position
  * @param targetX - Target X position
@@ -227,8 +244,10 @@ export function getAnimatedPosition(
   startTime: number,
   currentTime: number
 ): { position: Position; complete: boolean } {
+  const distance = targetX - startX;
+  const duration = calculateAnimationDuration(distance, terrain.width);
   const elapsed = currentTime - startTime;
-  const progress = Math.min(1, elapsed / MOVEMENT_ANIMATION_DURATION);
+  const progress = Math.min(1, elapsed / duration);
   const easedProgress = easeInOutQuad(progress);
 
   // Interpolate X position

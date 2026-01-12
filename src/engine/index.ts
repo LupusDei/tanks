@@ -192,7 +192,7 @@ export {
 } from './windParticles';
 
 export {
-  MOVEMENT_ANIMATION_DURATION,
+  MOVEMENT_SPEED_PERCENT_PER_SECOND,
   LARGE_TERRAIN_WIDTH,
   TANK_BODY_WIDTH,
   getMaxMovementDistance,
@@ -200,6 +200,7 @@ export {
   checkTankCollision,
   calculateMovementTarget,
   easeInOutQuad,
+  calculateAnimationDuration,
   getAnimatedPosition,
   getFinalPosition,
 } from './movement';

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  MOVEMENT_ANIMATION_DURATION,
+  MOVEMENT_SPEED_PERCENT_PER_SECOND,
   LARGE_TERRAIN_WIDTH,
   TANK_BODY_WIDTH,
   TANK_WHEEL_RADIUS,
@@ -10,6 +10,7 @@ import {
   checkTankCollision,
   calculateMovementTarget,
   easeInOutQuad,
+  calculateAnimationDuration,
   getAnimatedPosition,
   getFinalPosition,
 } from './movement';
@@ -53,8 +54,8 @@ function createMockTerrain(width: number = 1280, height: number = 720): TerrainD
 }
 
 describe('movement constants', () => {
-  it('MOVEMENT_ANIMATION_DURATION is 500ms', () => {
-    expect(MOVEMENT_ANIMATION_DURATION).toBe(500);
+  it('MOVEMENT_SPEED_PERCENT_PER_SECOND is 2', () => {
+    expect(MOVEMENT_SPEED_PERCENT_PER_SECOND).toBe(2);
   });
 
   it('LARGE_TERRAIN_WIDTH is 1280', () => {
@@ -386,12 +387,13 @@ describe('getAnimatedPosition', () => {
   });
 
   it('returns end position after animation duration', () => {
+    const duration = calculateAnimationDuration(100, terrain.width);
     const result = getAnimatedPosition(
       100,
       200,
       terrain,
       1000,
-      1000 + MOVEMENT_ANIMATION_DURATION + 1
+      1000 + duration + 1
     );
 
     expect(result.position.x).toBeCloseTo(200, 5);
@@ -399,12 +401,13 @@ describe('getAnimatedPosition', () => {
   });
 
   it('returns midpoint at half duration (with easing)', () => {
+    const duration = calculateAnimationDuration(100, terrain.width);
     const result = getAnimatedPosition(
       100,
       200,
       terrain,
       1000,
-      1000 + MOVEMENT_ANIMATION_DURATION / 2
+      1000 + duration / 2
     );
 
     // At t=0.5, easeInOutQuad returns 0.5
@@ -421,16 +424,48 @@ describe('getAnimatedPosition', () => {
   });
 
   it('handles moving left (decreasing X)', () => {
+    const duration = calculateAnimationDuration(-100, terrain.width);
     const result = getAnimatedPosition(
       200,
       100,
       terrain,
       1000,
-      1000 + MOVEMENT_ANIMATION_DURATION + 1
+      1000 + duration + 1
     );
 
     expect(result.position.x).toBeCloseTo(100, 5);
     expect(result.complete).toBe(true);
+  });
+});
+
+describe('calculateAnimationDuration', () => {
+  it('calculates duration based on distance and terrain width', () => {
+    // Moving 100px on 1280px terrain at 2% per second
+    // Speed = 0.02 * 1280 = 25.6 px/s
+    // Duration = 100 / 25.6 = 3906.25ms
+    const duration = calculateAnimationDuration(100, 1280);
+    expect(duration).toBeCloseTo(3906.25, 1);
+  });
+
+  it('handles negative distance (moving left)', () => {
+    const duration = calculateAnimationDuration(-100, 1280);
+    expect(duration).toBeCloseTo(3906.25, 1);
+  });
+
+  it('scales with terrain width', () => {
+    // On smaller terrain, same pixel distance takes same time
+    // because speed also scales with terrain
+    const largeDuration = calculateAnimationDuration(100, 1280);
+    const smallDuration = calculateAnimationDuration(50, 640);
+    // 100px on 1280 = 7.8125% of terrain
+    // 50px on 640 = 7.8125% of terrain
+    // Both should take same time
+    expect(largeDuration).toBeCloseTo(smallDuration, 1);
+  });
+
+  it('returns 0 for zero distance', () => {
+    const duration = calculateAnimationDuration(0, 1280);
+    expect(duration).toBe(0);
   });
 });
 
