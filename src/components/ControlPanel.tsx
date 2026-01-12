@@ -10,6 +10,10 @@ interface ControlPanelProps {
   enabled?: boolean
   /** Whether the player's shot is queued and waiting for others */
   isQueued?: boolean
+  /** Callback to fit game to screen (mobile) */
+  onFitScreen?: () => void
+  /** Whether the game is currently fitted to screen */
+  isFittedToScreen?: boolean
 }
 
 const ANGLE_STEP = 1
@@ -29,6 +33,8 @@ export function ControlPanel({
   onFire,
   enabled = true,
   isQueued = false,
+  onFitScreen,
+  isFittedToScreen = false,
 }: ControlPanelProps) {
   const isMobile = useIsMobile()
 
@@ -171,6 +177,17 @@ export function ControlPanel({
             <kbd>Shift</kbd>
             <span>for faster</span>
           </div>
+        )}
+
+        {isMobile && onFitScreen && (
+          <button
+            className={`control-panel__fit-btn${isFittedToScreen ? ' control-panel__fit-btn--active' : ''}`}
+            onClick={onFitScreen}
+            aria-label={isFittedToScreen ? 'Reset zoom' : 'Fit to screen'}
+            data-testid="fit-screen-btn"
+          >
+            {isFittedToScreen ? '⊕' : '⊖'}
+          </button>
         )}
 
         <div className="control-panel__control control-panel__control--power">

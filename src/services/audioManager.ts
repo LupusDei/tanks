@@ -105,6 +105,7 @@ class AudioManager {
   private preferences: AudioPreferences = { ...DEFAULT_PREFERENCES };
   private isInitialized = false;
   private loadingPromises: Map<string, Promise<AudioBuffer>> = new Map();
+  private userInteractionListenersAdded = false;
 
   // Sound definitions - paths to audio files
   private musicDefinitions: Record<MusicTrack, SoundDefinition> = {
@@ -144,6 +145,33 @@ class AudioManager {
 
   constructor() {
     this.loadPreferences();
+    this.setupUserInteractionListeners();
+  }
+
+  /**
+   * Set up listeners for user interaction to resume audio context.
+   * This is required due to browser autoplay policies.
+   */
+  private setupUserInteractionListeners(): void {
+    if (this.userInteractionListenersAdded || typeof document === 'undefined') return;
+
+    const resumeAudioContext = async () => {
+      if (this.audioContext?.state === 'suspended') {
+        try {
+          await this.audioContext.resume();
+        } catch {
+          // Ignore errors - context may not be ready yet
+        }
+      }
+    };
+
+    // Listen for user interactions that can unlock audio
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, resumeAudioContext, { once: false, passive: true });
+    });
+
+    this.userInteractionListenersAdded = true;
   }
 
   /**
@@ -309,7 +337,8 @@ class AudioManager {
   ): Promise<AudioBufferSourceNode | null> {
     if (!this.audioContext || !gainNode) return null;
 
-    await this.resume();
+    // Skip playing if context is suspended - user interaction listeners will resume it
+    if (this.audioContext.state === 'suspended') return null;
 
     try {
       const buffer = await this.loadSound(url);
@@ -328,7 +357,7 @@ class AudioManager {
 
       source.start(0);
       return source;
-    } catch (error) {
+    } catch {
       // Sound failed to load - fail silently
       return null;
     }
