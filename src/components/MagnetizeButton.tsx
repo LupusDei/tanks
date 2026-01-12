@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
+import { useAudioOptional } from "../context/AudioContext"
 
 type ButtonVariant = 'primary' | 'secondary'
 
@@ -69,6 +70,25 @@ export function MagnetizeButton({
 }: MagnetizeButtonProps) {
   const [isHovering, setIsHovering] = useState(false)
   const [time, setTime] = useState(0)
+  const audio = useAudioOptional()
+
+  const handleMouseEnter = useCallback(() => {
+    if (!disabled) {
+      setIsHovering(true)
+      audio?.playHover()
+    }
+  }, [disabled, audio])
+
+  const handleMouseLeave = useCallback(() => {
+    if (!disabled) {
+      setIsHovering(false)
+    }
+  }, [disabled])
+
+  const handleClick = useCallback(() => {
+    audio?.playClick()
+    onClick?.()
+  }, [audio, onClick])
 
   useEffect(() => {
     let animationId: number
@@ -102,11 +122,11 @@ export function MagnetizeButton({
   return (
     <button
       className={`magnetize-button magnetize-button--${variant} ${isHovering ? "magnetize-button--attracting" : ""} ${className}`}
-      onClick={onClick}
-      onMouseEnter={() => !disabled && setIsHovering(true)}
-      onMouseLeave={() => !disabled && setIsHovering(false)}
-      onTouchStart={() => !disabled && setIsHovering(true)}
-      onTouchEnd={() => !disabled && setIsHovering(false)}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleMouseEnter}
+      onTouchEnd={handleMouseLeave}
       disabled={disabled}
       data-testid={testId}
     >
