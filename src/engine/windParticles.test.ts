@@ -247,32 +247,20 @@ describe('windParticles', () => {
       }
     });
 
-    it('particles spawn from correct side based on wind direction', () => {
-      // Positive wind - particles should spawn from left (x <= 0)
-      let positiveWindSystem = createWindParticleSystem(800, 600);
-      for (let i = 0; i < 5; i++) {
-        positiveWindSystem = updateWindParticles(positiveWindSystem, 20, 1000 + i * 100, 100);
+    it('particles spawn in middle 50% of screen', () => {
+      // Particles should spawn in the middle 50% (25% to 75% of width)
+      // For 800px canvas: 200 to 600
+      let system = createWindParticleSystem(800, 600);
+      for (let i = 0; i < 10; i++) {
+        system = updateWindParticles(system, 20, 1000 + i * 100, 100);
       }
 
       // Get newly spawned particles (ones that haven't moved much yet)
-      const newPositiveParticles = positiveWindSystem.particles.filter(p => p.trace.length < 2);
-      if (newPositiveParticles.length > 0) {
-        // New particles should be spawned from left edge
-        const fromLeft = newPositiveParticles.every(p => p.x < 50);
-        expect(fromLeft).toBe(true);
-      }
-
-      // Negative wind - particles should spawn from right (x >= canvas width)
-      let negativeWindSystem = createWindParticleSystem(800, 600);
-      for (let i = 0; i < 5; i++) {
-        negativeWindSystem = updateWindParticles(negativeWindSystem, -20, 1000 + i * 100, 100);
-      }
-
-      const newNegativeParticles = negativeWindSystem.particles.filter(p => p.trace.length < 2);
-      if (newNegativeParticles.length > 0) {
-        // New particles should be spawned from right edge
-        const fromRight = newNegativeParticles.every(p => p.x > 750);
-        expect(fromRight).toBe(true);
+      const newParticles = system.particles.filter(p => p.trace.length < 2);
+      if (newParticles.length > 0) {
+        // New particles should be spawned in middle 50% of screen
+        const inMiddle = newParticles.every(p => p.x >= 200 && p.x <= 600);
+        expect(inMiddle).toBe(true);
       }
     });
   });

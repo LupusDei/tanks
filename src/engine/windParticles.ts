@@ -9,7 +9,7 @@ import { MAX_WIND } from './wind';
 const MAX_PARTICLES = 60;
 
 /** Particle lifetime in milliseconds */
-const PARTICLE_LIFETIME_MS = 2500;
+const PARTICLE_LIFETIME_MS = 4000;
 
 /** Base particle speed multiplier (pixels per second per m/s of wind) */
 const SPEED_MULTIPLIER = 3.5;
@@ -78,7 +78,7 @@ export function createWindParticleSystem(
 
 /**
  * Spawn a new particle at a random position.
- * Particles spawn from the side opposite to wind direction.
+ * Particles spawn in the middle 50% of the screen horizontally.
  */
 function spawnParticle(
   state: WindParticleSystemState,
@@ -88,18 +88,13 @@ function spawnParticle(
   const { canvasWidth, canvasHeight } = state;
   const windStrength = Math.abs(wind) / MAX_WIND;
 
-  // Spawn from the upwind side
-  let x: number;
-  if (wind > 0) {
-    // Wind blowing right, spawn from left
-    x = -10 - Math.random() * 20;
-  } else {
-    // Wind blowing left, spawn from right
-    x = canvasWidth + 10 + Math.random() * 20;
-  }
+  // Spawn in the middle 50% of the screen (25% to 75% of width)
+  const spawnRangeStart = canvasWidth * 0.25;
+  const spawnRangeWidth = canvasWidth * 0.5;
+  const x = spawnRangeStart + Math.random() * spawnRangeWidth;
 
-  // Random y position across the full height, weighted toward upper half (sky area)
-  const y = Math.random() * canvasHeight * 0.85;
+  // Random y position across the upper portion of the screen (sky area)
+  const y = Math.random() * canvasHeight * 0.7;
 
   // Velocity based on wind speed with some variance
   const baseSpeed = Math.abs(wind) * SPEED_MULTIPLIER;
