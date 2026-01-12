@@ -247,9 +247,9 @@ describe('windParticles', () => {
       }
     });
 
-    it('particles spawn in middle 50% of screen', () => {
-      // Particles should spawn in the middle 50% (25% to 75% of width)
-      // For 800px canvas: 200 to 600
+    it('particles spawn in middle 75% of screen', () => {
+      // Particles should spawn in the middle 75% (12.5% to 87.5% of width)
+      // For 800px canvas: 100 to 700
       let system = createWindParticleSystem(800, 600);
       for (let i = 0; i < 10; i++) {
         system = updateWindParticles(system, 20, 1000 + i * 100, 100);
@@ -258,8 +258,8 @@ describe('windParticles', () => {
       // Get newly spawned particles (ones that haven't moved much yet)
       const newParticles = system.particles.filter(p => p.trace.length < 2);
       if (newParticles.length > 0) {
-        // New particles should be spawned in middle 50% of screen
-        const inMiddle = newParticles.every(p => p.x >= 200 && p.x <= 600);
+        // New particles should be spawned in middle 75% of screen
+        const inMiddle = newParticles.every(p => p.x >= 100 && p.x <= 700);
         expect(inMiddle).toBe(true);
       }
     });

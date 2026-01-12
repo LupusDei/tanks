@@ -88,9 +88,9 @@ function spawnParticle(
   const { canvasWidth, canvasHeight } = state;
   const windStrength = Math.abs(wind) / MAX_WIND;
 
-  // Spawn in the middle 50% of the screen (25% to 75% of width)
-  const spawnRangeStart = canvasWidth * 0.25;
-  const spawnRangeWidth = canvasWidth * 0.5;
+  // Spawn in the middle 75% of the screen (12.5% to 87.5% of width)
+  const spawnRangeStart = canvasWidth * 0.125;
+  const spawnRangeWidth = canvasWidth * 0.75;
   const x = spawnRangeStart + Math.random() * spawnRangeWidth;
 
   // Random y position across the upper portion of the screen (sky area)
@@ -105,7 +105,8 @@ function spawnParticle(
   const vy = (Math.random() - 0.4) * 15;
 
   // Subtle opacity with variance, stronger wind = slightly more visible
-  const baseOpacity = 0.08 + windStrength * 0.12;
+  // Base opacity increased by 50% for better visibility
+  const baseOpacity = 0.12 + windStrength * 0.18;
   const opacity = baseOpacity * (0.6 + Math.random() * 0.8);
 
   // Small size with variance
