@@ -866,7 +866,8 @@ function App() {
       direction,
       state.tanks,
       state.terrain,
-      canvasX // Pass click X as target hint
+      canvasX, // Pass click X as target hint
+      MOVEMENT_FUEL_PER_INCREMENT // limit to 1 fuel per click
     )
 
     // Only move if there's actual distance to travel
