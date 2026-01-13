@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   MOVEMENT_SPEED_PERCENT_PER_SECOND,
+  MOVEMENT_FUEL_PER_INCREMENT,
   LARGE_TERRAIN_WIDTH,
   TANK_BODY_WIDTH,
   TANK_WHEEL_RADIUS,
@@ -56,6 +57,10 @@ function createMockTerrain(width: number = 1280, height: number = 720): TerrainD
 describe('movement constants', () => {
   it('MOVEMENT_SPEED_PERCENT_PER_SECOND is 2', () => {
     expect(MOVEMENT_SPEED_PERCENT_PER_SECOND).toBe(2);
+  });
+
+  it('MOVEMENT_FUEL_PER_INCREMENT is 1', () => {
+    expect(MOVEMENT_FUEL_PER_INCREMENT).toBe(1);
   });
 
   it('LARGE_TERRAIN_WIDTH is 1280', () => {
@@ -330,6 +335,73 @@ describe('calculateMovementTarget', () => {
     const expectedCost = calculateFuelCost(actualDistance, terrain.width);
 
     expect(result.fuelCost).toBe(expectedCost);
+  });
+
+  describe('fuelBudget parameter', () => {
+    it('limits movement to fuelBudget when less than tank fuel', () => {
+      const tank = createMockTank({ position: { x: 640, y: 100 }, fuel: 50 });
+      const terrain = createMockTerrain();
+
+      // Without budget: uses all 50 fuel
+      const fullResult = calculateMovementTarget(tank, 'right', [tank], terrain);
+
+      // With 1 fuel budget: should move much less
+      const budgetedResult = calculateMovementTarget(tank, 'right', [tank], terrain, undefined, 1);
+
+      expect(budgetedResult.fuelCost).toBeLessThanOrEqual(1);
+      expect(Math.abs(budgetedResult.targetX - tank.position.x)).toBeLessThan(
+        Math.abs(fullResult.targetX - tank.position.x)
+      );
+    });
+
+    it('uses tank fuel when fuelBudget exceeds available fuel', () => {
+      const tank = createMockTank({ position: { x: 640, y: 100 }, fuel: 5 });
+      const terrain = createMockTerrain();
+
+      // Budget of 100 but only 5 fuel available
+      const result = calculateMovementTarget(tank, 'right', [tank], terrain, undefined, 100);
+
+      // Should be limited by tank fuel (5), not budget (100)
+      expect(result.fuelCost).toBeLessThanOrEqual(5);
+    });
+
+    it('MOVEMENT_FUEL_PER_INCREMENT limits to 1% terrain movement', () => {
+      const tank = createMockTank({ position: { x: 640, y: 100 }, fuel: 50 });
+      const terrain = createMockTerrain();
+
+      const result = calculateMovementTarget(
+        tank,
+        'right',
+        [tank],
+        terrain,
+        undefined,
+        MOVEMENT_FUEL_PER_INCREMENT
+      );
+
+      // 1 fuel = ~12.8px on Large terrain (1280px)
+      const expectedMaxDistance = getMaxMovementDistance(1, terrain.width);
+      const actualDistance = Math.abs(result.targetX - tank.position.x);
+
+      expect(actualDistance).toBeLessThanOrEqual(expectedMaxDistance + 1);
+      expect(result.fuelCost).toBeLessThanOrEqual(1);
+    });
+
+    it('fuelBudget works with left direction', () => {
+      const tank = createMockTank({ position: { x: 640, y: 100 }, fuel: 50 });
+      const terrain = createMockTerrain();
+
+      const result = calculateMovementTarget(
+        tank,
+        'left',
+        [tank],
+        terrain,
+        undefined,
+        MOVEMENT_FUEL_PER_INCREMENT
+      );
+
+      expect(result.targetX).toBeLessThan(tank.position.x);
+      expect(result.fuelCost).toBeLessThanOrEqual(1);
+    });
   });
 });
 

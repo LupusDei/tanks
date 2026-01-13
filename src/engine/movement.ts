@@ -16,6 +16,9 @@ import { getInterpolatedHeightAt } from './terrain';
 /** Tank movement speed as percentage of terrain width per second */
 export const MOVEMENT_SPEED_PERCENT_PER_SECOND = 2;
 
+/** Fuel consumed per movement increment (1 fuel = 1% of terrain) */
+export const MOVEMENT_FUEL_PER_INCREMENT = 1;
+
 /** Reference terrain width for fuel calculations (Large terrain) */
 export const LARGE_TERRAIN_WIDTH = 1280;
 
@@ -139,7 +142,7 @@ export function checkTankCollision(
 /**
  * Calculate the final movement target position with all constraints applied.
  * Accounts for:
- * - Available fuel
+ * - Available fuel (limited by optional fuelBudget for incremental movement)
  * - Terrain boundaries
  * - Tank collisions
  * - Click-to-move vs key movement
@@ -149,6 +152,7 @@ export function checkTankCollision(
  * @param allTanks - All tanks for collision detection
  * @param terrain - Current terrain data
  * @param clickTargetX - Optional: click position for click-to-move
+ * @param fuelBudget - Optional: limit fuel usage per increment (for Q/E key movement)
  * @returns Target X position and fuel cost
  */
 export function calculateMovementTarget(
@@ -156,24 +160,27 @@ export function calculateMovementTarget(
   direction: 'left' | 'right',
   allTanks: TankState[],
   terrain: TerrainData,
-  clickTargetX?: number
+  clickTargetX?: number,
+  fuelBudget?: number
 ): { targetX: number; fuelCost: number } {
   if (tank.fuel <= 0) {
     return { targetX: tank.position.x, fuelCost: 0 };
   }
 
-  const maxDistance = getMaxMovementDistance(tank.fuel, terrain.width);
+  // Use the smaller of fuelBudget or available fuel
+  const effectiveFuel = fuelBudget !== undefined ? Math.min(fuelBudget, tank.fuel) : tank.fuel;
+  const maxDistance = getMaxMovementDistance(effectiveFuel, terrain.width);
   const directionMultiplier = direction === 'left' ? -1 : 1;
 
   let targetX: number;
 
   if (clickTargetX !== undefined) {
-    // Click-to-move: move toward click position, limited by fuel
+    // Click-to-move: move toward click position, limited by effective fuel
     const clickDistance = Math.abs(clickTargetX - tank.position.x);
     const limitedDistance = Math.min(clickDistance, maxDistance);
     targetX = tank.position.x + directionMultiplier * limitedDistance;
   } else {
-    // Q/E key movement: move maximum distance in direction
+    // Q/E key movement: move by fuel budget distance in direction
     targetX = tank.position.x + directionMultiplier * maxDistance;
   }
 

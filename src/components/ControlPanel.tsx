@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useKeyboard, useIsMobile, usePressAndHold } from '../hooks'
 
 interface ControlPanelProps {
@@ -35,6 +35,10 @@ const MAX_ANGLE = 120
 const MIN_POWER = 0
 const MAX_POWER = 100
 
+// Movement key repeat timing
+const MOVEMENT_INITIAL_DELAY = 200 // ms before repeat starts
+const MOVEMENT_REPEAT_INTERVAL = 100 // ms between repeats
+
 export function ControlPanel({
   angle,
   power,
@@ -62,6 +66,73 @@ export function ControlPanel({
     (newPower: number) => Math.max(MIN_POWER, Math.min(MAX_POWER, newPower)),
     []
   )
+
+  // Track held movement keys for press-and-hold behavior
+  const heldMovementKeyRef = useRef<'left' | 'right' | null>(null)
+  const movementInitialTimeoutRef = useRef<number | null>(null)
+  const movementRepeatIntervalRef = useRef<number | null>(null)
+
+  // Store latest movement handlers in refs to avoid stale closures
+  const onMoveLeftRef = useRef(onMoveLeft)
+  const onMoveRightRef = useRef(onMoveRight)
+  const canMoveRef = useRef(canMove)
+  onMoveLeftRef.current = onMoveLeft
+  onMoveRightRef.current = onMoveRight
+  canMoveRef.current = canMove
+
+  const clearMovementTimers = useCallback(() => {
+    if (movementInitialTimeoutRef.current !== null) {
+      window.clearTimeout(movementInitialTimeoutRef.current)
+      movementInitialTimeoutRef.current = null
+    }
+    if (movementRepeatIntervalRef.current !== null) {
+      window.clearInterval(movementRepeatIntervalRef.current)
+      movementRepeatIntervalRef.current = null
+    }
+  }, [])
+
+  const startMovementRepeat = useCallback((direction: 'left' | 'right') => {
+    // Already holding this direction
+    if (heldMovementKeyRef.current === direction) return
+
+    // Clear any existing timers
+    clearMovementTimers()
+    heldMovementKeyRef.current = direction
+
+    // Fire immediately
+    if (canMoveRef.current) {
+      if (direction === 'left' && onMoveLeftRef.current) {
+        onMoveLeftRef.current()
+      } else if (direction === 'right' && onMoveRightRef.current) {
+        onMoveRightRef.current()
+      }
+    }
+
+    // Start repeat after initial delay
+    movementInitialTimeoutRef.current = window.setTimeout(() => {
+      movementRepeatIntervalRef.current = window.setInterval(() => {
+        if (heldMovementKeyRef.current === direction && canMoveRef.current) {
+          if (direction === 'left' && onMoveLeftRef.current) {
+            onMoveLeftRef.current()
+          } else if (direction === 'right' && onMoveRightRef.current) {
+            onMoveRightRef.current()
+          }
+        }
+      }, MOVEMENT_REPEAT_INTERVAL)
+    }, MOVEMENT_INITIAL_DELAY)
+  }, [clearMovementTimers])
+
+  const stopMovementRepeat = useCallback(() => {
+    heldMovementKeyRef.current = null
+    clearMovementTimers()
+  }, [clearMovementTimers])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearMovementTimers()
+    }
+  }, [clearMovementTimers])
 
   // Press-and-hold handlers for all buttons (works on both desktop and mobile)
   const angleIncreaseHandlers = usePressAndHold({
@@ -129,24 +200,35 @@ export function ControlPanel({
         case 'q':
         case 'Q':
           event.preventDefault()
-          if (canMove && onMoveLeft) {
-            onMoveLeft()
-          }
+          startMovementRepeat('left')
           break
         case 'e':
         case 'E':
           event.preventDefault()
-          if (canMove && onMoveRight) {
-            onMoveRight()
-          }
+          startMovementRepeat('right')
           break
       }
     },
-    [angle, power, onAngleChange, onPowerChange, onFire, clampAngle, clampPower, canMove, onMoveLeft, onMoveRight]
+    [angle, power, onAngleChange, onPowerChange, onFire, clampAngle, clampPower, startMovementRepeat]
+  )
+
+  const handleKeyUp = useCallback(
+    (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 'q':
+        case 'Q':
+        case 'e':
+        case 'E':
+          stopMovementRepeat()
+          break
+      }
+    },
+    [stopMovementRepeat]
   )
 
   useKeyboard({
     onKeyDown: handleKeyDown,
+    onKeyUp: handleKeyUp,
     enabled,
   })
 

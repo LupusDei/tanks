@@ -69,6 +69,7 @@ import {
   getAnimatedPosition,
   getFinalPosition,
   GAS_CAN_FUEL_VALUE,
+  MOVEMENT_FUEL_PER_INCREMENT,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -776,7 +777,7 @@ function App() {
     setIsFittedToScreen(prev => !prev)
   }, [])
 
-  // Handle tank movement
+  // Handle tank movement (uses 1 fuel increment per call for small moves)
   const handleMoveLeft = useCallback(() => {
     const playerTank = state.tanks.find((t) => t.id === 'player')
     if (!playerTank || !state.terrain) return
@@ -786,7 +787,9 @@ function App() {
       playerTank,
       'left',
       state.tanks,
-      state.terrain
+      state.terrain,
+      undefined, // no click target
+      MOVEMENT_FUEL_PER_INCREMENT // limit to 1 fuel per increment
     )
 
     // Only move if there's actual distance to travel
@@ -804,7 +807,9 @@ function App() {
       playerTank,
       'right',
       state.tanks,
-      state.terrain
+      state.terrain,
+      undefined, // no click target
+      MOVEMENT_FUEL_PER_INCREMENT // limit to 1 fuel per increment
     )
 
     // Only move if there's actual distance to travel
