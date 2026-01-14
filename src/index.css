@@ -19,6 +19,14 @@
   box-sizing: border-box;
 }
 
+/* Make all keyboard shortcut hints unselectable and untouchable */
+kbd {
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+}
+
 body {
   margin: 0;
   display: flex;

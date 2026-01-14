@@ -708,6 +708,10 @@ p {
 .control-panel__keys {
   font-size: 0.55rem;
   color: #555;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
 }
 
 .control-panel__keys kbd {
@@ -729,6 +733,10 @@ p {
   color: #444;
   align-self: flex-end;
   gap: 0.15rem;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
 }
 
 .control-panel__hint kbd {
@@ -904,6 +912,10 @@ p {
   font-size: 0.5rem;
   font-weight: normal;
   opacity: 0.8;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
 }
 
 .control-panel__fire-keys kbd {
@@ -958,6 +970,10 @@ p {
   margin-top: 0.5rem;
   font-size: 0.7rem;
   color: #666;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
 }
 
 .fire-button__hint kbd {
@@ -2431,6 +2447,10 @@ p {
   gap: 0.25rem;
   font-size: 0.5rem;
   color: #444;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+  -webkit-touch-callout: none;
 }
 
 .weapon-selection-panel__hint kbd {
