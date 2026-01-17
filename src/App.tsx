@@ -13,6 +13,7 @@ import {
   WeaponShop,
   CampaignLeaderboard,
 } from './components'
+import { useIsMobile } from './hooks'
 import { useGame } from './context/useGame'
 import { useUser } from './context/UserContext'
 import { useCampaign } from './context/CampaignContext'
@@ -141,6 +142,7 @@ function App() {
   const [isExplosionActive, setIsExplosionActive] = useState(false)
   const [isFittedToScreen, setIsFittedToScreen] = useState(false)
   const gameRecordedRef = useRef(false)
+  const isMobile = useIsMobile()
 
   // Track kills during the current game for campaign earnings
   const gameKillsRef = useRef<Map<string, number>>(new Map())
@@ -1366,19 +1368,41 @@ function App() {
   const FRAME_BORDER = 60
   const gameContainerWidth = terrainConfig.width + FRAME_BORDER * 2
   const gameContainerHeight = terrainConfig.height + FRAME_BORDER * 2
-  // Use slightly smaller viewport area to leave room for UI controls
+
+  // Calculate mobile scale - terrain should fill available space after controls
+  // Control panel heights: ~65px normal mobile, ~95px for very small screens (<400px)
+  // Weapon selection panel: ~55px
+  // Turn indicator overlays terrain so doesn't need space
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : gameContainerWidth
-  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight * 0.85 : gameContainerHeight
-  const fitScale = Math.min(
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : gameContainerHeight
+  const isVerySmallScreen = viewportWidth < 400
+  const controlPanelHeight = isVerySmallScreen ? 95 : 65
+  const weaponPanelHeight = 55
+  const uiHeight = controlPanelHeight + weaponPanelHeight
+  const availableHeight = viewportHeight - uiHeight
+
+  // On mobile, auto-scale to fit; on desktop, only scale if fit button is pressed
+  const mobileScale = Math.min(
     viewportWidth / gameContainerWidth,
-    viewportHeight / gameContainerHeight,
+    availableHeight / gameContainerHeight,
     1 // Never scale up
   )
 
+  // Desktop fit scale (when fit button is pressed)
+  const desktopFitScale = Math.min(
+    viewportWidth / gameContainerWidth,
+    (viewportHeight * 0.85) / gameContainerHeight,
+    1
+  )
+
+  // Determine which scale to use
+  const shouldAutoScale = isMobile
+  const activeScale = shouldAutoScale ? mobileScale : (isFittedToScreen ? desktopFitScale : 1)
+
   return (
     <div
-      className={`app${isFittedToScreen ? ' app--fitted' : ''}`}
-      style={isFittedToScreen ? { '--fit-scale': fitScale } as React.CSSProperties : undefined}
+      className={`app${isFittedToScreen ? ' app--fitted' : ''}${isMobile ? ' app--mobile' : ''}`}
+      style={shouldAutoScale || isFittedToScreen ? { '--fit-scale': activeScale } as React.CSSProperties : undefined}
     >
       <GameContainer
         canvasWidth={terrainConfig.width}
