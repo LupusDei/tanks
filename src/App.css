@@ -2536,11 +2536,11 @@ p {
   }
 
   /* ===========================================
-     MOBILE GAME LAYOUT - Absolute Positioning
+     MOBILE GAME LAYOUT - Fixed Positioning
      Priority: Controls > Weapons > Terrain
      =========================================== */
 
-  /* App container becomes absolute positioned layout on mobile */
+  /* App container - full screen with safe area padding */
   .app {
     position: fixed;
     top: 0;
@@ -2555,6 +2555,7 @@ p {
     align-items: center;
     justify-content: flex-start;
     overflow: hidden;
+    padding-top: env(safe-area-inset-top, 0);
   }
 
   /* Game container - scaled to fit available space via JS */
@@ -2566,30 +2567,32 @@ p {
     transform: scale(var(--fit-scale, 1));
   }
 
-  /* Control panel - fixed at absolute bottom, highest priority */
+  /* Control panel - FIXED at bottom, highest priority */
   .control-panel {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     transform: none;
     border-radius: 8px 8px 0 0;
     z-index: 100;
+    /* Safe area padding for iPhone home indicator */
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
-  /* Weapon selection panel - above control panel */
+  /* Weapon selection panel - FIXED above control panel */
   .weapon-selection-panel {
-    position: absolute;
-    bottom: 65px;
+    position: fixed;
+    bottom: calc(70px + env(safe-area-inset-bottom, 0));
     left: 50%;
     transform: translateX(-50%);
     z-index: 90;
   }
 
-  /* Turn/Wind indicator - inside terrain area, overlay on canvas */
+  /* Turn/Wind indicator - FIXED at top, inside terrain area */
   .turn-indicator {
-    position: absolute;
-    top: 10px;
+    position: fixed;
+    top: calc(10px + env(safe-area-inset-top, 0));
     left: 50%;
     transform: translateX(-50%);
     z-index: 80;
@@ -3153,7 +3156,7 @@ p {
 
   /* Weapon selection panel - higher up for 2-row controls */
   .weapon-selection-panel {
-    bottom: 95px;
+    bottom: calc(100px + env(safe-area-inset-bottom, 0));
   }
 
   /* Smaller weapon slots */
@@ -3217,7 +3220,7 @@ p {
     display: none;
   }
 
-  /* Landscape layout uses same absolute positioning approach */
+  /* Landscape layout uses fixed positioning */
   .app {
     position: fixed;
     top: 0;
@@ -3232,6 +3235,7 @@ p {
     align-items: center;
     justify-content: flex-start;
     overflow: hidden;
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) 0 env(safe-area-inset-left, 0);
   }
 
   /* Game container in landscape - scaled via CSS variable */
@@ -3242,22 +3246,23 @@ p {
     transform: scale(var(--fit-scale, 1));
   }
 
-  /* Control panel - fixed at bottom in landscape */
+  /* Control panel - FIXED at bottom in landscape */
   .control-panel {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     transform: none;
     border-radius: 8px 8px 0 0;
     z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
-  /* Turn indicator - inside terrain area, top left in landscape */
+  /* Turn indicator - FIXED at top left in landscape */
   .turn-indicator {
-    position: absolute;
-    top: 8px;
-    left: 10px;
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top, 0));
+    left: calc(10px + env(safe-area-inset-left, 0));
     right: auto;
     transform: none;
     padding: 0.3rem 0.6rem;
@@ -3294,10 +3299,10 @@ p {
     font-size: 0.5rem;
   }
 
-  /* Weapon selection panel - above control panel in landscape */
+  /* Weapon selection panel - FIXED above control panel in landscape */
   .weapon-selection-panel {
-    position: absolute;
-    bottom: 55px;
+    position: fixed;
+    bottom: calc(55px + env(safe-area-inset-bottom, 0));
     left: 50%;
     transform: translateX(-50%);
     z-index: 90;

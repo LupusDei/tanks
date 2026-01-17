@@ -144,6 +144,33 @@ function App() {
   const gameRecordedRef = useRef(false)
   const isMobile = useIsMobile()
 
+  // Track viewport dimensions for mobile scaling
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 800,
+    height: typeof window !== 'undefined' ? window.innerHeight : 600,
+  }))
+
+  // Update viewport size on resize/orientation change
+  useEffect(() => {
+    const updateViewport = () => {
+      setViewportSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      })
+    }
+
+    window.addEventListener('resize', updateViewport)
+    window.addEventListener('orientationchange', updateViewport)
+    // Also update after a short delay to handle mobile browser chrome changes
+    const timeoutId = setTimeout(updateViewport, 100)
+
+    return () => {
+      window.removeEventListener('resize', updateViewport)
+      window.removeEventListener('orientationchange', updateViewport)
+      clearTimeout(timeoutId)
+    }
+  }, [])
+
   // Track kills during the current game for campaign earnings
   const gameKillsRef = useRef<Map<string, number>>(new Map())
 
@@ -1370,15 +1397,18 @@ function App() {
   const gameContainerHeight = terrainConfig.height + FRAME_BORDER * 2
 
   // Calculate mobile scale - terrain should fill available space after controls
-  // Control panel heights: ~65px normal mobile, ~95px for very small screens (<400px)
-  // Weapon selection panel: ~55px
-  // Turn indicator overlays terrain so doesn't need space
-  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : gameContainerWidth
-  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : gameContainerHeight
+  // Use tracked viewport size for responsive updates
+  const { width: viewportWidth, height: viewportHeight } = viewportSize
   const isVerySmallScreen = viewportWidth < 400
-  const controlPanelHeight = isVerySmallScreen ? 95 : 65
-  const weaponPanelHeight = 55
-  const uiHeight = controlPanelHeight + weaponPanelHeight
+
+  // UI element heights - be conservative to account for Safari's bottom toolbar
+  // Control panel: ~70px normal, ~100px for 2-row layout on small screens
+  // Weapon selection: ~60px
+  // Safari bottom toolbar: ~50px extra safety margin
+  const controlPanelHeight = isVerySmallScreen ? 100 : 70
+  const weaponPanelHeight = 60
+  const safetyMargin = 50 // For Safari's bottom toolbar and any extra chrome
+  const uiHeight = controlPanelHeight + weaponPanelHeight + safetyMargin
   const availableHeight = viewportHeight - uiHeight
 
   // On mobile, auto-scale to fit; on desktop, only scale if fit button is pressed
