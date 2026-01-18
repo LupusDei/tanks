@@ -773,14 +773,40 @@ describe('updateHomingTracking', () => {
     expect(result.launchConfig.angle).toBe(projectile.launchConfig.angle);
   });
 
-  it('adjusts angle toward target', () => {
+  it('does not engage tracking before 80% trajectory', () => {
     const tank = createMockTank({ angle: 0 }); // Pointing up
     const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
-    // Target to the right of projectile path
+    const originalAngle = projectile.currentAngle;
+    const originalLaunchAngle = projectile.launchConfig.angle;
+    // Ensure estimatedLandingTime is long enough that we're not at 80% yet
+    const projectileEarly = {
+      ...projectile,
+      estimatedLandingTime: 100.0, // Very long landing time
+    };
     const targetPos = { x: 300, y: 300 };
 
-    const result = updateHomingTracking(projectile, targetPos, 100);
-    // Angle should have changed
+    // At time 100ms with ANIMATION_SPEED_MULTIPLIER=5, elapsedPhysicsTime = 0.5 seconds
+    // Progress = 0.5 / 100 = 0.5% - well below 80%
+    const result = updateHomingTracking(projectileEarly, targetPos, 100);
+    // Angle should NOT have changed because tracking hasn't engaged
+    expect(result.currentAngle).toBe(originalAngle);
+    expect(result.launchConfig.angle).toBe(originalLaunchAngle);
+    // targetPosition should not be set before tracking engages
+    expect(result.targetPosition).toBeUndefined();
+  });
+
+  it('adjusts angle toward target after 80% trajectory', () => {
+    const tank = createMockTank({ angle: 0 }); // Pointing up
+    const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    // Set short estimatedLandingTime so we're past 80%
+    const projectileLate = {
+      ...projectile,
+      estimatedLandingTime: 0.5, // At time 100ms (0.5s physics time), progress = 100%
+    };
+    const targetPos = { x: 300, y: 300 };
+
+    const result = updateHomingTracking(projectileLate, targetPos, 100);
+    // Angle should have changed because tracking is now engaged
     expect(result.currentAngle).toBeDefined();
   });
 
@@ -793,22 +819,34 @@ describe('updateHomingTracking', () => {
     expect(result.trackingStrength).toBe(projectile.trackingStrength);
   });
 
-  it('updates target position', () => {
+  it('updates target position after 80% trajectory', () => {
     const tank = createMockTank();
     const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    // Set a short estimatedLandingTime so we can easily pass 80% threshold
+    // With ANIMATION_SPEED_MULTIPLIER=5, at time 1000ms we get 5 seconds of physics time
+    // Setting estimatedLandingTime to 1.0 means 5/1.0 = 500% progress (well past 80%)
+    const projectileWith80Percent = {
+      ...projectile,
+      estimatedLandingTime: 1.0,
+    };
     const targetPos = { x: 500, y: 300 };
 
-    const result = updateHomingTracking(projectile, targetPos, 1000);
+    const result = updateHomingTracking(projectileWith80Percent, targetPos, 1000);
     expect(result.targetPosition).toEqual(targetPos);
   });
 
-  it('creates new projectile state with updated time', () => {
+  it('creates new projectile state with updated time after 80% trajectory', () => {
     const tank = createMockTank();
     const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
+    // Set short estimatedLandingTime so we're past 80%
+    const projectileLate = {
+      ...projectile,
+      estimatedLandingTime: 1.0,
+    };
     const targetPos = { x: 500, y: 300 };
     const newTime = 2000;
 
-    const result = updateHomingTracking(projectile, targetPos, newTime);
+    const result = updateHomingTracking(projectileLate, targetPos, newTime);
     expect(result.startTime).toBe(newTime);
   });
 
@@ -822,13 +860,15 @@ describe('updateHomingTracking', () => {
     expect(result.previousDistanceToTarget).toBeGreaterThan(0);
   });
 
-  it('triggers proximity explosion when missile passes closest approach', () => {
+  it('triggers proximity explosion when missile passes closest approach after 80% trajectory', () => {
     const tank = createMockTank();
     const projectile = createProjectileState(tank, 0, CANVAS_HEIGHT, CANVAS_WIDTH, 'homing_missile');
     // Simulate missile that has been tracking and got very close (within 50px)
+    // Must also be past 80% trajectory for tracking to be engaged
     const projectileWithHistory = {
       ...projectile,
       previousDistanceToTarget: 30, // Was very close
+      estimatedLandingTime: 1.0, // Short landing time so we're past 80% at time 1000
     };
     // Target is now further away (missile has passed)
     const targetPos = { x: 500, y: 300 }; // Distance will be greater than 30

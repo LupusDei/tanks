@@ -138,8 +138,8 @@ export function createProjectileState(
   const launchConfig = createLaunchConfig(tank, canvasHeight, canvasWidth);
   const weaponConfig = getWeaponConfig(weaponType);
 
-  // For cluster bombs, estimate landing time to calculate split point
-  const estimatedLandingTime = weaponType === 'cluster_bomb'
+  // For cluster bombs and homing missiles, estimate landing time to calculate activation point
+  const estimatedLandingTime = (weaponType === 'cluster_bomb' || weaponType === 'homing_missile')
     ? estimateLandingTimeFromLaunch(launchConfig, canvasHeight)
     : undefined;
 
@@ -1267,6 +1267,11 @@ export function findNearestTarget(
 }
 
 /**
+ * Percentage of trajectory at which homing missile engages tracking (0.80 = 80%).
+ */
+const HOMING_ENGAGE_THRESHOLD = 0.80;
+
+/**
  * Proximity explosion threshold - how close missile must be to target before
  * distance tracking starts (prevents false triggers on first approach).
  */
@@ -1280,7 +1285,8 @@ const HOMING_MIN_APPROACH_DISTANCE = 50;
 
 /**
  * Update homing missile trajectory to track toward target.
- * Gradually adjusts the launch angle to steer toward the nearest enemy.
+ * Tracking only engages after 80% of the trajectory is complete.
+ * Once engaged, the missile accurately homes toward the nearest enemy.
  * Also detects when missile has passed its closest approach point and should explode.
  *
  * @param projectile - Current projectile state
@@ -1313,6 +1319,18 @@ export function updateHomingTracking(
   const dy = targetPos.y - currentPos.y;
   const currentDistance = Math.sqrt(dx * dx + dy * dy);
 
+  // Check trajectory progress - only engage tracking after 80% of trajectory
+  const progress = getTrajectoryProgress(projectile, currentTime);
+  const trackingEngaged = progress >= HOMING_ENGAGE_THRESHOLD;
+
+  // If tracking not yet engaged, just update distance tracking for later proximity detection
+  if (!trackingEngaged) {
+    return {
+      ...projectile,
+      previousDistanceToTarget: currentDistance,
+    };
+  }
+
   // Check for proximity explosion:
   // If we were close to the target (within threshold) and started at a minimum approach distance,
   // and now we're moving AWAY from the target, explode at this position
@@ -1331,6 +1349,7 @@ export function updateHomingTracking(
     };
   }
 
+  // Calculate angle to target
   const targetAngle = Math.atan2(-dy, dx) * (180 / Math.PI); // Convert to degrees, negate dy for screen coords
 
   // Get current angle
@@ -1341,10 +1360,10 @@ export function updateHomingTracking(
   while (angleDiff > 180) angleDiff -= 360;
   while (angleDiff < -180) angleDiff += 360;
 
-  // Apply tracking - adjust angle toward target based on tracking strength
-  // Max adjustment is proportional to tracking strength (0.3 = mild tracking)
-  const maxAdjustment = projectile.trackingStrength * 3; // Max 0.9 degrees per update at 0.3 strength
-  const adjustment = Math.max(-maxAdjustment, Math.min(maxAdjustment, angleDiff * projectile.trackingStrength));
+  // Once engaged, apply aggressive tracking for accurate targeting
+  // Use high adjustment rate to quickly point at target
+  const maxAdjustment = 15; // Max 15 degrees per update for fast, accurate tracking
+  const adjustment = Math.max(-maxAdjustment, Math.min(maxAdjustment, angleDiff));
 
   const newAngle = currentAngle + adjustment;
 
