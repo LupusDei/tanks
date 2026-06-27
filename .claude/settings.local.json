@@ -61,7 +61,11 @@
       "Bash(brew install:*)",
       "Bash(ffmpeg:*)",
       "Bash(chmod:*)",
-      "Bash(./scripts/generate-sounds.sh:*)"
+      "Bash(./scripts/generate-sounds.sh:*)",
+      "WebSearch",
+      "WebFetch(domain:community.cloudflare.com)",
+      "WebFetch(domain:tanks.justinmmartin.me)",
+      "Bash(wrangler pages project list:*)"
     ]
   }
 }
