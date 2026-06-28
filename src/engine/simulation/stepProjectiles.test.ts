@@ -111,6 +111,16 @@ describe('stepProjectiles', () => {
       expect(resolved).toHaveLength(1);
       expect(resolved[0]).toMatchObject({ ownerTankId: 'attacker', outOfBounds: false });
       expect(result.projectiles[0]!.isActive).toBe(false);
+
+      // An ExplosionSpawned event carries the audio/flagging payload for the host.
+      const spawned = result.events.filter((e) => e.type === 'ExplosionSpawned');
+      expect(spawned).toHaveLength(1);
+      expect(spawned[0]).toMatchObject({
+        type: 'ExplosionSpawned',
+        weaponType: 'standard',
+        x: 400,
+      });
+      expect((spawned[0] as { blastRadius: number }).blastRadius).toBeGreaterThan(0);
     });
 
     it('should not emit a TankHit when no tank is within the blast', () => {

@@ -5,6 +5,7 @@ import {
   isTankHit,
   isTankDestroyed,
   isMoveComplete,
+  isExplosionSpawned,
   isProjectileResolved,
   isCraterCreated,
   type SimEvent,
@@ -54,7 +55,8 @@ describe('SimEvent type guards', () => {
   const move: SimEvent = { type: 'MoveComplete', tankId: 't3', finalX: 100 };
   const resolved: SimEvent = { type: 'ProjectileResolved', ownerTankId: 't4', outOfBounds: true };
   const crater: SimEvent = { type: 'CraterCreated', x: 50, radius: 40, depth: 20 };
-  const all = [hit, dead, move, resolved, crater];
+  const boom: SimEvent = { type: 'ExplosionSpawned', x: 5, y: 6, weaponType: 'heavy_artillery', blastRadius: 35 };
+  const all = [hit, dead, move, resolved, crater, boom];
 
   it('should narrow each variant correctly (happy path)', () => {
     expect(all.filter(isTankHit)).toEqual([hit]);
@@ -62,6 +64,7 @@ describe('SimEvent type guards', () => {
     expect(all.filter(isMoveComplete)).toEqual([move]);
     expect(all.filter(isProjectileResolved)).toEqual([resolved]);
     expect(all.filter(isCraterCreated)).toEqual([crater]);
+    expect(all.filter(isExplosionSpawned)).toEqual([boom]);
   });
 
   it('should be mutually exclusive (a TankHit is not any other type / edge)', () => {

@@ -2,17 +2,13 @@
  * Pure simulation step for purely-visual effect lifecycles: weapon explosions
  * and tank-destruction animations.
  *
- * Both effect types are TIME-BASED: each carries a `startTime` and a duration
- * (see {@link isExplosionComplete} / {@link isDestructionComplete}). An effect
- * is "finished" once `now` passes `startTime + duration`. This step therefore
- * does not advance per-particle visual state (that is a render-layer concern
- * requiring a frame delta) — it advances the LIFECYCLE: it computes, at `now`,
- * which effects are still alive and returns new arrays containing only those.
- *
- * This mirrors the "remove finished" behaviour previously inlined in App.tsx's
- * render loop (`explosionsRef` / `destructionsRef` filtering), but as a pure
- * function: no React, DOM, canvas, `window`, `performance.now`, `console`, or
- * sound, and no mutation of the inputs.
+ * Each effect is advanced one frame ({@link updateExplosion} /
+ * {@link updateTankDestruction}, which integrate per-particle motion using the
+ * frame delta) and then culled if it has finished (its time-based animation has
+ * passed `startTime + duration`). This is the pure, headless port of the
+ * update-then-remove-finished loop previously inlined in App.tsx's render loop
+ * (`explosionsRef` / `destructionsRef`): no React, DOM, canvas, `window`,
+ * `performance.now`, `console`, or sound, and no mutation of the inputs.
  *
  * Events: this step emits none. The host owns gameplay events such as
  * `TankDestroyed` (fired when a tank's health hits 0, not when its animation
@@ -21,7 +17,9 @@
  * signature symmetry with other simulation steps.
  */
 import {
+  updateExplosion,
   isExplosionComplete,
+  updateTankDestruction,
   isDestructionComplete,
   type ExplosionState,
   type TankDestructionState,
@@ -51,19 +49,29 @@ export interface StepEffectsResult {
  * @param destructions Current tank-destruction animations.
  * @param now          Absolute timestamp (ms), same clock as each effect's
  *                     `startTime`.
+ * @param dtMs         Frame delta in milliseconds, for per-particle integration.
  */
 export function stepEffects(
   explosions: ExplosionState[],
   destructions: TankDestructionState[],
-  now: number
+  now: number,
+  dtMs: number
 ): StepEffectsResult {
-  const liveExplosions = explosions.filter(
-    (explosion) => explosion.isActive && !isExplosionComplete(explosion, now)
-  );
+  const liveExplosions: ExplosionState[] = [];
+  for (const explosion of explosions) {
+    if (!explosion.isActive) continue;
+    const updated = updateExplosion(explosion, now, dtMs);
+    if (isExplosionComplete(updated, now)) continue;
+    liveExplosions.push(updated);
+  }
 
-  const liveDestructions = destructions.filter(
-    (destruction) => destruction.isActive && !isDestructionComplete(destruction, now)
-  );
+  const liveDestructions: TankDestructionState[] = [];
+  for (const destruction of destructions) {
+    if (!destruction.isActive) continue;
+    const updated = updateTankDestruction(destruction, now, dtMs);
+    if (isDestructionComplete(updated, now)) continue;
+    liveDestructions.push(updated);
+  }
 
   return {
     explosions: liveExplosions,

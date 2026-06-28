@@ -83,6 +83,15 @@ export function stepProjectiles(
       createExplosion({ ...landingPos }, now, blastRadius, explosionType)
     );
 
+    // Report the explosion so the host can play audio / flag explosion activity.
+    events.push({
+      type: 'ExplosionSpawned',
+      x: landingPos.x,
+      y: landingPos.y,
+      weaponType: proj.weaponType,
+      blastRadius,
+    });
+
     // Terrain deformation (e.g. Bunker Buster). createCrater defaults depth to
     // radius * 0.5, which is how App.tsx invokes it, so report that depth.
     if (weaponConfig.craterRadius) {

@@ -48,9 +48,11 @@ describe('stepEffects', () => {
     );
     const now = startTime + EXPLOSION_DURATION_MS + 1;
 
-    const result = stepEffects([finished, activeLater, active], [], now);
+    const result = stepEffects([finished, activeLater, active], [], now, 16);
 
-    expect(result.explosions).toEqual([activeLater]);
+    // Only the still-alive explosion survives (advanced into a new object).
+    expect(result.explosions).toHaveLength(1);
+    expect(result.explosions[0]!.startTime).toBe(activeLater.startTime);
     expect(result.destructions).toEqual([]);
     expect(result.events).toEqual([]);
   });
@@ -66,9 +68,10 @@ describe('stepEffects', () => {
 
     const now = startTime + DESTRUCTION_DURATION_MS + 1;
 
-    const result = stepEffects([], [finished, active], now);
+    const result = stepEffects([], [finished, active], now, 16);
 
-    expect(result.destructions).toEqual([active]);
+    expect(result.destructions).toHaveLength(1);
+    expect(result.destructions[0]!.startTime).toBe(active.startTime);
     expect(result.explosions).toEqual([]);
     expect(result.events).toEqual([]);
   });
@@ -85,14 +88,14 @@ describe('stepEffects', () => {
     };
 
     // now is well within the time window — only the isActive flag should drop them.
-    const result = stepEffects([inactiveExplosion], [inactiveDestruction], startTime + 1);
+    const result = stepEffects([inactiveExplosion], [inactiveDestruction], startTime + 1, 16);
 
     expect(result.explosions).toEqual([]);
     expect(result.destructions).toEqual([]);
   });
 
   it('should return empty arrays and no events for empty inputs', () => {
-    const result = stepEffects([], [], 12345);
+    const result = stepEffects([], [], 12345, 16);
 
     expect(result.explosions).toEqual([]);
     expect(result.destructions).toEqual([]);
@@ -105,10 +108,10 @@ describe('stepEffects', () => {
     const explosion = createExplosion({ x: 1, y: 1 }, startTime, 20, 'standard');
 
     const justBefore = startTime + EXPLOSION_DURATION_MS - 1;
-    expect(stepEffects([explosion], [], justBefore).explosions).toEqual([explosion]);
+    expect(stepEffects([explosion], [], justBefore, 16).explosions).toHaveLength(1);
 
     const exactlyAt = startTime + EXPLOSION_DURATION_MS;
-    expect(stepEffects([explosion], [], exactlyAt).explosions).toEqual([]);
+    expect(stepEffects([explosion], [], exactlyAt, 16).explosions).toEqual([]);
   });
 
   it('should not mutate the input arrays or their elements (purity)', () => {
@@ -121,7 +124,7 @@ describe('stepEffects', () => {
     const explosionSnapshot = JSON.parse(JSON.stringify(explosion));
     const destructionSnapshot = JSON.parse(JSON.stringify(destruction));
 
-    const result = stepEffects(explosions, destructions, startTime + 1);
+    const result = stepEffects(explosions, destructions, startTime + 1, 16);
 
     // Inputs unchanged in length and contents.
     expect(explosions).toEqual([explosion]);

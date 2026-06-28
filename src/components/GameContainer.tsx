@@ -11,8 +11,8 @@ interface GameContainerProps {
   canvasWidth: number;
   /** Canvas height (inner game area) */
   canvasHeight: number;
-  /** Render callback for the canvas */
-  onRender: (ctx: CanvasRenderingContext2D) => void;
+  /** Render callback for the canvas (receives the frame delta in ms) */
+  onRender: (ctx: CanvasRenderingContext2D, deltaTime: number) => void;
   /** Click handler for the canvas */
   onClick?: (x: number, y: number) => void;
 }

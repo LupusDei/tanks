@@ -74,6 +74,19 @@ export interface MoveCompleteEvent {
   finalX: number;
 }
 
+/**
+ * An explosion was spawned at an impact point. Carries what the host needs to
+ * play weapon-appropriate audio and flag explosion activity; the explosion's
+ * VISUAL is already added to {@link SimulationState.explosions} by the step.
+ */
+export interface ExplosionSpawnedEvent {
+  type: 'ExplosionSpawned';
+  x: number;
+  y: number;
+  weaponType: WeaponType;
+  blastRadius: number;
+}
+
 /** A projectile finished its flight (impact or out of bounds) and was removed. */
 export interface ProjectileResolvedEvent {
   type: 'ProjectileResolved';
@@ -96,6 +109,7 @@ export type SimEvent =
   | TankHitEvent
   | TankDestroyedEvent
   | MoveCompleteEvent
+  | ExplosionSpawnedEvent
   | ProjectileResolvedEvent
   | CraterCreatedEvent;
 
@@ -132,6 +146,8 @@ export const isTankDestroyed = (e: SimEvent): e is TankDestroyedEvent =>
   e.type === 'TankDestroyed';
 export const isMoveComplete = (e: SimEvent): e is MoveCompleteEvent =>
   e.type === 'MoveComplete';
+export const isExplosionSpawned = (e: SimEvent): e is ExplosionSpawnedEvent =>
+  e.type === 'ExplosionSpawned';
 export const isProjectileResolved = (e: SimEvent): e is ProjectileResolvedEvent =>
   e.type === 'ProjectileResolved';
 export const isCraterCreated = (e: SimEvent): e is CraterCreatedEvent =>

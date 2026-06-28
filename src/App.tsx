@@ -23,11 +23,7 @@ import {
   applyArmorToTanks,
   renderTank,
   createProjectileState,
-  getProjectilePosition,
   renderProjectile,
-  updateProjectileTrace,
-  isProjectileOutOfBounds,
-  getInterpolatedHeightAt,
   calculateAIShot,
   selectTargetWithPersistence,
   selectAIWeapon,
@@ -37,34 +33,17 @@ import {
   resetAIState,
   recordShot,
   getConsecutiveShots,
-  createExplosion,
-  updateExplosion,
   renderExplosion,
-  isExplosionComplete,
-  checkTankHit,
-  checkProjectileTankCollision,
   getWeaponConfig,
   createTankDestruction,
-  updateTankDestruction,
   renderTankDestruction,
-  isDestructionComplete,
-  updateClusterBombSplit,
   renderClusterSubProjectiles,
-  checkTerrainCollision,
-  handleProjectileBounce,
   createCrater,
-  findNearestTarget,
-  updateHomingTracking,
   generateInitialWind,
   generateNextWind,
-  getProjectileVisual,
   calculateKillReward,
   createMoneyAnimation,
-  updateMoneyAnimation,
   renderMoneyAnimation,
-  isMoneyAnimationComplete,
-  createWindParticleSystem,
-  updateWindParticles,
   renderWindParticles,
   calculateMovementTarget,
   getAnimatedPosition,
@@ -89,6 +68,8 @@ import {
   clearAllCampaignConsumables,
 } from './services/userDatabase'
 import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings } from './engine/ai'
+import { useGameTick } from './hooks/useGameTick'
+import type { SimEvent, SimulationState, TickContext } from './engine/simulation'
 
 interface GameConfig {
   terrainSize: TerrainSize
@@ -137,7 +118,14 @@ function App() {
   const moneyAnimationsRef = useRef<MoneyAnimationState[]>([])
   // Wind particle system state
   const windParticlesRef = useRef<WindParticleSystemState | null>(null)
-  const lastFrameTimeRef = useRef<number>(performance.now())
+  // Current frame's shared context (timestamp + canvas size), set at the top of
+  // each render frame so the event-drain handler can build animations/craters
+  // with the same time/dimensions the simulation step used.
+  const frameCtxRef = useRef<{ now: number; canvasWidth: number; canvasHeight: number }>({
+    now: performance.now(),
+    canvasWidth: 800,
+    canvasHeight: 600,
+  })
   const [isProjectileActive, setIsProjectileActive] = useState(false)
   const [isExplosionActive, setIsExplosionActive] = useState(false)
   const [isFittedToScreen, setIsFittedToScreen] = useState(false)
@@ -905,441 +893,235 @@ function App() {
     }
   }, [state.phase, state.tanks, state.terrain, state.aiDifficulty, state.terrainSize, isProjectileActive, isExplosionActive, actions])
 
-  const handleRender = (ctx: CanvasRenderingContext2D) => {
+  // Drain simulation events into React state / side-effects. This is the seam
+  // between the pure simulation and React state: the pure step reports WHAT
+  // happened (hits, craters, explosions, move-completions); this applies the
+  // consequences (damage, scoring, audio, terrain deformation).
+  const applyEvents = useCallback((events: SimEvent[]) => {
+    const { now, canvasHeight } = frameCtxRef.current
+    const currentState = stateRef.current
+    const tanks = currentState.tanks
+
+    for (const event of events) {
+      switch (event.type) {
+        case 'ExplosionSpawned': {
+          playExplosion(event.blastRadius, event.weaponType)
+          setIsExplosionActive(true)
+          break
+        }
+        case 'CraterCreated': {
+          if (currentState.terrain) {
+            actions.setTerrain(createCrater(currentState.terrain, event.x, event.radius))
+          }
+          break
+        }
+        case 'TankHit': {
+          const tank = tanks.find((t) => t.id === event.tankId)
+          if (!tank) break
+          const willKill = tank.health > 0 && tank.health - event.damage <= 0
+
+          // Splash damage (not a direct hit); energy shield absorbs unless EMP.
+          actions.damageTank(tank.id, event.damage, event.weaponType, false)
+
+          const weaponConfig = getWeaponConfig(event.weaponType)
+          if (weaponConfig.stunTurns && weaponConfig.stunTurns > 0 && !willKill) {
+            actions.stunTank(tank.id, weaponConfig.stunTurns)
+          }
+
+          if (willKill) {
+            const attackerId = event.sourceTankId
+            const attackerTank = attackerId ? tanks.find((t) => t.id === attackerId) : undefined
+            const attackerName = attackerTank?.id === 'player' ? 'Player' : `AI (${attackerTank?.color ?? 'unknown'})`
+            const victimName = tank.id === 'player' ? 'Player' : `AI (${tank.color})`
+            const moneyEarned = attackerId === 'player' ? calculateKillReward(currentState.aiDifficulty) : 0
+            console.log(`[Kill] ${attackerName} destroyed ${victimName}${moneyEarned > 0 ? ` - Earned $${moneyEarned}` : ''}`)
+
+            if (isCampaignMode && attackerId) {
+              recordKill(attackerId)
+              recordDeath(tank.id)
+              const currentKills = gameKillsRef.current.get(attackerId) ?? 0
+              gameKillsRef.current.set(attackerId, currentKills + 1)
+            }
+
+            if (moneyEarned > 0) {
+              const moneyAnim = createMoneyAnimation(tank.position, canvasHeight, moneyEarned, now)
+              moneyAnimationsRef.current = [...moneyAnimationsRef.current, moneyAnim]
+            }
+
+            const killedTank = { ...tank, killedByWeapon: event.weaponType }
+            const destruction = createTankDestruction(killedTank, canvasHeight, now)
+            if (destruction) {
+              destructionsRef.current = [...destructionsRef.current, destruction]
+              playTankDestruction()
+            }
+          }
+          break
+        }
+        case 'MoveComplete': {
+          if (currentState.terrain) {
+            const finalPos = getFinalPosition(event.finalX, currentState.terrain)
+            actions.completeTankMove(event.tankId, finalPos.x, finalPos.y)
+          }
+          break
+        }
+        case 'ProjectileResolved':
+          // Activity is tracked from simulation state below; no side-effect here.
+          break
+      }
+    }
+  }, [actions, isCampaignMode, recordKill, recordDeath, playExplosion, playTankDestruction])
+
+  const { advance: advanceSimulation } = useGameTick({ applyEvents })
+
+  // Per-frame: advance the pure simulation, then render the resulting state.
+  // All game logic lives in engine/simulation (pure, tested); this callback is
+  // the thin host that feeds it React state and draws its output (no game logic).
+  const handleRender = (ctx: CanvasRenderingContext2D, deltaTime: number) => {
     const { terrain, tanks } = state
+    const now = performance.now()
+
+    // Share this frame's time + dimensions with the event-drain handler.
+    frameCtxRef.current = { now, canvasWidth: ctx.canvas.width, canvasHeight: ctx.canvas.height }
 
     // Clear canvas with dark background
     ctx.fillStyle = '#1a1a1a'
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
-    // Calculate delta time for wind particles
-    const currentTimeForWind = performance.now()
-    const windDeltaTime = currentTimeForWind - lastFrameTimeRef.current
-
-    // Initialize wind particle system if needed or dimensions changed
-    if (!windParticlesRef.current ||
-        windParticlesRef.current.canvasWidth !== ctx.canvas.width ||
-        windParticlesRef.current.canvasHeight !== ctx.canvas.height) {
-      windParticlesRef.current = createWindParticleSystem(ctx.canvas.width, ctx.canvas.height)
+    // ---- ADVANCE: step the pure simulation, drain its events ----
+    if (terrain) {
+      const simState: SimulationState = {
+        projectiles: projectilesRef.current,
+        explosions: explosionsRef.current,
+        destructions: destructionsRef.current,
+        moneyAnimations: moneyAnimationsRef.current,
+        windParticles: windParticlesRef.current,
+      }
+      const tickCtx: TickContext = {
+        now,
+        terrain,
+        tanks,
+        wind: state.wind,
+        canvasWidth: ctx.canvas.width,
+        canvasHeight: ctx.canvas.height,
+      }
+      const next = advanceSimulation(simState, deltaTime, tickCtx)
+      projectilesRef.current = next.projectiles
+      explosionsRef.current = next.explosions
+      destructionsRef.current = next.destructions
+      moneyAnimationsRef.current = next.moneyAnimations
+      windParticlesRef.current = next.windParticles
     }
 
-    // Update and render wind particles (before terrain, so they appear in background)
-    windParticlesRef.current = updateWindParticles(
-      windParticlesRef.current,
-      state.wind,
-      currentTimeForWind,
-      windDeltaTime
-    )
-    renderWindParticles(ctx, windParticlesRef.current)
+    // ---- RENDER: draw current state (pure; no mutation, no game logic) ----
+    // Wind particles (ambient background, behind terrain)
+    if (windParticlesRef.current) {
+      renderWindParticles(ctx, windParticlesRef.current)
+    }
 
-    // Render terrain if available
+    // Terrain
     if (terrain) {
-      ctx.fillStyle = '#8B4513' // Brown color for terrain
+      ctx.fillStyle = '#8B4513'
       ctx.beginPath()
       ctx.moveTo(0, ctx.canvas.height)
-
-      // Draw terrain profile
       for (let x = 0; x < terrain.points.length; x++) {
         const terrainHeight = terrain.points[x]!
         const canvasY = ctx.canvas.height - terrainHeight
         ctx.lineTo(x, canvasY)
       }
-
       ctx.lineTo(ctx.canvas.width, ctx.canvas.height)
       ctx.closePath()
       ctx.fill()
     }
 
-    // Render tanks (skip dead tanks and those with active destruction animations)
+    // Tanks (skip dead and those with active destruction animations)
     const hasActiveProjectiles = projectilesRef.current.some((p) => p.isActive)
-    const destroyedTankIds = new Set(destructionsRef.current.filter(d => d.isActive).map(d => d.tankId))
-    const currentAnimTime = performance.now()
+    const destroyedTankIds = new Set(
+      destructionsRef.current.filter((d) => d.isActive).map((d) => d.tankId)
+    )
 
     for (const tank of tanks) {
-      // Skip rendering dead tanks
-      if (tank.health <= 0) {
-        continue
-      }
-      // Skip rendering tanks that have destruction animations playing
-      if (destroyedTankIds.has(tank.id)) {
-        continue
-      }
+      if (tank.health <= 0) continue
+      if (destroyedTankIds.has(tank.id)) continue
+
       const isCurrentTurn = tank.id === state.currentPlayerId && !hasActiveProjectiles
-      // Show rank insignia on enemy tanks to indicate AI difficulty
       const isEnemy = tank.id !== 'player'
       const chevronCount = isEnemy ? getChevronCount(state.aiDifficulty) : 0
       const starCount = isEnemy ? getStarCount(state.aiDifficulty) : 0
 
-      // Get tank name for display
       let tankName: string | undefined
       if (isCampaignMode && campaign) {
-        // Campaign mode: look up name from participants
-        const participant = campaign.participants.find(p => p.id === tank.id)
+        const participant = campaign.participants.find((p) => p.id === tank.id)
         tankName = participant?.name
       } else if (tank.id === 'player' && userData) {
-        // Free play: show player's username
         tankName = userData.profile.username
       }
 
-      // Handle movement animation - render at interpolated position
-      if (tank.isMoving && tank.moveTargetX !== null && tank.moveStartTime !== null && tank.moveStartX !== null && terrain) {
+      // Movement animation is a render concern: interpolate the drawn position.
+      // Completion is detected by the simulation (MoveComplete event).
+      if (
+        tank.isMoving &&
+        tank.moveTargetX !== null &&
+        tank.moveStartTime !== null &&
+        tank.moveStartX !== null &&
+        terrain
+      ) {
         const animResult = getAnimatedPosition(
           tank.moveStartX,
           tank.moveTargetX,
           terrain,
           tank.moveStartTime,
-          currentAnimTime
+          now
         )
-
-        // Create a temporary tank with animated position for rendering
         const animatedTank = { ...tank, position: animResult.position }
         renderTank(ctx, animatedTank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount, name: tankName })
-
-        // Check if animation is complete and update state
-        if (animResult.complete) {
-          const finalPos = getFinalPosition(tank.moveTargetX, terrain)
-          actions.completeTankMove(tank.id, finalPos.x, finalPos.y)
-        }
       } else {
         renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount, name: tankName })
       }
     }
 
-    const currentTime = performance.now()
-    const deltaTime = currentTime - lastFrameTimeRef.current
-    lastFrameTimeRef.current = currentTime
-
-    // Render and update all projectiles
-    let anyProjectileActive = false
-    const updatedProjectiles: ProjectileState[] = []
-
-    // Helper function to handle projectile landing (explosion + damage + destruction animation)
-    const handleProjectileLanding = (proj: ProjectileState, landingPos: { x: number; y: number }) => {
-      const weaponConfig = getWeaponConfig(proj.weaponType as WeaponType)
-      // For sub-projectiles, use smaller blast radius
-      const blastRadius = proj.isSubProjectile ? weaponConfig.blastRadius * 0.6 : weaponConfig.blastRadius
-      // For sub-projectiles, don't create sub-explosions (pass 'standard' to avoid recursive sub-explosions)
-      const explosionType = proj.isSubProjectile ? 'standard' as WeaponType : proj.weaponType as WeaponType
-      const newExplosion = createExplosion(landingPos, currentTime, blastRadius, explosionType)
-      explosionsRef.current = [...explosionsRef.current, newExplosion]
-      setIsExplosionActive(true)
-
-      // Play explosion sound based on size and weapon type
-      playExplosion(blastRadius, proj.weaponType as WeaponType)
-
-      // Apply crater for Bunker Buster weapon
-      if (weaponConfig.craterRadius && terrain) {
-        const newTerrain = createCrater(terrain, landingPos.x, weaponConfig.craterRadius)
-        actions.setTerrain(newTerrain)
-      }
-
-      // Check for tank hits and apply weapon damage
-      const damage = proj.isSubProjectile ? weaponConfig.damage * 0.6 : weaponConfig.damage
-      for (const tank of tanks) {
-        if (checkTankHit(landingPos, tank, ctx.canvas.height, blastRadius)) {
-          // Check if this damage will kill the tank
-          const willKill = tank.health > 0 && tank.health - damage <= 0
-
-          // Explosion damage is splash damage (not direct hit)
-          // Energy shield absorbs splash damage unless it's EMP
-          actions.damageTank(tank.id, damage, proj.weaponType, false)
-
-          // Apply stun effect for EMP weapons (only if tank is still alive)
-          if (weaponConfig.stunTurns && weaponConfig.stunTurns > 0 && !willKill) {
-            actions.stunTank(tank.id, weaponConfig.stunTurns)
-          }
-
-          // Create destruction animation if tank was killed
-          if (willKill) {
-            // Log the kill and money earned
-            const attackerTank = tanks.find(t => t.id === proj.tankId)
-            const attackerName = attackerTank?.id === 'player' ? 'Player' : `AI (${attackerTank?.color ?? 'unknown'})`
-            const victimName = tank.id === 'player' ? 'Player' : `AI (${tank.color})`
-            const moneyEarned = proj.tankId === 'player' ? calculateKillReward(state.aiDifficulty) : 0
-            console.log(`[Kill] ${attackerName} destroyed ${victimName}${moneyEarned > 0 ? ` - Earned $${moneyEarned}` : ''}`)
-
-            // Record kill/death in campaign mode
-            if (isCampaignMode) {
-              recordKill(proj.tankId)
-              recordDeath(tank.id)
-              // Track kills for game earnings calculation
-              const currentKills = gameKillsRef.current.get(proj.tankId) ?? 0
-              gameKillsRef.current.set(proj.tankId, currentKills + 1)
-            }
-
-            // Create money animation if player earned money from this kill
-            if (moneyEarned > 0) {
-              const moneyAnim = createMoneyAnimation(tank.position, ctx.canvas.height, moneyEarned, currentTime)
-              moneyAnimationsRef.current = [...moneyAnimationsRef.current, moneyAnim]
-            }
-
-            // Create a temporary tank state with the killing weapon set
-            const killedTank = { ...tank, killedByWeapon: proj.weaponType }
-            const destruction = createTankDestruction(killedTank, ctx.canvas.height, currentTime)
-            if (destruction) {
-              destructionsRef.current = [...destructionsRef.current, destruction]
-              // Play tank destruction sound
-              playTankDestruction()
-            }
-          }
-        }
-      }
-    }
-
+    // Projectiles (main + cluster sub-projectiles)
     for (const projectile of projectilesRef.current) {
-      if (!projectile.isActive && !projectile.subProjectiles?.some(s => s.isActive)) {
-        updatedProjectiles.push(projectile)
-        continue
+      if (projectile.isActive) {
+        renderProjectile(ctx, projectile, now, state.wind)
       }
-
-      // Check for cluster bomb split (only for active main projectiles)
-      let currentProjectile = projectile
-      if (projectile.isActive && projectile.weaponType === 'cluster_bomb' && !projectile.hasSplit) {
-        currentProjectile = updateClusterBombSplit(projectile, currentTime, state.wind)
-
-        // If split just happened, the main projectile becomes inactive
-        // and sub-projectiles are created
-        if (currentProjectile.hasSplit && !projectile.hasSplit) {
-          // Main projectile just split - don't create explosion for main
-          // Sub-projectiles will create their own explosions on landing
-        }
+      if (projectile.subProjectiles && projectile.subProjectiles.length > 0) {
+        renderClusterSubProjectiles(ctx, projectile, now, state.wind)
       }
-
-      // Handle main projectile if still active
-      if (currentProjectile.isActive) {
-        // Update trace points
-        let updatedProjectile = updateProjectileTrace(currentProjectile, currentTime, state.wind)
-
-        // Update homing missile tracking
-        if (updatedProjectile.weaponType === 'homing_missile' && updatedProjectile.trackingStrength) {
-          const position = getProjectilePosition(updatedProjectile, currentTime, state.wind)
-          const target = findNearestTarget(position, stateRef.current.tanks, updatedProjectile.tankId, ctx.canvas.height)
-          updatedProjectile = updateHomingTracking(updatedProjectile, target, currentTime, state.wind)
-
-          // Check for proximity explosion (missile passed closest approach to target)
-          if (updatedProjectile.shouldProximityExplode) {
-            currentProjectile = { ...updatedProjectile, isActive: false }
-            handleProjectileLanding(currentProjectile, position)
-            updatedProjectiles.push(currentProjectile)
-            continue // Skip to next projectile
-          }
-        }
-
-        // Get current position
-        const position = getProjectilePosition(updatedProjectile, currentTime, state.wind)
-
-        // Check for in-flight tank collision (direct hit)
-        const projectileVisual = getProjectileVisual(updatedProjectile.weaponType as WeaponType)
-        let inFlightHit = false
-        for (const tank of tanks) {
-          // Skip the tank that fired (no self-damage from direct hit during flight)
-          if (tank.id === updatedProjectile.tankId) continue
-
-          if (checkProjectileTankCollision(position, tank, ctx.canvas.height, projectileVisual.radius)) {
-            // Direct hit! Trigger landing at projectile position
-            currentProjectile = { ...updatedProjectile, isActive: false }
-            handleProjectileLanding(currentProjectile, position)
-            inFlightHit = true
-            break
-          }
-        }
-
-        if (inFlightHit) {
-          updatedProjectiles.push(currentProjectile)
-          continue // Skip to next projectile
-        }
-
-        // Check for terrain collision first (for bouncing weapons)
-        const terrainCollision = terrain ? checkTerrainCollision(position, terrain, ctx.canvas.height) : { hit: false, point: null, worldPoint: null }
-
-        // Check if projectile is out of bounds
-        const terrainHeight = terrain ? getInterpolatedHeightAt(terrain, position.x) ?? 0 : 0
-        if (isProjectileOutOfBounds(position, ctx.canvas.width, ctx.canvas.height, terrainHeight) || terrainCollision.hit) {
-          // Try to bounce if this is a bouncing weapon
-          const bounceResult = terrainCollision.point
-            ? handleProjectileBounce(updatedProjectile, terrainCollision.point, currentTime, state.wind)
-            : null
-
-          if (bounceResult) {
-            // Bounce succeeded - continue with bounced projectile
-            currentProjectile = bounceResult
-            anyProjectileActive = true
-            // Render projectile at new position
-            renderProjectile(ctx, bounceResult, currentTime, state.wind)
-          } else {
-            // Projectile has landed - mark as inactive
-            currentProjectile = { ...updatedProjectile, isActive: false }
-            // Use collision point if available, otherwise use current position
-            const landingPos = terrainCollision.point ?? position
-            handleProjectileLanding(currentProjectile, landingPos)
-          }
-        } else {
-          // Projectile still active
-          currentProjectile = updatedProjectile
-          anyProjectileActive = true
-
-          // Render projectile
-          renderProjectile(ctx, updatedProjectile, currentTime, state.wind)
-        }
-      }
-
-      // Handle sub-projectiles for cluster bomb
-      if (currentProjectile.subProjectiles && currentProjectile.subProjectiles.length > 0) {
-        const updatedSubProjectiles: ProjectileState[] = []
-
-        for (const sub of currentProjectile.subProjectiles) {
-          if (!sub.isActive) {
-            updatedSubProjectiles.push(sub)
-            continue
-          }
-
-          // Update trace points for sub-projectile
-          const updatedSub = updateProjectileTrace(sub, currentTime, state.wind)
-          const subPosition = getProjectilePosition(updatedSub, currentTime, state.wind)
-
-          // Check for in-flight tank collision (direct hit) for sub-projectile
-          let subInFlightHit = false
-          const subProjectileRadius = 4 // Smaller radius for cluster sub-projectiles
-          for (const tank of tanks) {
-            // Skip the tank that fired (no self-damage)
-            if (tank.id === updatedSub.tankId) continue
-
-            if (checkProjectileTankCollision(subPosition, tank, ctx.canvas.height, subProjectileRadius)) {
-              // Direct hit!
-              updatedSubProjectiles.push({ ...updatedSub, isActive: false })
-              handleProjectileLanding(updatedSub, subPosition)
-              subInFlightHit = true
-              break
-            }
-          }
-
-          if (subInFlightHit) {
-            continue // Skip to next sub-projectile
-          }
-
-          // Check if sub-projectile has landed
-          const subTerrainHeight = terrain ? getInterpolatedHeightAt(terrain, subPosition.x) ?? 0 : 0
-          if (isProjectileOutOfBounds(subPosition, ctx.canvas.width, ctx.canvas.height, subTerrainHeight)) {
-            // Sub-projectile has landed
-            updatedSubProjectiles.push({ ...updatedSub, isActive: false })
-            handleProjectileLanding(updatedSub, subPosition)
-          } else {
-            // Sub-projectile still active
-            updatedSubProjectiles.push(updatedSub)
-            anyProjectileActive = true
-          }
-        }
-
-        currentProjectile = { ...currentProjectile, subProjectiles: updatedSubProjectiles }
-
-        // Render sub-projectiles
-        renderClusterSubProjectiles(ctx, currentProjectile, currentTime, state.wind)
-      }
-
-      updatedProjectiles.push(currentProjectile)
     }
 
-    // Update projectiles ref with new state
-    projectilesRef.current = updatedProjectiles
+    // Explosions
+    for (const explosion of explosionsRef.current) {
+      renderExplosion(ctx, explosion, now)
+    }
 
-    // Update isProjectileActive state if needed
+    // Tank destruction animations
+    for (const destruction of destructionsRef.current) {
+      renderTankDestruction(ctx, destruction, now)
+    }
+
+    // Money earned animations
+    for (const moneyAnim of moneyAnimationsRef.current) {
+      renderMoneyAnimation(ctx, moneyAnim, now)
+    }
+
+    // ---- Turn settling: when all action has resolved, advance the round ----
+    const anyProjectileActive = projectilesRef.current.some(
+      (p) => p.isActive || p.subProjectiles?.some((s) => s.isActive)
+    )
+    const anyExplosionActive = explosionsRef.current.length > 0
+    const anyDestructionActive = destructionsRef.current.length > 0
+
     if (isProjectileActive && !anyProjectileActive) {
       setIsProjectileActive(false)
     }
 
-    // Render and update all explosions
-    let anyExplosionActive = false
-    const updatedExplosions: ExplosionState[] = []
-
-    for (const explosion of explosionsRef.current) {
-      if (!explosion.isActive) {
-        continue // Don't keep inactive explosions
-      }
-
-      // Update explosion state
-      const updatedExplosion = updateExplosion(explosion, currentTime, deltaTime)
-
-      // Render explosion
-      renderExplosion(ctx, updatedExplosion, currentTime)
-
-      // Check if explosion is complete
-      if (isExplosionComplete(updatedExplosion, currentTime)) {
-        // Don't add completed explosions to the array
-        continue
-      } else {
-        updatedExplosions.push(updatedExplosion)
-        anyExplosionActive = true
-      }
-    }
-
-    // Update explosions ref
-    explosionsRef.current = updatedExplosions
-
-    // Render and update all tank destruction animations
-    const updatedDestructions: TankDestructionState[] = []
-    let anyDestructionActive = false
-
-    for (const destruction of destructionsRef.current) {
-      if (!destruction.isActive) {
-        continue // Don't keep inactive destructions
-      }
-
-      // Update destruction state
-      const updatedDestruction = updateTankDestruction(destruction, currentTime, deltaTime)
-
-      // Render destruction
-      renderTankDestruction(ctx, updatedDestruction, currentTime)
-
-      // Check if destruction is complete
-      if (isDestructionComplete(updatedDestruction, currentTime)) {
-        // Don't add completed destructions to the array
-        continue
-      } else {
-        updatedDestructions.push(updatedDestruction)
-        anyDestructionActive = true
-      }
-    }
-
-    // Update destructions ref
-    destructionsRef.current = updatedDestructions
-
-    // Render and update all money animations
-    const updatedMoneyAnimations: MoneyAnimationState[] = []
-
-    for (const moneyAnim of moneyAnimationsRef.current) {
-      if (!moneyAnim.isActive) {
-        continue // Don't keep inactive animations
-      }
-
-      // Update animation state
-      const updatedMoneyAnim = updateMoneyAnimation(moneyAnim, currentTime)
-
-      // Render animation
-      renderMoneyAnimation(ctx, updatedMoneyAnim, currentTime)
-
-      // Check if animation is complete
-      if (isMoneyAnimationComplete(updatedMoneyAnim, currentTime)) {
-        // Don't add completed animations to the array
-        continue
-      } else {
-        updatedMoneyAnimations.push(updatedMoneyAnim)
-      }
-    }
-
-    // Update money animations ref
-    moneyAnimationsRef.current = updatedMoneyAnimations
-
-    // In simultaneous mode, just clear explosion state when all complete
-    // No turn cycling - all tanks fire together each round
-    // IMPORTANT: Also check that no projectiles are still active to prevent
-    // wind changes mid-flight when multiple tanks fire simultaneously
+    // Simultaneous mode: clear explosion state and advance the round once
+    // everything has settled (no projectiles/explosions/destructions in flight).
     if (isExplosionActive && !anyExplosionActive && !anyProjectileActive && !anyDestructionActive) {
       setIsExplosionActive(false)
-      // Increment turn counter for round tracking
       actions.incrementTurn()
-      // Note: Stun counters are now decremented when each tank "consumes" their stun
-      // by skipping their turn, not globally at round end
-      // Generate new wind for the next turn (based on current wind)
+      // New wind for the next turn (only once all motion has stopped, to avoid
+      // mid-flight wind changes when multiple tanks fire simultaneously).
       actions.setWind(generateNextWind(state.wind))
     }
   }

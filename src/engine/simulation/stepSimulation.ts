@@ -46,7 +46,7 @@ export function stepSimulation(
   const mergedExplosions = proj.newExplosions.length
     ? [...state.explosions, ...proj.newExplosions]
     : state.explosions;
-  const fx = stepEffects(mergedExplosions, state.destructions, ctx.now);
+  const fx = stepEffects(mergedExplosions, state.destructions, ctx.now, dtMs);
   events.push(...fx.events);
 
   // 3. Movement completion detection.
