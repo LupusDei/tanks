@@ -257,9 +257,7 @@ function App() {
 
   // Keep refs to latest state for use in timeouts
   const stateRef = useRef(state)
-  const isProjectileActiveRef = useRef(isProjectileActive)
   stateRef.current = state
-  isProjectileActiveRef.current = isProjectileActive
 
   // Check if player has queued their shot and AI should respond
   const playerTank = state.tanks.find((t) => t.id === 'player')

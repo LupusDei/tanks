@@ -25,4 +25,23 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Architecture guard (tanks-301.4.1): the engine layer — including the
+    // decoupled simulation — MUST stay pure and framework-free. No React/DOM in
+    // src/engine/ so game logic stays headless, deterministic, and testable.
+    files: ['src/engine/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['react', 'react-dom', 'react/*', 'react-dom/*'],
+              message: 'engine/ must stay React-free (pure game logic).',
+            },
+          ],
+        },
+      ],
+    },
+  },
 )
