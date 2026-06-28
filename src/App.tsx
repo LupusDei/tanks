@@ -70,6 +70,7 @@ import {
 import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings } from './engine/ai'
 import { useGameTick } from './hooks/useGameTick'
 import type { SimEvent, SimulationState, TickContext } from './engine/simulation'
+import { getTerrainCache, type TerrainCacheEntry } from './renderer/terrainCache'
 
 interface GameConfig {
   terrainSize: TerrainSize
@@ -118,6 +119,8 @@ function App() {
   const moneyAnimationsRef = useRef<MoneyAnimationState[]>([])
   // Wind particle system state
   const windParticlesRef = useRef<WindParticleSystemState | null>(null)
+  // Cached offscreen terrain render (re-rendered only on crater/resize)
+  const terrainCacheRef = useRef<TerrainCacheEntry | null>(null)
   // Current frame's shared context (timestamp + canvas size), set at the top of
   // each render frame so the event-drain handler can build animations/craters
   // with the same time/dimensions the simulation step used.
@@ -1016,19 +1019,17 @@ function App() {
       renderWindParticles(ctx, windParticlesRef.current)
     }
 
-    // Terrain
+    // Terrain — blit a cached offscreen render instead of re-stroking the
+    // up-to-2100-point polygon every frame. The cache re-renders only when the
+    // terrain object changes (crater) or the canvas is resized.
     if (terrain) {
-      ctx.fillStyle = '#8B4513'
-      ctx.beginPath()
-      ctx.moveTo(0, ctx.canvas.height)
-      for (let x = 0; x < terrain.points.length; x++) {
-        const terrainHeight = terrain.points[x]!
-        const canvasY = ctx.canvas.height - terrainHeight
-        ctx.lineTo(x, canvasY)
-      }
-      ctx.lineTo(ctx.canvas.width, ctx.canvas.height)
-      ctx.closePath()
-      ctx.fill()
+      terrainCacheRef.current = getTerrainCache(
+        terrainCacheRef.current,
+        terrain,
+        ctx.canvas.width,
+        ctx.canvas.height
+      )
+      ctx.drawImage(terrainCacheRef.current.canvas, 0, 0)
     }
 
     // Tanks (skip dead and those with active destruction animations)
