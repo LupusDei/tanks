@@ -74,6 +74,7 @@ import { useGameTick } from './hooks/useGameTick'
 import type { SimEvent, SimulationState, TickContext } from './engine/simulation'
 import { getTerrainCache, type TerrainCacheEntry } from './renderer/terrainCache'
 import { renderAimPreview } from './renderer/aimPreviewRenderer'
+import { renderNukeFlash, NUKE_FLASH_DURATION_MS } from './renderer/nukeFlash'
 
 interface GameConfig {
   terrainSize: TerrainSize
@@ -124,6 +125,8 @@ function App() {
   const windParticlesRef = useRef<WindParticleSystemState | null>(null)
   // Cached offscreen terrain render (re-rendered only on crater/resize)
   const terrainCacheRef = useRef<TerrainCacheEntry | null>(null)
+  // Timestamp of the last nuke detonation, for the white flash overlay (null = idle)
+  const nukeFlashStartRef = useRef<number | null>(null)
   // Current frame's shared context (timestamp + canvas size), set at the top of
   // each render frame so the event-drain handler can build animations/craters
   // with the same time/dimensions the simulation step used.
@@ -911,6 +914,10 @@ function App() {
         case 'ExplosionSpawned': {
           playExplosion(event.blastRadius, event.weaponType)
           setIsExplosionActive(true)
+          // Nuke: trigger the brief full-screen white detonation flash.
+          if (event.weaponType === 'nuke') {
+            nukeFlashStartRef.current = now
+          }
           break
         }
         case 'CraterCreated': {
@@ -1121,6 +1128,15 @@ function App() {
     // Money earned animations
     for (const moneyAnim of moneyAnimationsRef.current) {
       renderMoneyAnimation(ctx, moneyAnim, now)
+    }
+
+    // Nuke detonation flash (over everything). Clears once faded.
+    if (nukeFlashStartRef.current !== null) {
+      const flashElapsed = now - nukeFlashStartRef.current
+      renderNukeFlash(ctx, flashElapsed)
+      if (flashElapsed >= NUKE_FLASH_DURATION_MS) {
+        nukeFlashStartRef.current = null
+      }
     }
 
     // ---- Turn settling: when all action has resolved, advance the round ----

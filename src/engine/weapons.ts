@@ -26,7 +26,8 @@ export type WeaponType =
   | 'emp'
   | 'bouncing_betty'
   | 'bunker_buster'
-  | 'homing_missile';
+  | 'homing_missile'
+  | 'nuke';
 
 /**
  * Destruction animation category.
@@ -50,6 +51,7 @@ export function getDestructionCategory(weaponType: WeaponType): DestructionCateg
     case 'bouncing_betty':
     case 'bunker_buster':
     case 'homing_missile':
+    case 'nuke':
       return 'explosive';
     case 'emp':
       return 'electric';
@@ -269,6 +271,23 @@ export const WEAPON_HOMING_MISSILE: WeaponConfig = {
   trackingStrength: 0.3,
 };
 
+/**
+ * Nuke - premium superweapon (ported from auto-tank).
+ * Massive blast radius and a huge crater; instakills any tank in range. Slow,
+ * heavy projectile and a dramatic nuclear explosion. The economy's top tier —
+ * you save up for it. (Cost scaled to tanks' economy vs auto-tank's 5000.)
+ */
+export const WEAPON_NUKE: WeaponConfig = {
+  id: 'nuke',
+  name: 'Nuke',
+  description: 'Devastating nuclear blast. Enormous radius, levels the terrain.',
+  cost: 750,
+  damage: 100,
+  blastRadius: 70,
+  projectileSpeedMultiplier: 0.75,
+  craterRadius: 80,
+};
+
 // ============================================================================
 // WEAPON REGISTRY
 // ============================================================================
@@ -287,6 +306,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   bouncing_betty: WEAPON_BOUNCING_BETTY,
   bunker_buster: WEAPON_BUNKER_BUSTER,
   homing_missile: WEAPON_HOMING_MISSILE,
+  nuke: WEAPON_NUKE,
 };
 
 /**
@@ -303,6 +323,7 @@ export const WEAPON_TYPES: WeaponType[] = [
   'bouncing_betty',
   'bunker_buster',
   'homing_missile',
+  'nuke',
 ];
 
 /**

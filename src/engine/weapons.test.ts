@@ -178,7 +178,7 @@ describe('Weapon configurations', () => {
 
 describe('WEAPONS registry', () => {
   it('contains all weapon types', () => {
-    expect(Object.keys(WEAPONS)).toHaveLength(9);
+    expect(Object.keys(WEAPONS)).toHaveLength(10);
     expect(WEAPONS).toHaveProperty('standard');
     expect(WEAPONS).toHaveProperty('heavy_artillery');
     expect(WEAPONS).toHaveProperty('precision');
@@ -188,6 +188,7 @@ describe('WEAPONS registry', () => {
     expect(WEAPONS).toHaveProperty('bouncing_betty');
     expect(WEAPONS).toHaveProperty('bunker_buster');
     expect(WEAPONS).toHaveProperty('homing_missile');
+    expect(WEAPONS).toHaveProperty('nuke');
   });
 
   it('maps to correct weapon configs', () => {
@@ -205,7 +206,7 @@ describe('WEAPONS registry', () => {
 
 describe('WEAPON_TYPES array', () => {
   it('contains all weapon types in order', () => {
-    expect(WEAPON_TYPES).toHaveLength(9);
+    expect(WEAPON_TYPES).toHaveLength(10);
     expect(WEAPON_TYPES[0]).toBe('standard');
     expect(WEAPON_TYPES).toContain('heavy_artillery');
     expect(WEAPON_TYPES).toContain('precision');
@@ -215,6 +216,7 @@ describe('WEAPON_TYPES array', () => {
     expect(WEAPON_TYPES).toContain('bouncing_betty');
     expect(WEAPON_TYPES).toContain('bunker_buster');
     expect(WEAPON_TYPES).toContain('homing_missile');
+    expect(WEAPON_TYPES).toContain('nuke');
   });
 });
 
@@ -235,9 +237,11 @@ describe('getWeaponConfig', () => {
 describe('getPurchasableWeapons', () => {
   it('returns only weapons with cost > 0', () => {
     const purchasable = getPurchasableWeapons();
+    // 9 purchasable: all weapons except the free standard shell (now incl. nuke).
 
-    expect(purchasable).toHaveLength(8);
+    expect(purchasable).toHaveLength(9);
     expect(purchasable).not.toContain(WEAPON_STANDARD);
+    expect(purchasable.some((w) => w.id === 'nuke')).toBe(true);
     expect(purchasable).toContain(WEAPON_HEAVY_ARTILLERY);
     expect(purchasable).toContain(WEAPON_PRECISION);
     expect(purchasable).toContain(WEAPON_CLUSTER_BOMB);

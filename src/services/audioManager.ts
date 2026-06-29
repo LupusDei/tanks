@@ -78,6 +78,7 @@ export function getFireSoundForWeapon(weaponType: WeaponType): SfxType {
     bouncing_betty: 'fire_bouncing',
     bunker_buster: 'fire_bunker',
     homing_missile: 'fire_homing',
+    nuke: 'fire_heavy', // reuse the heaviest fire sfx for the nuke
   };
   return mapping[weaponType] || 'fire_standard';
 }

@@ -159,6 +159,19 @@ function getExplosionConfig(weaponType: WeaponType): ExplosionConfig {
         fireColorInner: 'rgba(255, 150, 80, 1)',
         fireColorOuter: 'rgba(180, 50, 0, 0)',
       };
+    case 'nuke':
+      // Nuclear blast: blinding white core washing out to orange/red, dense
+      // long-lived particles. The biggest, brightest explosion in the game.
+      return {
+        colors: ['#ffffff', '#fff3cc', '#ffcc66', '#ff8800', '#ff4400', '#cc2200'],
+        durationMultiplier: 1.8,
+        particleMultiplier: 2.2,
+        speedMultiplier: 1.1,
+        flashColorInner: 'rgba(255, 255, 255, 1)',
+        flashColorOuter: 'rgba(255, 180, 80, 0)',
+        fireColorInner: 'rgba(255, 255, 230, 1)',
+        fireColorOuter: 'rgba(255, 120, 30, 0)',
+      };
     case 'standard':
     default:
       return {
