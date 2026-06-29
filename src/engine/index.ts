@@ -205,3 +205,8 @@ export {
   getAnimatedPosition,
   getFinalPosition,
 } from './movement';
+
+export {
+  computeAimPreview,
+  type AimPreviewOptions,
+} from './aimPreview';

@@ -48,6 +48,8 @@ import {
   calculateMovementTarget,
   getAnimatedPosition,
   getFinalPosition,
+  createLaunchConfig,
+  computeAimPreview,
   GAS_CAN_FUEL_VALUE,
   MOVEMENT_FUEL_PER_INCREMENT,
   type ProjectileState,
@@ -71,6 +73,7 @@ import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings
 import { useGameTick } from './hooks/useGameTick'
 import type { SimEvent, SimulationState, TickContext } from './engine/simulation'
 import { getTerrainCache, type TerrainCacheEntry } from './renderer/terrainCache'
+import { renderAimPreview } from './renderer/aimPreviewRenderer'
 
 interface GameConfig {
   terrainSize: TerrainSize
@@ -1076,6 +1079,23 @@ function App() {
       } else {
         renderTank(ctx, tank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount, name: tankName })
       }
+    }
+
+    // Aim trajectory preview — shown while the player is aiming (alive, their turn,
+    // nothing in flight). Reuses the real shell physics so the dotted arc matches
+    // where the shot will actually land.
+    const aimingPlayer = tanks.find((t) => t.id === 'player')
+    if (
+      terrain &&
+      aimingPlayer &&
+      aimingPlayer.health > 0 &&
+      !aimingPlayer.isMoving &&
+      !hasActiveProjectiles &&
+      explosionsRef.current.length === 0
+    ) {
+      const aimConfig = createLaunchConfig(aimingPlayer, ctx.canvas.height, ctx.canvas.width)
+      const previewPoints = computeAimPreview(aimConfig, state.wind, terrain, ctx.canvas.height)
+      renderAimPreview(ctx, previewPoints)
     }
 
     // Projectiles (main + cluster sub-projectiles)
