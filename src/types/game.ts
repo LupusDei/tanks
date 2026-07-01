@@ -156,6 +156,8 @@ export interface GameState {
   weaponAmmo: Partial<Record<WeaponType, number>>;
   /** Current wind speed in m/s (negative = left, positive = right) */
   wind: number;
+  /** Easy Mode: calmer wind + more starting money. */
+  easyMode: boolean;
 }
 
 export interface GameActions {
@@ -184,6 +186,7 @@ export interface GameActions {
   setWeaponAmmo: (ammo: Partial<Record<WeaponType, number>>) => void;
   decrementAmmo: (weapon: WeaponType) => void;
   setWind: (wind: number) => void;
+  setEasyMode: (easyMode: boolean) => void;
   /** Start tank movement animation to target X position */
   startTankMove: (tankId: string, targetX: number, fuelCost: number) => void;
   /** Complete tank movement animation and update final position */
@@ -293,6 +296,9 @@ export interface CampaignConfig {
   enemyCount: EnemyCount;
   playerColor: TankColor;
   aiDifficulty: AIDifficulty;
+  /** Easy Mode: calmer wind + more starting money. Optional for back-compat with
+   *  campaigns saved before Easy Mode existed (treated as false). */
+  easyMode?: boolean;
 }
 
 /**

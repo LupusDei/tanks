@@ -3386,3 +3386,47 @@ p {
     z-index: 110;
   }
 }
+
+/* ===== Easy Mode toggle (config screen) ===== */
+.game-config-screen__easy-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid #444;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+}
+.game-config-screen__easy-mode-toggle:hover {
+  border-color: #6a6;
+}
+.game-config-screen__easy-mode-toggle--on {
+  border-color: #2ecc71;
+  background: rgba(46, 204, 113, 0.12);
+}
+.game-config-screen__easy-mode-state {
+  flex: 0 0 auto;
+  min-width: 56px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-align: center;
+  color: #999;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid #555;
+}
+.game-config-screen__easy-mode-toggle--on .game-config-screen__easy-mode-state {
+  color: #062;
+  background: #2ecc71;
+  border-color: #2ecc71;
+}
+.game-config-screen__easy-mode-description {
+  color: #bbb;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}

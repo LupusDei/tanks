@@ -101,6 +101,12 @@ export interface WeaponConfig {
 export const STARTING_MONEY = 500;
 
 /**
+ * Starting money in Easy Mode — a generous cushion so players can buy premium
+ * weapons/armor right away.
+ */
+export const EASY_MODE_STARTING_MONEY = 2000;
+
+/**
  * Money earned per enemy kill.
  * Primary source of income during gameplay.
  */

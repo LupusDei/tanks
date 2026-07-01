@@ -22,6 +22,7 @@ const initialState: GameState = {
   selectedWeapon: 'standard',
   weaponAmmo: { standard: Infinity },
   wind: 0,
+  easyMode: false,
 };
 
 interface GameProviderProps {
@@ -241,6 +242,10 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, wind }));
   }, []);
 
+  const setEasyMode = useCallback((easyMode: boolean) => {
+    setState((prev) => ({ ...prev, easyMode }));
+  }, []);
+
   // Start tank movement animation
   const startTankMove = useCallback((tankId: string, targetX: number, fuelCost: number) => {
     setState((prev) => ({
@@ -301,6 +306,7 @@ export function GameProvider({ children }: GameProviderProps) {
     setWeaponAmmo,
     decrementAmmo,
     setWind,
+    setEasyMode,
     startTankMove,
     completeTankMove,
   };

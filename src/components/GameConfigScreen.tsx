@@ -5,7 +5,7 @@ import { PlayerStatsDisplay } from './PlayerStatsDisplay'
 import { loadGameConfig, saveGameConfig } from '../services/userDatabase'
 
 interface GameConfigScreenProps {
-  onStartGame: (config: { terrainSize: TerrainSize; enemyCount: EnemyCount; playerColor: TankColor; aiDifficulty: AIDifficulty }) => void
+  onStartGame: (config: { terrainSize: TerrainSize; enemyCount: EnemyCount; playerColor: TankColor; aiDifficulty: AIDifficulty; easyMode: boolean }) => void
 }
 
 const TERRAIN_SIZE_ORDER: TerrainSize[] = ['small', 'medium', 'large', 'huge', 'epic']
@@ -34,6 +34,7 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
   const [enemyCount, setEnemyCount] = useState<EnemyCount>(DEFAULT_ENEMY_COUNT)
   const [playerColor, setPlayerColor] = useState<TankColor>(DEFAULT_PLAYER_COLOR)
   const [aiDifficulty, setAIDifficulty] = useState<AIDifficulty>(DEFAULT_AI_DIFFICULTY)
+  const [easyMode, setEasyMode] = useState<boolean>(false)
 
   // Load saved config on mount
   useEffect(() => {
@@ -45,6 +46,9 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
       if (savedConfig.aiDifficulty) {
         setAIDifficulty(savedConfig.aiDifficulty)
       }
+      if (savedConfig.easyMode !== undefined) {
+        setEasyMode(savedConfig.easyMode)
+      }
     }
   }, [])
 
@@ -54,8 +58,8 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
   const handleEngage = () => {
     if (allSelected) {
       // Save config before starting game
-      saveGameConfig({ terrainSize, enemyCount, playerColor, aiDifficulty })
-      onStartGame({ terrainSize, enemyCount, playerColor, aiDifficulty })
+      saveGameConfig({ terrainSize, enemyCount, playerColor, aiDifficulty, easyMode })
+      onStartGame({ terrainSize, enemyCount, playerColor, aiDifficulty, easyMode })
     }
   }
 
@@ -206,6 +210,23 @@ export function GameConfigScreen({ onStartGame }: GameConfigScreenProps) {
               </button>
             ))}
           </div>
+        </div>
+        {/* Easy Mode Section */}
+        <div className="game-config-screen__section">
+          <h2 className="game-config-screen__section-title">Easy Mode</h2>
+          <button
+            className={`game-config-screen__easy-mode-toggle ${easyMode ? 'game-config-screen__easy-mode-toggle--on' : ''}`}
+            onClick={() => setEasyMode((v) => !v)}
+            data-testid="config-easy-mode-toggle"
+            aria-label="Toggle Easy Mode"
+            aria-pressed={easyMode}
+            role="switch"
+          >
+            <span className="game-config-screen__easy-mode-state">{easyMode ? 'ON' : 'OFF'}</span>
+            <span className="game-config-screen__easy-mode-description">
+              Calmer winds + extra starting money. Great for learning or a relaxed game.
+            </span>
+          </button>
         </div>
       </div>
 

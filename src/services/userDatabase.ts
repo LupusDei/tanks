@@ -16,7 +16,7 @@ import type {
   CampaignConfig,
 } from '../types/game';
 import { CAMPAIGN_STARTING_BALANCE } from '../types/game';
-import { STARTING_MONEY, calculateGameEarnings, GAS_CAN_MAX, type WeaponType } from '../engine/weapons';
+import { STARTING_MONEY, EASY_MODE_STARTING_MONEY, calculateGameEarnings, GAS_CAN_MAX, type WeaponType } from '../engine/weapons';
 
 // Storage keys
 const PLAYERS_DB_KEY = 'tanks_players_db';
@@ -31,6 +31,7 @@ export interface GameConfig {
   enemyCount: EnemyCount;
   playerColor: TankColor;
   aiDifficulty?: AIDifficulty;
+  easyMode?: boolean;
 }
 
 const MAX_RECENT_GAMES = 50;
@@ -435,6 +436,34 @@ export function addMoney(amount: number): number | null {
   return userData.stats.balance;
 }
 
+/**
+ * Free-play Easy Mode starting bonus.
+ *
+ * For a BRAND-NEW player (no games played yet), raise their balance to at least
+ * {@link EASY_MODE_STARTING_MONEY}. This is a one-time floor: it never lowers an
+ * existing balance, doesn't stack, and is a no-op once the player has completed a
+ * game (they keep their earned money). Returns the resulting balance, or null if
+ * there is no current player.
+ */
+export function applyEasyModeStartBonus(): number | null {
+  const userData = loadUserData();
+  if (!userData) return null;
+
+  if (userData.stats.balance === undefined) {
+    userData.stats.balance = STARTING_MONEY;
+  }
+
+  if (
+    userData.stats.gamesPlayed === 0 &&
+    userData.stats.balance < EASY_MODE_STARTING_MONEY
+  ) {
+    userData.stats.balance = EASY_MODE_STARTING_MONEY;
+    saveUserData(userData);
+  }
+
+  return userData.stats.balance;
+}
+
 // ============================================================================
 // WEAPON INVENTORY FUNCTIONS
 // ============================================================================
@@ -583,13 +612,14 @@ export function createCampaignParticipant(
   name: string,
   isPlayer: boolean,
   startingLevel: AIDifficulty,
-  color: TankColor
+  color: TankColor,
+  startingBalance: number = CAMPAIGN_STARTING_BALANCE
 ): CampaignParticipant {
   return {
     id,
     name,
     isPlayer,
-    balance: CAMPAIGN_STARTING_BALANCE,
+    balance: startingBalance,
     kills: 0,
     deaths: 0,
     gamesPlayed: 0,
@@ -672,13 +702,19 @@ export function createNewCampaign(
   const allColors: TankColor[] = ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'cyan', 'pink', 'white', 'brown'];
   const availableColors = allColors.filter(c => c !== config.playerColor);
 
+  // Easy Mode gives the PLAYER extra starting money (AI stays normal, to keep it easy).
+  const playerStartingBalance = config.easyMode
+    ? EASY_MODE_STARTING_MONEY
+    : CAMPAIGN_STARTING_BALANCE;
+
   // Create player participant with ID matching game tank ID
   const player = createCampaignParticipant(
     'player', // ID must match game tank ID
     playerName,
     true,
     config.aiDifficulty,
-    config.playerColor
+    config.playerColor,
+    playerStartingBalance
   );
 
   // Create AI participants with IDs matching game tank IDs ('enemy-1', 'enemy-2', etc.)

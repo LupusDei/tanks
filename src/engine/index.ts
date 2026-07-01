@@ -110,6 +110,7 @@ export {
 export {
   // Economy constants
   STARTING_MONEY,
+  EASY_MODE_STARTING_MONEY,
   KILL_REWARD,
   WIN_BONUS,
   LOSS_CONSOLATION,
@@ -168,6 +169,7 @@ export {
   WIND_CHANGE_STD_DEV,
   MAX_WIND,
   WIND_REGRESSION,
+  EASY_MODE_WIND_SCALE,
   gaussianRandom,
   generateInitialWind,
   generateNextWind,

@@ -40,6 +40,7 @@ import {
   renderClusterSubProjectiles,
   createCrater,
   generateInitialWind,
+  EASY_MODE_WIND_SCALE,
   generateNextWind,
   calculateKillReward,
   createMoneyAnimation,
@@ -68,6 +69,7 @@ import {
   getCampaignGasCanCount,
   clearConsumableInventory,
   clearAllCampaignConsumables,
+  applyEasyModeStartBonus,
 } from './services/userDatabase'
 import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings } from './engine/ai'
 import { useGameTick } from './hooks/useGameTick'
@@ -81,6 +83,7 @@ interface GameConfig {
   enemyCount: EnemyCount
   playerColor: TankColor
   aiDifficulty: AIDifficulty
+  easyMode: boolean
 }
 
 // Tank dimensions for hit detection (must match tank.ts)
@@ -560,6 +563,9 @@ function App() {
     // Reset AI state for new game (target persistence and shot history)
     resetAIState()
 
+    // Persist the easy-mode choice into game state (drives wind + shop money).
+    actions.setEasyMode(config.easyMode)
+
     // Check if this is a new campaign
     const pendingLength = pendingCampaignLengthRef.current
     if (pendingLength && userData) {
@@ -569,9 +575,13 @@ function App() {
         enemyCount: config.enemyCount,
         playerColor: config.playerColor,
         aiDifficulty: config.aiDifficulty,
+        easyMode: config.easyMode,
       }
       startNewCampaign(pendingLength, campaignConfig, userData.profile.username)
       pendingCampaignLengthRef.current = null
+    } else if (config.easyMode) {
+      // Free play: give a brand-new player the easy-mode starting cushion (one-time).
+      applyEasyModeStartBonus()
     }
 
     // Get terrain dimensions from selected size
@@ -652,8 +662,8 @@ function App() {
     }
 
     actions.setSelectedWeapon(weapon)
-    // Generate initial wind for the game
-    actions.setWind(generateInitialWind())
+    // Generate initial wind for the game (calmer in Easy Mode)
+    actions.setWind(generateInitialWind(state.easyMode ? EASY_MODE_WIND_SCALE : 1))
     actions.setPhase('playing')
   }
 
@@ -1157,7 +1167,8 @@ function App() {
       actions.incrementTurn()
       // New wind for the next turn (only once all motion has stopped, to avoid
       // mid-flight wind changes when multiple tanks fire simultaneously).
-      actions.setWind(generateNextWind(state.wind))
+      // Calmer in Easy Mode.
+      actions.setWind(generateNextWind(state.wind, state.easyMode ? EASY_MODE_WIND_SCALE : 1))
     }
   }
 

@@ -16,6 +16,13 @@ export const MAX_WIND = 30;
 export const WIND_REGRESSION = 0.7;
 
 /**
+ * Wind scale for Easy Mode. Scales both the random spread and the max clamp, so
+ * easy-mode wind is much calmer (std-dev 10→2.5, max ±30→±7.5). Default scale is
+ * 1 (normal wind).
+ */
+export const EASY_MODE_WIND_SCALE = 0.25;
+
+/**
  * Generate a random number from a standard normal distribution (mean=0, stdDev=1)
  * using the Box-Muller transform.
  */
@@ -45,21 +52,25 @@ export function gaussianRandom(mean: number = 0, stdDev: number = 1): number {
 }
 
 /**
- * Clamp a value to the valid wind range.
+ * Clamp a value to the valid wind range, scaled by `windScale`
+ * (Easy Mode uses a smaller scale for a tighter max).
  */
-function clampWind(wind: number): number {
-  return Math.max(-MAX_WIND, Math.min(MAX_WIND, wind));
+function clampWind(wind: number, windScale: number = 1): number {
+  const max = MAX_WIND * windScale;
+  return Math.max(-max, Math.min(max, wind));
 }
 
 /**
  * Generate initial wind for the start of a game.
  * Uses normal distribution with mean=0 and stdDev=WIND_STD_DEV.
  *
+ * @param windScale - Multiplier for spread + max (1 = normal, <1 = calmer, e.g.
+ *   {@link EASY_MODE_WIND_SCALE} for Easy Mode). Default 1.
  * @returns Wind speed in m/s (negative = left, positive = right)
  */
-export function generateInitialWind(): number {
-  const wind = gaussianRandom(0, WIND_STD_DEV);
-  return clampWind(Math.round(wind));
+export function generateInitialWind(windScale: number = 1): number {
+  const wind = gaussianRandom(0, WIND_STD_DEV * windScale);
+  return clampWind(Math.round(wind), windScale);
 }
 
 /**
@@ -77,16 +88,18 @@ export function generateInitialWind(): number {
  * - Calm conditions can become windy, but extreme winds are rare
  *
  * @param currentWind - The current wind speed in m/s
+ * @param windScale - Multiplier for spread + max (1 = normal, <1 = calmer, e.g.
+ *   {@link EASY_MODE_WIND_SCALE} for Easy Mode). Default 1.
  * @returns The new wind speed for the next turn
  */
-export function generateNextWind(currentWind: number): number {
+export function generateNextWind(currentWind: number, windScale: number = 1): number {
   // Apply regression to mean - extreme winds decay toward 0
   const regressed = currentWind * WIND_REGRESSION;
 
-  // Add random change
-  const change = gaussianRandom(0, WIND_CHANGE_STD_DEV);
+  // Add random change (spread scaled for Easy Mode)
+  const change = gaussianRandom(0, WIND_CHANGE_STD_DEV * windScale);
 
   // Calculate new wind and clamp
   const newWind = regressed + change;
-  return clampWind(Math.round(newWind));
+  return clampWind(Math.round(newWind), windScale);
 }
