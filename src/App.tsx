@@ -1256,17 +1256,28 @@ function App() {
   const shouldAutoScale = isMobile
   const activeScale = shouldAutoScale ? mobileScale : (isFittedToScreen ? desktopFitScale : 1)
 
+  // When scaling, the fit-wrapper takes the SCALED footprint so it centers
+  // correctly in the viewport; the game-container scales from its top-left to
+  // exactly fill it (a `transform: scale` alone leaves the full-size layout box,
+  // which mis-centers/overflows — the cause of the mobile/iPad clipping).
+  const isScaling = shouldAutoScale || isFittedToScreen
+  const fitWrapperStyle: React.CSSProperties | undefined = isScaling
+    ? { width: gameContainerWidth * activeScale, height: gameContainerHeight * activeScale }
+    : undefined
+
   return (
     <div
       className={`app${isFittedToScreen ? ' app--fitted' : ''}${isMobile ? ' app--mobile' : ''}`}
       style={shouldAutoScale || isFittedToScreen ? { '--fit-scale': activeScale } as React.CSSProperties : undefined}
     >
-      <GameContainer
-        canvasWidth={terrainConfig.width}
-        canvasHeight={terrainConfig.height}
-        onRender={handleRender}
-        onClick={handleCanvasClick}
-      />
+      <div className={`game-fit-wrapper${isScaling ? ' game-fit-wrapper--scaled' : ''}`} style={fitWrapperStyle}>
+        <GameContainer
+          canvasWidth={terrainConfig.width}
+          canvasHeight={terrainConfig.height}
+          onRender={handleRender}
+          onClick={handleCanvasClick}
+        />
+      </div>
       <AudioControls position="top-right" />
       <TurnIndicator
         turnNumber={state.currentTurn}

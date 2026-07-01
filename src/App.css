@@ -8,10 +8,21 @@
   text-align: center;
 }
 
-/* Fit-to-screen mode for mobile devices */
-.app--fitted .game-container {
+/* Fit-wrapper: takes the SCALED footprint so it centers correctly in the
+   viewport; the game-container inside scales from its top-left to fill it. */
+.game-fit-wrapper {
+  flex-shrink: 0;
+}
+.game-fit-wrapper--scaled {
+  overflow: hidden; /* clip the game-container's full-size (unscaled) layout box */
+}
+
+/* Fit-to-screen scaling (desktop fit button + mobile/tablet auto-fit).
+   transform-origin top-left so the scaled visual exactly fills the fit-wrapper. */
+.app--fitted .game-fit-wrapper .game-container,
+.app--mobile .game-fit-wrapper .game-container {
   transform: scale(var(--fit-scale, 1));
-  transform-origin: center center;
+  transform-origin: top left;
 }
 
 /* Game container with metal background */
@@ -2525,8 +2536,10 @@ p {
    Breakpoint: 768px
    =========================================== */
 
-/* Hide keyboard hints on mobile */
-@media (max-width: 768px) {
+/* Mobile + tablet layout: narrow screens OR any touch-first (coarse-pointer)
+   device such as iPads/tablets, whose width (>=768px) otherwise fell through to
+   the desktop layout and left the canvas unscaled/overflowing. */
+@media (max-width: 768px), (pointer: coarse) {
   .control-panel__keys,
   .control-panel__hint,
   .control-panel__fire-keys,
@@ -2558,11 +2571,13 @@ p {
     padding-top: env(safe-area-inset-top, 0);
   }
 
-  /* Game container - scaled to fit available space via JS */
+  /* Game container - scaled to fit available space via JS.
+     transform-origin top-left so the scaled visual fills the fit-wrapper (which
+     carries the scaled footprint for correct centering). */
   .app .game-container {
     flex-shrink: 0;
     margin: 0;
-    transform-origin: top center;
+    transform-origin: top left;
     /* Scale is applied via CSS variable from JS */
     transform: scale(var(--fit-scale, 1));
   }
@@ -3242,7 +3257,7 @@ p {
   .app .game-container {
     flex-shrink: 0;
     margin: 0;
-    transform-origin: top center;
+    transform-origin: top left;
     transform: scale(var(--fit-scale, 1));
   }
 

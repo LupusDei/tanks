@@ -57,4 +57,53 @@ describe('useIsMobile', () => {
     const { result } = renderHook(() => useIsMobile())
     expect(result.current).toBe(true)
   })
+
+  describe('tablet / iPad detection (tanks-305)', () => {
+    /** Simulate a coarse-pointer touch device (iPad/tablet) or a fine-pointer laptop. */
+    function stubTouchDevice(coarse: boolean, touch: boolean) {
+      Object.defineProperty(navigator, 'maxTouchPoints', {
+        configurable: true,
+        value: touch ? 5 : 0,
+      })
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: coarse && query.includes('coarse'),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+        onchange: null,
+      }))
+    }
+
+    afterEach(() => {
+      Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 0 })
+      vi.unstubAllGlobals()
+    })
+
+    it('detects an iPad in portrait (width >= 768, coarse pointer + touch) as mobile', () => {
+      vi.stubGlobal('innerWidth', 834)
+      vi.stubGlobal('innerHeight', 1112)
+      stubTouchDevice(true, true)
+      const { result } = renderHook(() => useIsMobile())
+      expect(result.current).toBe(true)
+    })
+
+    it('detects an iPad in landscape (wide + tall, coarse pointer + touch) as mobile', () => {
+      vi.stubGlobal('innerWidth', 1112)
+      vi.stubGlobal('innerHeight', 834)
+      stubTouchDevice(true, true)
+      const { result } = renderHook(() => useIsMobile())
+      expect(result.current).toBe(true)
+    })
+
+    it('does NOT treat a large touch laptop (fine primary pointer) as mobile', () => {
+      vi.stubGlobal('innerWidth', 1440)
+      vi.stubGlobal('innerHeight', 900)
+      stubTouchDevice(false, true) // has touch, but fine primary pointer
+      const { result } = renderHook(() => useIsMobile())
+      expect(result.current).toBe(false)
+    })
+  })
 })

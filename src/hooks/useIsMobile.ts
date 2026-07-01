@@ -10,11 +10,21 @@ function checkIsMobile(): boolean {
   const isSmallWidth = window.innerWidth < MOBILE_WIDTH_BREAKPOINT
   const isSmallHeight = window.innerHeight < MOBILE_HEIGHT_BREAKPOINT
 
-  // Also check for touch capability to help distinguish mobile from small desktop windows
+  // Touch capability (helps distinguish real touch devices from small desktop windows)
   const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
-  // Mobile if: small width OR (small height AND has touch)
-  return isSmallWidth || (isSmallHeight && hasTouch)
+  // A coarse *primary* pointer means a touch-first device (phone/tablet), NOT a
+  // desktop that merely has a touchscreen. This is what catches iPads and large
+  // tablets, whose width (>=768) previously fell through as "desktop" and left the
+  // game canvas unscaled and overflowing the screen with no way to scroll.
+  const hasCoarsePointer =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: coarse)').matches
+
+  // Use the mobile/tablet layout (compact controls + auto-fit-to-screen scaling)
+  // when: small width, OR small height on a touch device, OR any touch-first
+  // (coarse-pointer) device regardless of size — i.e. phones AND iPads/tablets.
+  return isSmallWidth || (isSmallHeight && hasTouch) || (hasTouch && hasCoarsePointer)
 }
 
 export function useIsMobile(): boolean {

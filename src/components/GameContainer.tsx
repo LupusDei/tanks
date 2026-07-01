@@ -37,8 +37,6 @@ export function GameContainer({
         position: 'relative',
         width: totalWidth,
         height: totalHeight,
-        maxWidth: '100vw',
-        maxHeight: '100vh',
       }}
     >
       {/* Metal background frame */}
