@@ -69,7 +69,6 @@ import {
   getCampaignGasCanCount,
   clearConsumableInventory,
   clearAllCampaignConsumables,
-  applyEasyModeStartBonus,
 } from './services/userDatabase'
 import { decideAIPurchases, selectAIWeaponFromInventory, calculateAIGameEarnings } from './engine/ai'
 import { useGameTick } from './hooks/useGameTick'
@@ -93,7 +92,7 @@ const TANK_WHEEL_RADIUS = 6
 
 function App() {
   const { state, actions } = useGame()
-  const { userData, createNewUser, recordGame, consumeWeapon, clearArmor } = useUser()
+  const { userData, createNewUser, recordGame, consumeWeapon, clearArmor, applyEasyModeStartBonus } = useUser()
   const {
     campaign,
     isCampaignMode,

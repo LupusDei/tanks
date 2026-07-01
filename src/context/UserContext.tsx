@@ -11,6 +11,7 @@ import {
   removeWeapon,
   purchaseArmor as purchaseArmorDb,
   clearArmorInventory,
+  applyEasyModeStartBonus as applyEasyModeStartBonusDb,
   type GameEndParams,
 } from '../services/userDatabase';
 import { getWeaponConfig, getArmorConfig } from '../engine/weapons';
@@ -34,6 +35,8 @@ interface UserContextValue {
   purchaseArmor: (armorType: ArmorType) => boolean;
   hasArmor: (armorType: ArmorType) => boolean;
   clearArmor: () => void;
+  /** Apply the Easy Mode free-play starting bonus (one-time floor for new players). */
+  applyEasyModeStartBonus: () => void;
 }
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -84,6 +87,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
     return false;
+  }, []);
+
+  const applyEasyModeStartBonus = useCallback(() => {
+    applyEasyModeStartBonusDb();
+    // Reflect the (possibly) updated balance in React state.
+    const updated = loadUserData();
+    if (updated) {
+      setUserData(updated);
+    }
   }, []);
 
   const purchaseWeapon = useCallback((weaponType: WeaponType, quantity: number): boolean => {
@@ -191,6 +203,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     purchaseArmor: purchaseArmorFn,
     hasArmor: hasArmorFn,
     clearArmor: clearArmorFn,
+    applyEasyModeStartBonus,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
