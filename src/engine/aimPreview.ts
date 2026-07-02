@@ -14,7 +14,7 @@
  * Pure function — no React, DOM, or canvas.
  */
 import type { Position, TerrainData } from '../types/game';
-import { calculatePosition, type LaunchConfig } from './physics';
+import { calculatePosition, calculateApexTime, type LaunchConfig } from './physics';
 import { checkTerrainCollision } from './projectile';
 
 export interface AimPreviewOptions {
@@ -24,12 +24,19 @@ export interface AimPreviewOptions {
   maxTime?: number;
   /** Hard cap on number of points. Default 240. */
   maxPoints?: number;
+  /**
+   * End the preview at roughly the apex (top of the arc) instead of running the
+   * full trajectory to terrain/out-of-bounds. Default true — a shorter guide that
+   * shows launch direction + arc height without giving away the exact landing.
+   */
+  stopAtApex?: boolean;
 }
 
 const DEFAULTS: Required<AimPreviewOptions> = {
   dt: 0.05,
   maxTime: 12,
   maxPoints: 240,
+  stopAtApex: true,
 };
 
 /**
@@ -50,13 +57,18 @@ export function computeAimPreview(
   canvasHeight: number,
   opts: AimPreviewOptions = {}
 ): Position[] {
-  const { dt, maxTime, maxPoints } = { ...DEFAULTS, ...opts };
+  const { dt, maxTime, maxPoints, stopAtApex } = { ...DEFAULTS, ...opts };
   if (!(dt > 0) || !Number.isFinite(dt)) {
     throw new RangeError(`dt must be a positive finite number, got ${dt}`);
   }
 
+  // End the preview near the apex by default (top of the arc). Fall back to the
+  // full maxTime for the rare downward shot that has no apex.
+  const apexTime = calculateApexTime(config);
+  const effectiveMaxTime = stopAtApex && apexTime > 0 ? Math.min(maxTime, apexTime) : maxTime;
+
   const points: Position[] = [];
-  for (let time = 0; time <= maxTime && points.length < maxPoints; time += dt) {
+  for (let time = 0; time <= effectiveMaxTime && points.length < maxPoints; time += dt) {
     const pos = calculatePosition(config, time, wind);
     points.push(pos);
 

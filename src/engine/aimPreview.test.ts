@@ -44,9 +44,10 @@ describe('computeAimPreview', () => {
   });
 
   it('should truncate at terrain impact (does not draw through ground) (edge)', () => {
-    // Low, weak shot → comes down and hits terrain quickly.
+    // Low, weak shot → comes down and hits terrain quickly. Full trajectory
+    // (stopAtApex disabled) so we exercise the terrain-impact truncation.
     const config = cfg({ angle: 30, power: 30 });
-    const pts = computeAimPreview(config, 0, terrain, CANVAS_H, { dt: 0.05 });
+    const pts = computeAimPreview(config, 0, terrain, CANVAS_H, { dt: 0.05, stopAtApex: false });
     expect(pts.length).toBeLessThan(240); // truncated, not max length
     // The last point is at/below the terrain surface at its x (impact).
     const last = pts[pts.length - 1]!;
@@ -63,10 +64,27 @@ describe('computeAimPreview', () => {
   it('should stop when the shell leaves the horizontal bounds (edge)', () => {
     // Fire from near the right edge, rightward, high power → exits right quickly.
     const config = cfg({ position: { x: 790, y: 100 }, angle: 10, power: 100 });
-    const pts = computeAimPreview(config, 0, terrain, CANVAS_H, { dt: 0.1 });
+    const pts = computeAimPreview(config, 0, terrain, CANVAS_H, { dt: 0.1, stopAtApex: false });
     const last = pts[pts.length - 1]!;
     expect(last.x).toBeGreaterThan(terrain.width - 60);
     expect(pts.length).toBeLessThan(240);
+  });
+
+  it('should end at roughly the apex by default (shorter than the full arc) (tanks-308)', () => {
+    // A clear upward arc (barrel well above ground) that stays airborne past apex.
+    const config = cfg({ position: { x: 100, y: 150 }, angle: 70, power: 80 });
+    const full = computeAimPreview(config, 0, terrain, CANVAS_H, { dt: 0.05, stopAtApex: false });
+    const apex = computeAimPreview(config, 0, terrain, CANVAS_H, { dt: 0.05 }); // default: stop at apex
+
+    // The apex preview is a strict prefix-length subset of the full arc.
+    expect(apex.length).toBeGreaterThan(2);
+    expect(apex.length).toBeLessThan(full.length);
+
+    // Its last point is at (roughly) the highest point of the arc — in screen
+    // coords the apex has the SMALLEST y. It should match the full arc's min y.
+    const minYFull = Math.min(...full.map((p) => p.y));
+    const lastApexY = apex[apex.length - 1]!.y;
+    expect(Math.abs(lastApexY - minYFull)).toBeLessThan(8);
   });
 
   it('should throw on a non-positive dt (error path)', () => {
