@@ -921,6 +921,11 @@ function App() {
     const currentState = stateRef.current
     const tanks = currentState.tanks
 
+    // Accumulate terrain craters across ALL events this frame into a single
+    // terrain update, so multiple impacts (cluster sub-munitions / simultaneous
+    // shots) stack instead of overwriting one another.
+    let crateredTerrain = currentState.terrain
+
     for (const event of events) {
       switch (event.type) {
         case 'ExplosionSpawned': {
@@ -933,8 +938,8 @@ function App() {
           break
         }
         case 'CraterCreated': {
-          if (currentState.terrain) {
-            actions.setTerrain(createCrater(currentState.terrain, event.x, event.radius))
+          if (crateredTerrain) {
+            crateredTerrain = createCrater(crateredTerrain, event.x, event.radius, event.depth)
           }
           break
         }
@@ -991,6 +996,12 @@ function App() {
           // Activity is tracked from simulation state below; no side-effect here.
           break
       }
+    }
+
+    // Commit the accumulated terrain deformation once. A new terrain object means
+    // the offscreen terrain cache invalidates and re-renders the deformed ground.
+    if (crateredTerrain && crateredTerrain !== currentState.terrain) {
+      actions.setTerrain(crateredTerrain)
     }
   }, [actions, isCampaignMode, recordKill, recordDeath, playExplosion, playTankDestruction])
 

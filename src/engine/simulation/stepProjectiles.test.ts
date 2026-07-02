@@ -238,10 +238,25 @@ describe('stepProjectiles', () => {
       expect(craters[0]).toMatchObject({ x: 400, radius: 40, depth: 20 });
     });
 
-    it('should not emit CraterCreated for a non-crater weapon', () => {
+    it('should crater the ground for EVERY weapon, sized to its blast radius (destructible terrain)', () => {
+      // Standard shell has no explicit craterRadius -> craters by its blast radius (20).
       const proj = makeProjectile({ x: 400, y: surfaceY(400) + 5 }, { weaponType: 'standard' });
       const result = stepProjectiles([proj], ctxWith([]));
-      expect(result.events.some((e) => e.type === 'CraterCreated')).toBe(false);
+      const craters = result.events.filter((e) => e.type === 'CraterCreated');
+      expect(craters).toHaveLength(1);
+      expect(craters[0]).toMatchObject({ x: 400, radius: 20, depth: 10 });
+    });
+
+    it('should scale the crater down for cluster sub-munitions (reduced blast)', () => {
+      // A landed sub-projectile uses 0.6x blast, so its crater is 0.6x too.
+      const sub = makeProjectile(
+        { x: 400, y: surfaceY(400) + 5 },
+        { weaponType: 'standard', isSubProjectile: true }
+      );
+      const result = stepProjectiles([sub], ctxWith([]));
+      const craters = result.events.filter((e) => e.type === 'CraterCreated');
+      expect(craters).toHaveLength(1);
+      expect((craters[0] as { radius: number }).radius).toBeCloseTo(20 * 0.6, 5);
     });
   });
 

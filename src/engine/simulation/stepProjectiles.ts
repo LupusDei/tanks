@@ -92,16 +92,17 @@ export function stepProjectiles(
       blastRadius,
     });
 
-    // Terrain deformation (e.g. Bunker Buster). createCrater defaults depth to
-    // radius * 0.5, which is how App.tsx invokes it, so report that depth.
-    if (weaponConfig.craterRadius) {
-      events.push({
-        type: 'CraterCreated',
-        x: landingPos.x,
-        radius: weaponConfig.craterRadius,
-        depth: weaponConfig.craterRadius * 0.5,
-      });
-    }
+    // Destructible terrain: EVERY impact craters the ground. Weapons with an
+    // explicit craterRadius (Bunker Buster, Nuke) dig a bigger hole; all others
+    // crater in proportion to their blast radius. Depth defaults to radius * 0.5
+    // (matching createCrater), so the host can pass it straight through.
+    const craterRadius = weaponConfig.craterRadius ?? blastRadius;
+    events.push({
+      type: 'CraterCreated',
+      x: landingPos.x,
+      radius: craterRadius,
+      depth: craterRadius * 0.5,
+    });
 
     const damage = proj.isSubProjectile
       ? weaponConfig.damage * 0.6
