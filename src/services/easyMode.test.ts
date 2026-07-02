@@ -5,8 +5,9 @@ import {
   loadUserData,
   createNewCampaign,
   applyEasyModeStartBonus,
+  recordGameEnd,
 } from './userDatabase';
-import { EASY_MODE_STARTING_MONEY } from '../engine/weapons';
+import { EASY_MODE_STARTING_MONEY, calculateGameEarnings } from '../engine/weapons';
 import { CAMPAIGN_STARTING_BALANCE, type CampaignConfig } from '../types/game';
 
 function config(easyMode: boolean): CampaignConfig {
@@ -65,5 +66,32 @@ describe('Easy Mode — free-play starting bonus (tanks-304.2)', () => {
   it('should return null when there is no current player (error path)', () => {
     localStorage.clear();
     expect(applyEasyModeStartBonus()).toBeNull();
+  });
+});
+
+describe('Easy Mode — free-play earnings credit the extra per-kill money (tanks-307)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('should credit the easy-mode (2x kill) earnings to a free-play player', () => {
+    const u = createUser('Earner');
+    u.stats.balance = 0;
+    saveUserData(u);
+
+    const params = {
+      isVictory: true as const,
+      enemyCount: 3 as const,
+      enemiesKilled: 3,
+      terrainSize: 'medium' as const,
+      aiDifficulty: 'veteran' as const,
+      turnsPlayed: 5,
+      playerColor: 'red' as const,
+      easyMode: true,
+    };
+    recordGameEnd(params);
+
+    const expected = calculateGameEarnings(true, 3, 'veteran', true);
+    expect(loadUserData()!.stats.balance).toBe(expected);
+    // And it's strictly more than the non-easy earnings.
+    expect(expected).toBeGreaterThan(calculateGameEarnings(true, 3, 'veteran', false));
   });
 });

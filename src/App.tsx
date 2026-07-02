@@ -190,7 +190,8 @@ function App() {
           const isWinner = tankId === state.winner
           const participant = campaign?.participants.find(p => p.id === tankId)
           if (participant) {
-            const earnings = calculateAIGameEarnings(isWinner, killCount, participant.currentLevel)
+            // Easy Mode gives the human PLAYER a higher per-kill reward (AI unchanged).
+            const earnings = calculateAIGameEarnings(isWinner, killCount, participant.currentLevel, state.easyMode && tankId === 'player')
             if (earnings > 0) {
               updateBalance(tankId, earnings)
             }
@@ -217,6 +218,7 @@ function App() {
           aiDifficulty: state.aiDifficulty,
           turnsPlayed: state.currentTurn,
           playerColor: state.playerColor!,
+          easyMode: state.easyMode,
         })
 
         // Clear armor (armor is consumed after each game)
@@ -229,7 +231,7 @@ function App() {
       gameRecordedRef.current = false
       gameKillsRef.current.clear()
     }
-  }, [state.phase, state.winner, state.tanks, state.enemyCount, state.terrainSize, state.aiDifficulty, state.currentTurn, state.playerColor, recordGame, isCampaignMode, recordGameEnd, campaign, updateBalance, actions, clearArmor, clearAllArmor])
+  }, [state.phase, state.winner, state.tanks, state.enemyCount, state.terrainSize, state.aiDifficulty, state.currentTurn, state.playerColor, state.easyMode, recordGame, isCampaignMode, recordGameEnd, campaign, updateBalance, actions, clearArmor, clearAllArmor])
 
   // Background music based on game phase
   useEffect(() => {
@@ -954,7 +956,7 @@ function App() {
             const attackerTank = attackerId ? tanks.find((t) => t.id === attackerId) : undefined
             const attackerName = attackerTank?.id === 'player' ? 'Player' : `AI (${attackerTank?.color ?? 'unknown'})`
             const victimName = tank.id === 'player' ? 'Player' : `AI (${tank.color})`
-            const moneyEarned = attackerId === 'player' ? calculateKillReward(currentState.aiDifficulty) : 0
+            const moneyEarned = attackerId === 'player' ? calculateKillReward(currentState.aiDifficulty, currentState.easyMode) : 0
             console.log(`[Kill] ${attackerName} destroyed ${victimName}${moneyEarned > 0 ? ` - Earned $${moneyEarned}` : ''}`)
 
             if (isCampaignMode && attackerId) {

@@ -973,12 +973,16 @@ export function selectAIWeaponFromInventory(
 export function calculateAIGameEarnings(
   isVictory: boolean,
   killCount: number,
-  aiDifficulty: AIDifficulty
+  aiDifficulty: AIDifficulty,
+  easyMode: boolean = false
 ): number {
   // Import constants directly to avoid circular dependency
   const KILL_REWARD = 200;
   const WIN_BONUS = 250;
   const LOSS_CONSOLATION = 50;
+  // Must match weapons.ts EASY_MODE_KILL_MULTIPLIER. Only the human PLAYER passes
+  // easyMode=true (see the campaign earnings loop), so AI earnings are unchanged.
+  const EASY_MODE_KILL_MULTIPLIER = 2;
   const DIFFICULTY_MULTIPLIERS: Record<AIDifficulty, number> = {
     blind_fool: 0.5,
     private: 0.75,
@@ -988,7 +992,8 @@ export function calculateAIGameEarnings(
   };
 
   const multiplier = DIFFICULTY_MULTIPLIERS[aiDifficulty];
-  const killReward = Math.round(KILL_REWARD * multiplier) * killCount;
+  const easyBonus = easyMode ? EASY_MODE_KILL_MULTIPLIER : 1;
+  const killReward = Math.round(KILL_REWARD * multiplier) * killCount * easyBonus;
   const endBonus = isVictory
     ? Math.round(WIN_BONUS * multiplier)
     : LOSS_CONSOLATION;

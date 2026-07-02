@@ -113,6 +113,13 @@ export const EASY_MODE_STARTING_MONEY = 2000;
 export const KILL_REWARD = 200;
 
 /**
+ * Easy Mode kill-reward multiplier — the player earns this much MORE money per
+ * enemy destroyed in Easy Mode (stacks on the difficulty multiplier). Applies to
+ * the player only; the AI's earnings are unchanged.
+ */
+export const EASY_MODE_KILL_MULTIPLIER = 2;
+
+/**
  * Bonus money for winning a game.
  * Significant reward to incentivize winning.
  */
@@ -360,9 +367,10 @@ export function canAffordWeapon(balance: number, weaponType: WeaponType): boolea
 /**
  * Calculate reward for a kill based on difficulty.
  */
-export function calculateKillReward(aiDifficulty: string): number {
+export function calculateKillReward(aiDifficulty: string, easyMode: boolean = false): number {
   const multiplier = DIFFICULTY_REWARD_MULTIPLIERS[aiDifficulty] ?? 1.0;
-  return Math.round(KILL_REWARD * multiplier);
+  const easyBonus = easyMode ? EASY_MODE_KILL_MULTIPLIER : 1;
+  return Math.round(KILL_REWARD * multiplier * easyBonus);
 }
 
 /**
@@ -379,9 +387,10 @@ export function calculateWinBonus(aiDifficulty: string): number {
 export function calculateGameEarnings(
   isVictory: boolean,
   killCount: number,
-  aiDifficulty: string
+  aiDifficulty: string,
+  easyMode: boolean = false
 ): number {
-  const killReward = calculateKillReward(aiDifficulty) * killCount;
+  const killReward = calculateKillReward(aiDifficulty, easyMode) * killCount;
   const endBonus = isVictory
     ? calculateWinBonus(aiDifficulty)
     : LOSS_CONSOLATION;

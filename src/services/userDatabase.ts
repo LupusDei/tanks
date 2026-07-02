@@ -273,6 +273,8 @@ export interface GameEndParams {
   aiDifficulty: AIDifficulty;
   turnsPlayed: number;
   playerColor: TankColor;
+  /** Easy Mode gives the player a higher per-kill reward. */
+  easyMode?: boolean;
 }
 
 export function recordGameEnd(params: GameEndParams): UserData | null {
@@ -288,7 +290,8 @@ export function recordGameEnd(params: GameEndParams): UserData | null {
   const moneyEarned = calculateGameEarnings(
     params.isVictory,
     params.enemiesKilled,
-    params.aiDifficulty
+    params.aiDifficulty,
+    params.easyMode ?? false
   );
 
   const gameRecord: GameRecord = {
