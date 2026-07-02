@@ -76,6 +76,7 @@ import type { SimEvent, SimulationState, TickContext } from './engine/simulation
 import { getTerrainCache, type TerrainCacheEntry } from './renderer/terrainCache'
 import { renderAimPreview } from './renderer/aimPreviewRenderer'
 import { renderNukeFlash, NUKE_FLASH_DURATION_MS } from './renderer/nukeFlash'
+import { computeMobileFillScale } from './utils/mobileFit'
 
 interface GameConfig {
   terrainSize: TerrainSize
@@ -1238,11 +1239,23 @@ function App() {
   const uiHeight = controlPanelHeight + weaponPanelHeight + safetyMargin
   const availableHeight = viewportHeight - uiHeight
 
-  // On mobile, auto-scale to fit; on desktop, only scale if fit button is pressed
-  const mobileScale = Math.min(
+  // On mobile, FILL the available play area (cover) rather than shrinking to fit
+  // the whole battlefield width — on narrow phones a fit-both scale left the
+  // canvas a tiny strip with most of the screen wasted. The overflowing dimension
+  // is made pannable via the scroll container below, so the whole map is reachable.
+  const mobileScale = computeMobileFillScale(
+    viewportWidth,
+    availableHeight,
+    gameContainerWidth,
+    gameContainerHeight
+  )
+
+  // Mobile "fit whole battlefield" scale (when the ⊖ button is pressed): shrink so
+  // the entire map is visible at once (no panning), at the cost of some size.
+  const mobileFitScale = Math.min(
     viewportWidth / gameContainerWidth,
     availableHeight / gameContainerHeight,
-    1 // Never scale up
+    1
   )
 
   // Desktop fit scale (when fit button is pressed)
@@ -1252,9 +1265,14 @@ function App() {
     1
   )
 
-  // Determine which scale to use
+  // Determine which scale to use.
+  // - Mobile default: FILL the screen (big, pannable). The ⊖ fit button toggles
+  //   to "fit whole battlefield" (mobileFitScale) so you can see the entire map.
+  // - Desktop: 1:1 unless the fit button is pressed.
   const shouldAutoScale = isMobile
-  const activeScale = shouldAutoScale ? mobileScale : (isFittedToScreen ? desktopFitScale : 1)
+  const activeScale = shouldAutoScale
+    ? (isFittedToScreen ? mobileFitScale : mobileScale)
+    : (isFittedToScreen ? desktopFitScale : 1)
 
   // When scaling, the fit-wrapper takes the SCALED footprint so it centers
   // correctly in the viewport; the game-container scales from its top-left to
@@ -1265,18 +1283,35 @@ function App() {
     ? { width: gameContainerWidth * activeScale, height: gameContainerHeight * activeScale }
     : undefined
 
+  // On mobile the game sits in a bounded, pannable scroll area that fills the
+  // space above the fixed controls (so the controls are never overlapped and the
+  // whole battlefield is reachable by dragging).
+  const gameScrollStyle: React.CSSProperties | undefined = shouldAutoScale
+    ? {
+        width: '100%',
+        height: availableHeight,
+        overflow: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        display: 'flex',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
+      }
+    : undefined
+
   return (
     <div
       className={`app${isFittedToScreen ? ' app--fitted' : ''}${isMobile ? ' app--mobile' : ''}`}
       style={shouldAutoScale || isFittedToScreen ? { '--fit-scale': activeScale } as React.CSSProperties : undefined}
     >
-      <div className={`game-fit-wrapper${isScaling ? ' game-fit-wrapper--scaled' : ''}`} style={fitWrapperStyle}>
-        <GameContainer
-          canvasWidth={terrainConfig.width}
-          canvasHeight={terrainConfig.height}
-          onRender={handleRender}
-          onClick={handleCanvasClick}
-        />
+      <div className="game-scroll" style={gameScrollStyle}>
+        <div className={`game-fit-wrapper${isScaling ? ' game-fit-wrapper--scaled' : ''}`} style={fitWrapperStyle}>
+          <GameContainer
+            canvasWidth={terrainConfig.width}
+            canvasHeight={terrainConfig.height}
+            onRender={handleRender}
+            onClick={handleCanvasClick}
+          />
+        </div>
       </div>
       <AudioControls position="top-right" />
       <TurnIndicator
