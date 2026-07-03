@@ -10,12 +10,20 @@
  */
 import type { TankState, TerrainData } from '../types/game';
 import { calculateTankPosition } from './tank';
+import { GRAVITY } from './physics';
 
-/** Delay (ms) after impact before a tank begins to fall — lets the blast finish. */
-export const FALL_DELAY_MS = 700;
+/** Delay (ms) after impact before a tank begins to fall — one third of a second,
+ *  which lets the blast finish before the tank settles. */
+export const FALL_DELAY_MS = 1000 / 3;
 
-/** Gravity for the fall animation (world px/s²). Gentle, for a slow visible settle. */
-export const FALL_GRAVITY = 380;
+/**
+ * Gravity for the fall animation (world px/s²) — ONE THIRD the game's gravity rate.
+ * The projectile sim runs physics at ANIMATION_SPEED_MULTIPLIER (5×) real time, so an
+ * object's effective acceleration is GRAVITY * 5² = 250 world-px/s²; tanks settle at a
+ * third of that for a slow, gentle drop.
+ */
+const PROJECTILE_ANIMATION_SPEED = 5;
+export const FALL_GRAVITY = (GRAVITY * PROJECTILE_ANIMATION_SPEED ** 2) / 3;
 
 /**
  * A tank counts as "floating" (and should fall) only if its center is at least this
