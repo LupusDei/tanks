@@ -92,17 +92,27 @@ export function stepProjectiles(
       blastRadius,
     });
 
-    // Destructible terrain: EVERY impact craters the ground. Weapons with an
-    // explicit craterRadius (Bunker Buster, Nuke) dig a bigger hole; all others
-    // crater in proportion to their blast radius. Depth defaults to radius * 0.5
-    // (matching createCrater), so the host can pass it straight through.
-    const craterRadius = weaponConfig.craterRadius ?? blastRadius;
-    events.push({
-      type: 'CraterCreated',
-      x: landingPos.x,
-      radius: craterRadius,
-      depth: craterRadius * 0.5,
-    });
+    // Terrain deformation. A Dirt Bomb (moundRadius) BUILDS terrain instead of
+    // digging; every other impact craters the ground. Weapons with an explicit
+    // craterRadius (Bunker Buster, Nuke) dig a bigger hole; all others crater in
+    // proportion to their blast radius. Sub-munitions never build mounds.
+    if (weaponConfig.moundRadius && !proj.isSubProjectile) {
+      const moundRadius = weaponConfig.moundRadius;
+      events.push({
+        type: 'MoundCreated',
+        x: landingPos.x,
+        radius: moundRadius,
+        height: weaponConfig.moundHeight ?? moundRadius * 0.5,
+      });
+    } else {
+      const craterRadius = weaponConfig.craterRadius ?? blastRadius;
+      events.push({
+        type: 'CraterCreated',
+        x: landingPos.x,
+        radius: craterRadius,
+        depth: craterRadius * 0.5,
+      });
+    }
 
     const damage = proj.isSubProjectile
       ? weaponConfig.damage * 0.6

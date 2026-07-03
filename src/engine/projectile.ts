@@ -247,6 +247,8 @@ export function getProjectileVisual(weaponType: WeaponType): ProjectileVisual {
       return { color: '#333333', glowColor: '#ff6600', radius: 6, trailColor: '#555555' };
     case 'homing_missile':
       return { color: '#cc0000', glowColor: '#ff4400', radius: 6, trailColor: '#ff6600' };
+    case 'dirt_bomb':
+      return { color: '#8B5A2B', glowColor: '#C19A6B', radius: 6, trailColor: '#6b4423' };
     case 'standard':
     default:
       return { color: '#ffff00', glowColor: '#ffffff', radius: 5 };

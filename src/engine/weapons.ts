@@ -27,7 +27,8 @@ export type WeaponType =
   | 'bouncing_betty'
   | 'bunker_buster'
   | 'homing_missile'
-  | 'nuke';
+  | 'nuke'
+  | 'dirt_bomb';
 
 /**
  * Destruction animation category.
@@ -88,6 +89,10 @@ export interface WeaponConfig {
   craterRadius?: number;
   /** Tracking strength for homing weapons (0.0 to 1.0, higher = stronger tracking) */
   trackingStrength?: number;
+  /** Radius of terrain BUILD-UP mound in px (Dirt Bomb — raises ground for cover) */
+  moundRadius?: number;
+  /** Peak height of the raised mound in px (defaults to moundRadius * 0.5) */
+  moundHeight?: number;
 }
 
 // ============================================================================
@@ -260,12 +265,12 @@ export const WEAPON_BOUNCING_BETTY: WeaponConfig = {
 export const WEAPON_BUNKER_BUSTER: WeaponConfig = {
   id: 'bunker_buster',
   name: 'Bunker Buster',
-  description: 'Creates a 40px crater in terrain. Destroys cover and bunkers.',
-  cost: 300,
+  description: 'Digs a huge 55px crater in terrain. Destroys cover and bunkers.',
+  cost: 225,
   damage: 55,
-  blastRadius: 15,
+  blastRadius: 22,
   projectileSpeedMultiplier: 0.9,
-  craterRadius: 40,
+  craterRadius: 55,
 };
 
 /**
@@ -301,6 +306,23 @@ export const WEAPON_NUKE: WeaponConfig = {
   craterRadius: 80,
 };
 
+/**
+ * Dirt Bomb - utility weapon (ported from auto-tank). Instead of blasting a crater,
+ * it BUILDS a mound of terrain where it lands: raise a wall to block incoming fire,
+ * climb out of a pit, or bury a low enemy. Minimal damage — it's a tactical tool.
+ */
+export const WEAPON_DIRT_BOMB: WeaponConfig = {
+  id: 'dirt_bomb',
+  name: 'Dirt Bomb',
+  description: 'Builds a mound of terrain for cover instead of a crater. Minimal damage.',
+  cost: 175,
+  damage: 5,
+  blastRadius: 18,
+  projectileSpeedMultiplier: 0.9,
+  moundRadius: 45,
+  moundHeight: 40,
+};
+
 // ============================================================================
 // WEAPON REGISTRY
 // ============================================================================
@@ -320,6 +342,7 @@ export const WEAPONS: Record<WeaponType, WeaponConfig> = {
   bunker_buster: WEAPON_BUNKER_BUSTER,
   homing_missile: WEAPON_HOMING_MISSILE,
   nuke: WEAPON_NUKE,
+  dirt_bomb: WEAPON_DIRT_BOMB,
 };
 
 /**
@@ -337,6 +360,7 @@ export const WEAPON_TYPES: WeaponType[] = [
   'bunker_buster',
   'homing_missile',
   'nuke',
+  'dirt_bomb',
 ];
 
 /**

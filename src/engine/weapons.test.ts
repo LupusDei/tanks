@@ -139,7 +139,7 @@ describe('Weapon configurations', () => {
   it('WEAPON_BUNKER_BUSTER creates craters', () => {
     expect(WEAPON_BUNKER_BUSTER.damage).toBeLessThan(100);
     expect(WEAPON_BUNKER_BUSTER.cost).toBeGreaterThan(0);
-    expect(WEAPON_BUNKER_BUSTER.craterRadius).toBe(40);
+    expect(WEAPON_BUNKER_BUSTER.craterRadius).toBe(55);
   });
 
   it('WEAPON_HOMING_MISSILE has tracking capability', () => {
@@ -178,7 +178,8 @@ describe('Weapon configurations', () => {
 
 describe('WEAPONS registry', () => {
   it('contains all weapon types', () => {
-    expect(Object.keys(WEAPONS)).toHaveLength(10);
+    expect(Object.keys(WEAPONS)).toHaveLength(11);
+    expect(WEAPONS).toHaveProperty('dirt_bomb');
     expect(WEAPONS).toHaveProperty('standard');
     expect(WEAPONS).toHaveProperty('heavy_artillery');
     expect(WEAPONS).toHaveProperty('precision');
@@ -206,7 +207,8 @@ describe('WEAPONS registry', () => {
 
 describe('WEAPON_TYPES array', () => {
   it('contains all weapon types in order', () => {
-    expect(WEAPON_TYPES).toHaveLength(10);
+    expect(WEAPON_TYPES).toHaveLength(11);
+    expect(WEAPON_TYPES).toContain('dirt_bomb');
     expect(WEAPON_TYPES[0]).toBe('standard');
     expect(WEAPON_TYPES).toContain('heavy_artillery');
     expect(WEAPON_TYPES).toContain('precision');
@@ -237,11 +239,12 @@ describe('getWeaponConfig', () => {
 describe('getPurchasableWeapons', () => {
   it('returns only weapons with cost > 0', () => {
     const purchasable = getPurchasableWeapons();
-    // 9 purchasable: all weapons except the free standard shell (now incl. nuke).
+    // 10 purchasable: all weapons except the free standard shell (incl. nuke + dirt bomb).
 
-    expect(purchasable).toHaveLength(9);
+    expect(purchasable).toHaveLength(10);
     expect(purchasable).not.toContain(WEAPON_STANDARD);
     expect(purchasable.some((w) => w.id === 'nuke')).toBe(true);
+    expect(purchasable.some((w) => w.id === 'dirt_bomb')).toBe(true);
     expect(purchasable).toContain(WEAPON_HEAVY_ARTILLERY);
     expect(purchasable).toContain(WEAPON_PRECISION);
     expect(purchasable).toContain(WEAPON_CLUSTER_BOMB);

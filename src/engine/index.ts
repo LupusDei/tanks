@@ -5,6 +5,7 @@ export {
   smoothTerrain,
   createSeededRandom,
   createCrater,
+  raiseTerrain,
   type TerrainConfig,
 } from './terrain';
 

@@ -6,6 +6,7 @@ import {
   smoothTerrain,
   createSeededRandom,
   createCrater,
+  raiseTerrain,
   type TerrainConfig,
 } from './terrain';
 
@@ -365,5 +366,39 @@ describe('createCrater', () => {
     expect(countAffected(largeCrater.points)).toBeGreaterThan(
       countAffected(smallCrater.points)
     );
+  });
+});
+
+describe('raiseTerrain (tanks-312 Dirt Bomb)', () => {
+  const flatTerrain = { width: 100, height: 400, points: new Array(100).fill(200) };
+
+  it('should return new terrain data without mutating the original (happy path)', () => {
+    const original = [...flatTerrain.points];
+    const raised = raiseTerrain(flatTerrain, 50, 20, 30);
+    expect(flatTerrain.points).toEqual(original); // untouched
+    expect(raised.points).not.toBe(flatTerrain.points);
+    expect(raised.width).toBe(100);
+    expect(raised.height).toBe(400);
+  });
+
+  it('should RAISE the surface, highest at the center (behavior — inverse of a crater)', () => {
+    const raised = raiseTerrain(flatTerrain, 50, 20, 30);
+    // Center rises the most; the rim barely moves; everything is >= the original.
+    expect(raised.points[50]!).toBeGreaterThan(200);
+    expect(raised.points[50]!).toBeGreaterThan(raised.points[45]!);
+    expect(raised.points[50]!).toBeCloseTo(230, 0); // full height at center
+    for (let i = 30; i <= 70; i++) expect(raised.points[i]!).toBeGreaterThanOrEqual(200);
+  });
+
+  it('should cap the build-up at the terrain ceiling (edge)', () => {
+    const tall = { width: 20, height: 210, points: new Array(20).fill(200) };
+    const raised = raiseTerrain(tall, 10, 5, 100); // would exceed ceiling 210
+    for (const h of raised.points) expect(h).toBeLessThanOrEqual(210);
+  });
+
+  it('should only affect points within the radius (edge)', () => {
+    const raised = raiseTerrain(flatTerrain, 50, 10, 20);
+    expect(raised.points[10]!).toBe(200); // far away, untouched
+    expect(raised.points[90]!).toBe(200);
   });
 });

@@ -230,3 +230,48 @@ export function createCrater(
     points,
   };
 }
+
+/**
+ * Raise a mound of terrain around `worldX` (the inverse of {@link createCrater}) —
+ * used by the Dirt Bomb to BUILD cover. Returns a NEW TerrainData (reference change
+ * invalidates the terrain cache). Uses the same inverted-parabola profile + edge
+ * smoothing as craters, and caps the build-up at the terrain's ceiling height.
+ *
+ * @param height Peak rise at the center in px (tapers to 0 at the rim). Default radius*0.5.
+ */
+export function raiseTerrain(
+  terrain: TerrainData,
+  worldX: number,
+  radius: number,
+  height: number = radius * 0.5
+): TerrainData {
+  const points = [...terrain.points];
+  const ceiling = terrain.height; // don't build up past the top of the world
+  const startX = Math.max(0, Math.floor(worldX - radius));
+  const endX = Math.min(terrain.width - 1, Math.ceil(worldX + radius));
+
+  for (let x = startX; x <= endX; x++) {
+    const distanceRatio = Math.abs(x - worldX) / radius;
+    if (distanceRatio <= 1) {
+      // Inverted parabola: full height at center, 0 at the rim.
+      const rise = height * (1 - distanceRatio * distanceRatio);
+      const currentHeight = points[x]!;
+      points[x] = Math.min(ceiling, currentHeight + rise);
+    }
+  }
+
+  // Smooth the edges to avoid jagged transitions (same as createCrater).
+  for (let pass = 0; pass < 2; pass++) {
+    for (let x = startX + 1; x < endX; x++) {
+      const prev = points[x - 1]!;
+      const current = points[x]!;
+      const next = points[x + 1]!;
+      points[x] = current * 0.6 + prev * 0.2 + next * 0.2;
+    }
+  }
+
+  return {
+    ...terrain,
+    points,
+  };
+}

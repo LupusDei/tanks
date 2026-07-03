@@ -39,6 +39,7 @@ import {
   renderTankDestruction,
   renderClusterSubProjectiles,
   createCrater,
+  raiseTerrain,
   generateInitialWind,
   EASY_MODE_WIND_SCALE,
   generateNextWind,
@@ -943,6 +944,12 @@ function App() {
         case 'CraterCreated': {
           if (crateredTerrain) {
             crateredTerrain = createCrater(crateredTerrain, event.x, event.radius, event.depth)
+          }
+          break
+        }
+        case 'MoundCreated': {
+          if (crateredTerrain) {
+            crateredTerrain = raiseTerrain(crateredTerrain, event.x, event.radius, event.height)
           }
           break
         }

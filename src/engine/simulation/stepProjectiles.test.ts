@@ -235,7 +235,7 @@ describe('stepProjectiles', () => {
 
       const craters = result.events.filter((e) => e.type === 'CraterCreated');
       expect(craters).toHaveLength(1);
-      expect(craters[0]).toMatchObject({ x: 400, radius: 40, depth: 20 });
+      expect(craters[0]).toMatchObject({ x: 400, radius: 55, depth: 27.5 });
     });
 
     it('should crater the ground for EVERY weapon, sized to its blast radius (destructible terrain)', () => {
@@ -245,6 +245,16 @@ describe('stepProjectiles', () => {
       const craters = result.events.filter((e) => e.type === 'CraterCreated');
       expect(craters).toHaveLength(1);
       expect(craters[0]).toMatchObject({ x: 400, radius: 20, depth: 10 });
+    });
+
+    it('should BUILD a mound (not a crater) for the Dirt Bomb (tanks-312)', () => {
+      const proj = makeProjectile({ x: 400, y: surfaceY(400) + 5 }, { weaponType: 'dirt_bomb' });
+      const result = stepProjectiles([proj], ctxWith([]));
+      const mounds = result.events.filter((e) => e.type === 'MoundCreated');
+      const craters = result.events.filter((e) => e.type === 'CraterCreated');
+      expect(craters).toHaveLength(0); // it builds, it does not dig
+      expect(mounds).toHaveLength(1);
+      expect(mounds[0]).toMatchObject({ x: 400, radius: 45, height: 40 });
     });
 
     it('should scale the crater down for cluster sub-munitions (reduced blast)', () => {

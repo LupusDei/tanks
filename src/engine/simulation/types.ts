@@ -111,6 +111,14 @@ export interface CraterCreatedEvent {
   depth: number;
 }
 
+/** A Dirt Bomb built up terrain (a mound) at `x` — the inverse of a crater. */
+export interface MoundCreatedEvent {
+  type: 'MoundCreated';
+  x: number;
+  radius: number;
+  height: number;
+}
+
 /** Discriminated union of everything the pure simulation reports to the host. */
 export type SimEvent =
   | TankHitEvent
@@ -119,7 +127,8 @@ export type SimEvent =
   | FallCompleteEvent
   | ExplosionSpawnedEvent
   | ProjectileResolvedEvent
-  | CraterCreatedEvent;
+  | CraterCreatedEvent
+  | MoundCreatedEvent;
 
 /** Standard return shape for a simulation step. */
 export interface StepResult {
@@ -162,3 +171,5 @@ export const isProjectileResolved = (e: SimEvent): e is ProjectileResolvedEvent 
   e.type === 'ProjectileResolved';
 export const isCraterCreated = (e: SimEvent): e is CraterCreatedEvent =>
   e.type === 'CraterCreated';
+export const isMoundCreated = (e: SimEvent): e is MoundCreatedEvent =>
+  e.type === 'MoundCreated';
