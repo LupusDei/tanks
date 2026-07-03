@@ -19,6 +19,7 @@
 import { stepProjectiles } from './stepProjectiles';
 import { stepEffects } from './stepEffects';
 import { stepMovement } from './stepMovement';
+import { stepFalling } from './stepFalling';
 import { stepAmbient } from './stepAmbient';
 import type { SimEvent, SimulationState, StepResult, TickContext } from './types';
 
@@ -52,6 +53,10 @@ export function stepSimulation(
   // 3. Movement completion detection.
   const move = stepMovement(ctx.tanks, ctx);
   events.push(...move.events);
+
+  // 3b. Tank-fall completion detection (settling into destroyed ground).
+  const fall = stepFalling(ctx.tanks, ctx);
+  events.push(...fall.events);
 
   // 4. Ambient effects (wind particles + money popups).
   const amb = stepAmbient(state.windParticles, state.moneyAnimations, dtMs, ctx);

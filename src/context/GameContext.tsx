@@ -246,6 +246,35 @@ export function GameProvider({ children }: GameProviderProps) {
     setState((prev) => ({ ...prev, easyMode }));
   }, []);
 
+  const startTankFall = useCallback((tankId: string, startY: number, targetY: number, startTime: number) => {
+    setState((prev) => ({
+      ...prev,
+      tanks: prev.tanks.map((tank) =>
+        tank.id === tankId
+          ? { ...tank, isFalling: true, fallStartY: startY, fallTargetY: targetY, fallStartTime: startTime }
+          : tank
+      ),
+    }));
+  }, []);
+
+  const completeTankFall = useCallback((tankId: string, finalY: number) => {
+    setState((prev) => ({
+      ...prev,
+      tanks: prev.tanks.map((tank) =>
+        tank.id === tankId
+          ? {
+              ...tank,
+              isFalling: false,
+              fallStartY: null,
+              fallTargetY: null,
+              fallStartTime: null,
+              position: { ...tank.position, y: finalY },
+            }
+          : tank
+      ),
+    }));
+  }, []);
+
   // Start tank movement animation
   const startTankMove = useCallback((tankId: string, targetX: number, fuelCost: number) => {
     setState((prev) => ({
@@ -307,6 +336,8 @@ export function GameProvider({ children }: GameProviderProps) {
     decrementAmmo,
     setWind,
     setEasyMode,
+    startTankFall,
+    completeTankFall,
     startTankMove,
     completeTankMove,
   };

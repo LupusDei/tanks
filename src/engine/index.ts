@@ -214,3 +214,11 @@ export {
   computeAimPreview,
   type AimPreviewOptions,
 } from './aimPreview';
+
+export {
+  FALL_DELAY_MS,
+  FALL_GRAVITY,
+  FALL_THRESHOLD,
+  getFallPosition,
+  getTankSettleTargetY,
+} from './fall';

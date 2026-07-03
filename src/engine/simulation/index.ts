@@ -10,5 +10,6 @@ export { createAccumulator, type Accumulator } from './timestep';
 export { stepProjectiles, type StepProjectilesResult } from './stepProjectiles';
 export { stepEffects } from './stepEffects';
 export { stepMovement } from './stepMovement';
+export { stepFalling } from './stepFalling';
 export { stepAmbient } from './stepAmbient';
 export { stepSimulation } from './stepSimulation';

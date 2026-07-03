@@ -49,6 +49,9 @@ import {
   calculateMovementTarget,
   getAnimatedPosition,
   getFinalPosition,
+  getFallPosition,
+  getTankSettleTargetY,
+  FALL_DELAY_MS,
   createLaunchConfig,
   computeAimPreview,
   GAS_CAN_FUEL_VALUE,
@@ -992,6 +995,10 @@ function App() {
           }
           break
         }
+        case 'FallComplete': {
+          actions.completeTankFall(event.tankId, event.finalY)
+          break
+        }
         case 'ProjectileResolved':
           // Activity is tracked from simulation state below; no side-effect here.
           break
@@ -1002,6 +1009,20 @@ function App() {
     // the offscreen terrain cache invalidates and re-renders the deformed ground.
     if (crateredTerrain && crateredTerrain !== currentState.terrain) {
       actions.setTerrain(crateredTerrain)
+
+      // Settle any ALIVE tank whose ground was destroyed beneath it: fall onto the
+      // new (lower) surface after a short delay so the explosion finishes first.
+      // Tanks being destroyed this frame don't fall (they're exploding).
+      const destroyingIds = new Set(destructionsRef.current.map((d) => d.tankId))
+      for (const tank of tanks) {
+        if (tank.health <= 0 || tank.isFalling || tank.isMoving || destroyingIds.has(tank.id)) {
+          continue
+        }
+        const targetY = getTankSettleTargetY(tank, crateredTerrain)
+        if (targetY !== null) {
+          actions.startTankFall(tank.id, tank.position.y, targetY, now + FALL_DELAY_MS)
+        }
+      }
     }
   }, [actions, isCampaignMode, recordKill, recordDeath, playExplosion, playTankDestruction])
 
@@ -1088,9 +1109,20 @@ function App() {
         tankName = userData.profile.username
       }
 
-      // Movement animation is a render concern: interpolate the drawn position.
-      // Completion is detected by the simulation (MoveComplete event).
+      // Falling animation (settling into destroyed ground) is a render concern:
+      // interpolate the drawn Y. Completion is detected by the simulation (FallComplete).
       if (
+        tank.isFalling &&
+        tank.fallStartY !== null && tank.fallStartY !== undefined &&
+        tank.fallTargetY !== null && tank.fallTargetY !== undefined &&
+        tank.fallStartTime !== null && tank.fallStartTime !== undefined
+      ) {
+        const fall = getFallPosition(tank.fallStartY, tank.fallTargetY, tank.fallStartTime, now)
+        const fallingTank = { ...tank, position: { x: tank.position.x, y: fall.y } }
+        renderTank(ctx, fallingTank, ctx.canvas.height, { isCurrentTurn, chevronCount, starCount, name: tankName })
+      } else if (
+        // Movement animation is a render concern: interpolate the drawn position.
+        // Completion is detected by the simulation (MoveComplete event).
         tank.isMoving &&
         tank.moveTargetX !== null &&
         tank.moveStartTime !== null &&
@@ -1168,14 +1200,15 @@ function App() {
     )
     const anyExplosionActive = explosionsRef.current.length > 0
     const anyDestructionActive = destructionsRef.current.length > 0
+    const anyTankFalling = tanks.some((t) => t.isFalling)
 
     if (isProjectileActive && !anyProjectileActive) {
       setIsProjectileActive(false)
     }
 
     // Simultaneous mode: clear explosion state and advance the round once
-    // everything has settled (no projectiles/explosions/destructions in flight).
-    if (isExplosionActive && !anyExplosionActive && !anyProjectileActive && !anyDestructionActive) {
+    // everything has settled — including tanks finishing their fall into craters.
+    if (isExplosionActive && !anyExplosionActive && !anyProjectileActive && !anyDestructionActive && !anyTankFalling) {
       setIsExplosionActive(false)
       actions.incrementTurn()
       // New wind for the next turn (only once all motion has stopped, to avoid

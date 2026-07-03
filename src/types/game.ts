@@ -131,6 +131,14 @@ export interface TankState {
   moveStartTime: number | null;
   /** Starting X position for movement animation */
   moveStartX: number | null;
+  /** Whether the tank is falling after the ground beneath it was destroyed. */
+  isFalling?: boolean;
+  /** World-y where the fall began (the floating position). */
+  fallStartY?: number | null;
+  /** World-y of the new surface the tank is settling onto. */
+  fallTargetY?: number | null;
+  /** Absolute ms when the fall should begin (impact time + delay). */
+  fallStartTime?: number | null;
 }
 
 export interface TerrainData {
@@ -187,6 +195,8 @@ export interface GameActions {
   decrementAmmo: (weapon: WeaponType) => void;
   setWind: (wind: number) => void;
   setEasyMode: (easyMode: boolean) => void;
+  startTankFall: (tankId: string, startY: number, targetY: number, startTime: number) => void;
+  completeTankFall: (tankId: string, finalY: number) => void;
   /** Start tank movement animation to target X position */
   startTankMove: (tankId: string, targetX: number, fuelCost: number) => void;
   /** Complete tank movement animation and update final position */

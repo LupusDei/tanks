@@ -74,6 +74,13 @@ export interface MoveCompleteEvent {
   finalX: number;
 }
 
+/** A tank finished falling onto the new (destroyed) surface at world-y `finalY`. */
+export interface FallCompleteEvent {
+  type: 'FallComplete';
+  tankId: string;
+  finalY: number;
+}
+
 /**
  * An explosion was spawned at an impact point. Carries what the host needs to
  * play weapon-appropriate audio and flag explosion activity; the explosion's
@@ -109,6 +116,7 @@ export type SimEvent =
   | TankHitEvent
   | TankDestroyedEvent
   | MoveCompleteEvent
+  | FallCompleteEvent
   | ExplosionSpawnedEvent
   | ProjectileResolvedEvent
   | CraterCreatedEvent;
@@ -146,6 +154,8 @@ export const isTankDestroyed = (e: SimEvent): e is TankDestroyedEvent =>
   e.type === 'TankDestroyed';
 export const isMoveComplete = (e: SimEvent): e is MoveCompleteEvent =>
   e.type === 'MoveComplete';
+export const isFallComplete = (e: SimEvent): e is FallCompleteEvent =>
+  e.type === 'FallComplete';
 export const isExplosionSpawned = (e: SimEvent): e is ExplosionSpawnedEvent =>
   e.type === 'ExplosionSpawned';
 export const isProjectileResolved = (e: SimEvent): e is ProjectileResolvedEvent =>
