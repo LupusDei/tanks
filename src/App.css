@@ -3258,7 +3258,8 @@ p {
     display: none;
   }
 
-  /* Landscape layout uses fixed positioning */
+  /* Landscape layout: flow column (like portrait) so the control/weapon bars stay
+     within the dynamic viewport and never hide behind iOS Safari's toolbar. */
   .app {
     position: fixed;
     top: 0;
@@ -3273,7 +3274,7 @@ p {
     align-items: center;
     justify-content: flex-start;
     overflow: hidden;
-    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) 0 env(safe-area-inset-left, 0);
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
   }
 
   /* Game container in landscape - scaled via CSS variable */
@@ -3284,16 +3285,18 @@ p {
     transform: scale(var(--fit-scale, 1));
   }
 
-  /* Control panel - FIXED at bottom in landscape */
+  /* Control panel - IN FLOW at the bottom of the landscape column (not fixed). */
   .control-panel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
+    width: 100%;
+    flex-shrink: 0;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
     transform: none;
     border-radius: 8px 8px 0 0;
     z-index: 100;
-    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
   /* Turn indicator - FIXED at top left in landscape */
@@ -3337,13 +3340,18 @@ p {
     font-size: 0.5rem;
   }
 
-  /* Weapon selection panel - FIXED above control panel in landscape */
+  /* Weapon selection panel - IN FLOW, centered directly above the control bar. */
   .weapon-selection-panel {
-    position: fixed;
-    bottom: calc(55px + env(safe-area-inset-bottom, 0));
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    align-self: center;
+    flex-shrink: 0;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    transform: none;
     z-index: 90;
+    margin-bottom: 6px;
     padding: 0.25rem 0.35rem;
   }
 
