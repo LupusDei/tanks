@@ -2580,6 +2580,8 @@ p {
     justify-content: flex-start;
     overflow: hidden;
     padding-top: env(safe-area-inset-top, 0);
+    /* Bottom safe-area so the flow-positioned control bar clears the home indicator. */
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
   /* Game container - scaled to fit available space via JS.
@@ -2593,27 +2595,36 @@ p {
     transform: scale(var(--fit-scale, 1));
   }
 
-  /* Control panel - FIXED at bottom, highest priority */
+  /* Control panel - IN FLOW at the bottom of the 100dvh column (NOT position:fixed).
+     Being in normal flow inside the dynamic-viewport app means it can never hide
+     behind iOS Safari's bottom toolbar, which a fixed bottom bar does. */
   .control-panel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
+    width: 100%;
+    flex-shrink: 0;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
     transform: none;
     border-radius: 8px 8px 0 0;
     z-index: 100;
-    /* Safe-area padding for the home indicator PLUS extra clearance so the panel
-       (and the FIRE button) clears iOS Safari's bottom toolbar. */
-    padding-bottom: calc(env(safe-area-inset-bottom, 0) + 10px);
   }
 
-  /* Weapon selection panel - FIXED above control panel */
+  /* Weapon selection panel - IN FLOW, centered directly above the control bar.
+     Reset every offset so the base fixed-positioning props (bottom/left/transform)
+     don't shift this now-relative element. */
   .weapon-selection-panel {
-    position: fixed;
-    bottom: calc(70px + env(safe-area-inset-bottom, 0));
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    align-self: center;
+    flex-shrink: 0;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    transform: none;
     z-index: 90;
+    margin-bottom: 6px;
   }
 
   /* Turn/Wind indicator - FIXED at top, inside terrain area */
@@ -3181,9 +3192,9 @@ p {
     gap: 0.3rem;
   }
 
-  /* Weapon selection panel - higher up for 2-row controls */
+  /* Weapon selection panel sits in flow above the controls — no bottom offset. */
   .weapon-selection-panel {
-    bottom: calc(100px + env(safe-area-inset-bottom, 0));
+    bottom: auto;
   }
 
   /* Smaller weapon slots */

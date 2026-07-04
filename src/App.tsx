@@ -1285,10 +1285,12 @@ function App() {
   // UI element heights - be conservative to account for Safari's bottom toolbar
   // Control panel: ~70px normal, ~100px for 2-row layout on small screens
   // Weapon selection: ~60px
-  // Safari bottom toolbar: ~50px extra safety margin
-  const controlPanelHeight = isVerySmallScreen ? 100 : 70
-  const weaponPanelHeight = 60
-  const safetyMargin = 50 // For Safari's bottom toolbar and any extra chrome
+  // The control + weapon bars are now in normal flow (not fixed), so no Safari-toolbar
+  // margin is needed — that's handled by the 100dvh flow layout + safe-area padding.
+  // This estimate just sizes the canvas fill; a small mismatch simply becomes pannable.
+  const controlPanelHeight = isVerySmallScreen ? 118 : 90
+  const weaponPanelHeight = 64
+  const safetyMargin = 8
   const uiHeight = controlPanelHeight + weaponPanelHeight + safetyMargin
   const availableHeight = viewportHeight - uiHeight
 
@@ -1339,10 +1341,15 @@ function App() {
   // On mobile the game sits in a bounded, pannable scroll area that fills the
   // space above the fixed controls (so the controls are never overlapped and the
   // whole battlefield is reachable by dragging).
+  // The scroll area fills the space ABOVE the flow-positioned control/weapon bars
+  // (flex: 1), rather than a JS-computed fixed height. This keeps the bottom bars in
+  // normal document flow inside the 100dvh app so they can never be hidden behind
+  // iOS Safari's bottom toolbar (which a position:fixed bottom bar suffers from).
   const gameScrollStyle: React.CSSProperties | undefined = shouldAutoScale
     ? {
         width: '100%',
-        height: availableHeight,
+        flex: '1 1 0',
+        minHeight: 0,
         overflow: 'auto',
         WebkitOverflowScrolling: 'touch',
         display: 'flex',
