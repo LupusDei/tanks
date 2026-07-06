@@ -3129,10 +3129,12 @@ p {
 }
 
 /* ===========================================
-   VERY SMALL SCREENS - 2-Row Control Layout
-   For phones < 400px width
+   PHONE-WIDTH SCREENS - 2-Row Control Layout
+   The full 1-row control row is ~620px wide, so it overflows (FIRE off the right
+   edge) on ANY phone in portrait — incl. large iPhones (428-440px). Use the compact
+   wrapped 2-row layout for all phone widths; tablets (>=744px) keep the 1-row layout.
    =========================================== */
-@media (max-width: 400px) {
+@media (max-width: 640px) {
   /* Control panel uses 2 rows on very small screens */
   .control-panel--mobile {
     padding: 0.4rem 0.5rem;
