@@ -57,6 +57,12 @@ import {
   computeAimPreview,
   GAS_CAN_FUEL_VALUE,
   MOVEMENT_FUEL_PER_INCREMENT,
+  spawnPowerUps,
+  renderPowerUp,
+  renderPowerUpToast,
+  POWERUP_CONFIGS,
+  POWERUP_BOUNCY_BOUNCES,
+  type PowerUpToast,
   type ProjectileState,
   type ExplosionState,
   type WeaponType,
@@ -95,6 +101,9 @@ const TANK_BODY_WIDTH = 40
 const TANK_BODY_HEIGHT = 20
 const TANK_WHEEL_RADIUS = 6
 
+// How many power-up crates to keep on the battlefield (spawned + topped up each round).
+const POWERUP_TARGET_COUNT = 3
+
 function App() {
   const { state, actions } = useGame()
   const { userData, createNewUser, recordGame, consumeWeapon, clearArmor, applyEasyModeStartBonus } = useUser()
@@ -120,6 +129,10 @@ function App() {
   } = useCampaign()
   const { playMusic, crossfadeMusic, playWeaponFire, playExplosion, playTankDestruction } = useAudio()
 
+  // Monotonic counter for unique power-up crate id batches.
+  const powerUpSeqRef = useRef(0)
+  // Rising "collected!" toasts for power-ups.
+  const powerUpToastsRef = useRef<PowerUpToast[]>([])
   // Array of active projectiles for simultaneous firing
   const projectilesRef = useRef<ProjectileState[]>([])
   // Array of active explosions for simultaneous impacts
@@ -431,6 +444,7 @@ function App() {
 
     // Create projectiles for all ready tanks simultaneously
     const newProjectiles: ProjectileState[] = []
+    const bouncyShooters: string[] = []
     for (const tank of readyTanks) {
       // Use queued shot values for the projectile
       const tankWithQueuedValues = {
@@ -468,6 +482,13 @@ function App() {
       }
 
       const projectile = createProjectileState(tankWithQueuedValues, launchTime, canvasHeight, canvasWidth, weaponType)
+      // Bouncy power-up: make this shot ricochet if the tank has bouncy charges and
+      // the weapon isn't already a bouncing type.
+      if ((tank.bouncyShotsRemaining ?? 0) > 0 && !projectile.maxBounces) {
+        projectile.maxBounces = POWERUP_BOUNCY_BOUNCES
+        projectile.bounceCount = 0
+        bouncyShooters.push(tank.id)
+      }
       newProjectiles.push(projectile)
 
       // Play weapon fire sound
@@ -502,6 +523,8 @@ function App() {
 
     // Add all projectiles at once
     projectilesRef.current = [...projectilesRef.current, ...newProjectiles]
+    // Spend one bouncy charge per tank that fired a bouncy shot this volley.
+    for (const tankId of bouncyShooters) actions.consumeBouncyShot(tankId)
     setIsProjectileActive(true)
 
     // Reset all tanks' queued state
@@ -610,6 +633,10 @@ function App() {
     // Set terrain and tanks in game state
     actions.setTerrain(terrain)
     actions.initializeTanks(tanks)
+    // Scatter power-up crates across the battlefield.
+    actions.setPowerUps(
+      spawnPowerUps({ terrain, tanks, count: POWERUP_TARGET_COUNT, idPrefix: `pu-${powerUpSeqRef.current++}` })
+    )
 
     // Transition to weapon shop phase
     actions.setPhase('weaponShop')
@@ -744,6 +771,10 @@ function App() {
     // Set terrain and tanks in game state
     actions.setTerrain(terrain)
     actions.initializeTanks(updatedTanks)
+    // Scatter power-up crates across the battlefield.
+    actions.setPowerUps(
+      spawnPowerUps({ terrain, tanks: updatedTanks, count: POWERUP_TARGET_COUNT, idPrefix: `pu-${powerUpSeqRef.current++}` })
+    )
   }
 
   const handlePlayAgain = () => {
@@ -953,6 +984,17 @@ function App() {
           }
           break
         }
+        case 'PowerUpCollected': {
+          // Remove the crate + apply its effect to the collecting tank.
+          actions.collectPowerUp(event.powerUpId, event.tankId, event.powerUpType)
+          const cfg = POWERUP_CONFIGS[event.powerUpType]
+          powerUpToastsRef.current = [
+            ...powerUpToastsRef.current,
+            { text: cfg.label, color: cfg.color, x: event.x, y: event.y, startTime: now },
+          ]
+          playTankDestruction() // reuse a punchy sfx as the pickup chime
+          break
+        }
         case 'TankHit': {
           const tank = tanks.find((t) => t.id === event.tankId)
           if (!tank) break
@@ -1065,6 +1107,7 @@ function App() {
         wind: state.wind,
         canvasWidth: ctx.canvas.width,
         canvasHeight: ctx.canvas.height,
+        powerUps: state.powerUps,
       }
       const next = advanceSimulation(simState, deltaTime, tickCtx)
       projectilesRef.current = next.projectiles
@@ -1091,6 +1134,11 @@ function App() {
         ctx.canvas.height
       )
       ctx.drawImage(terrainCacheRef.current.canvas, 0, 0)
+    }
+
+    // Power-up crates float on the battlefield (drawn under the tanks/projectiles).
+    for (const pu of state.powerUps) {
+      renderPowerUp(ctx, pu, ctx.canvas.height, now)
     }
 
     // Tanks (skip dead and those with active destruction animations)
@@ -1192,6 +1240,13 @@ function App() {
       renderMoneyAnimation(ctx, moneyAnim, now)
     }
 
+    // Power-up collect toasts ("Shield!"), rising + fading; cull expired.
+    if (powerUpToastsRef.current.length > 0) {
+      powerUpToastsRef.current = powerUpToastsRef.current.filter((toast) =>
+        renderPowerUpToast(ctx, toast, ctx.canvas.height, now)
+      )
+    }
+
     // Nuke detonation flash (over everything). Clears once faded.
     if (nukeFlashStartRef.current !== null) {
       const flashElapsed = now - nukeFlashStartRef.current
@@ -1222,6 +1277,23 @@ function App() {
       // mid-flight wind changes when multiple tanks fire simultaneously).
       // Calmer in Easy Mode.
       actions.setWind(generateNextWind(state.wind, state.easyMode ? EASY_MODE_WIND_SCALE : 1))
+
+      // Top up power-up crates so the battlefield stays stocked each round. New
+      // crates avoid the tanks and the crates that are still lying around.
+      const existing = state.powerUps
+      if (terrain && existing.length < POWERUP_TARGET_COUNT) {
+        const avoid = [
+          ...tanks.filter((t) => t.health > 0),
+          ...existing.map((c) => ({ position: { x: c.x, y: 0 } })),
+        ]
+        const fresh = spawnPowerUps({
+          terrain,
+          tanks: avoid,
+          count: POWERUP_TARGET_COUNT - existing.length,
+          idPrefix: `pu-${powerUpSeqRef.current++}`,
+        })
+        if (fresh.length > 0) actions.setPowerUps([...existing, ...fresh])
+      }
     }
   }
 

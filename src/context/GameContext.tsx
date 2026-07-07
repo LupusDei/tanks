@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useState, useCallback } from 'react';
-import { GameState, GameActions, GamePhase, TankState, TerrainData, TankColor, AIDifficulty, TerrainSize, EnemyCount, WeaponType } from '../types/game';
+import { GameState, GameActions, GamePhase, TankState, TerrainData, TankColor, AIDifficulty, TerrainSize, EnemyCount, WeaponType, PowerUp, PowerUpType } from '../types/game';
+import { POWERUP_SHIELD_HP, POWERUP_FUEL_AMOUNT, POWERUP_BOUNCY_SHOTS } from '../engine';
 
 export interface GameContextValue {
   state: GameState;
@@ -23,6 +24,7 @@ const initialState: GameState = {
   weaponAmmo: { standard: Infinity },
   wind: 0,
   easyMode: false,
+  powerUps: [],
 };
 
 interface GameProviderProps {
@@ -257,6 +259,47 @@ export function GameProvider({ children }: GameProviderProps) {
     }));
   }, []);
 
+  const setPowerUps = useCallback((powerUps: PowerUp[]) => {
+    setState((prev) => ({ ...prev, powerUps }));
+  }, []);
+
+  // Collect a crate: remove it and apply its effect to the collecting tank (atomic).
+  const collectPowerUp = useCallback((powerUpId: string, tankId: string, type: PowerUpType) => {
+    setState((prev) => ({
+      ...prev,
+      powerUps: prev.powerUps.filter((p) => p.id !== powerUpId),
+      tanks: prev.tanks.map((tank) => {
+        if (tank.id !== tankId) return tank;
+        switch (type) {
+          case 'shield': {
+            const shieldHp = tank.shieldHp + POWERUP_SHIELD_HP;
+            return { ...tank, shieldHp, maxShieldHp: Math.max(tank.maxShieldHp, shieldHp) };
+          }
+          case 'fuel':
+            return { ...tank, fuel: Math.min(tank.maxFuel, tank.fuel + POWERUP_FUEL_AMOUNT) };
+          case 'bouncy':
+            return {
+              ...tank,
+              bouncyShotsRemaining: (tank.bouncyShotsRemaining ?? 0) + POWERUP_BOUNCY_SHOTS,
+            };
+          default:
+            return tank;
+        }
+      }),
+    }));
+  }, []);
+
+  const consumeBouncyShot = useCallback((tankId: string) => {
+    setState((prev) => ({
+      ...prev,
+      tanks: prev.tanks.map((tank) =>
+        tank.id === tankId && (tank.bouncyShotsRemaining ?? 0) > 0
+          ? { ...tank, bouncyShotsRemaining: (tank.bouncyShotsRemaining ?? 0) - 1 }
+          : tank
+      ),
+    }));
+  }, []);
+
   const completeTankFall = useCallback((tankId: string, finalY: number) => {
     setState((prev) => ({
       ...prev,
@@ -336,6 +379,9 @@ export function GameProvider({ children }: GameProviderProps) {
     decrementAmmo,
     setWind,
     setEasyMode,
+    setPowerUps,
+    collectPowerUp,
+    consumeBouncyShot,
     startTankFall,
     completeTankFall,
     startTankMove,

@@ -223,3 +223,22 @@ export {
   getFallPosition,
   getTankSettleTargetY,
 } from './fall';
+
+export {
+  POWERUP_TYPES,
+  POWERUP_CONFIGS,
+  POWERUP_SHIELD_HP,
+  POWERUP_FUEL_AMOUNT,
+  POWERUP_BOUNCY_SHOTS,
+  POWERUP_BOUNCY_BOUNCES,
+  POWERUP_FLOAT_HEIGHT,
+  POWERUP_RADIUS,
+  POWERUP_TOAST_DURATION_MS,
+  spawnPowerUps,
+  findCollectedPowerUp,
+  renderPowerUp,
+  renderPowerUpToast,
+  type PowerUp,
+  type PowerUpType,
+  type PowerUpToast,
+} from './powerups';

@@ -6,7 +6,7 @@ import {
   getInterpolatedHeightAt,
   type ProjectileState,
 } from '../index';
-import type { Position, TankState } from '../../types/game';
+import type { Position, TankState, PowerUp } from '../../types/game';
 
 /**
  * Test strategy for precise positioning:
@@ -245,6 +245,28 @@ describe('stepProjectiles', () => {
       const craters = result.events.filter((e) => e.type === 'CraterCreated');
       expect(craters).toHaveLength(1);
       expect(craters[0]).toMatchObject({ x: 400, radius: 20, depth: 10 });
+    });
+
+    it('should collect a power-up crate the blast overlaps, crediting the shooter (tanks-317)', () => {
+      // Crate world-y = surface height + float; sits right at the landing point.
+      const crate: PowerUp = {
+        id: 'c1',
+        type: 'shield',
+        x: 400,
+        y: (getInterpolatedHeightAt(terrain, 400) ?? 0) + 26,
+      };
+      const proj = makeProjectile({ x: 400, y: surfaceY(400) + 5 }, { tankId: 'player' });
+      const result = stepProjectiles([proj], ctxWith([], { powerUps: [crate] }));
+      const collected = result.events.filter((e) => e.type === 'PowerUpCollected');
+      expect(collected).toHaveLength(1);
+      expect(collected[0]).toMatchObject({ powerUpId: 'c1', powerUpType: 'shield', tankId: 'player' });
+    });
+
+    it('should NOT collect a crate far from the blast (tanks-317)', () => {
+      const crate: PowerUp = { id: 'c2', type: 'fuel', x: 100, y: (getInterpolatedHeightAt(terrain, 100) ?? 0) + 26 };
+      const proj = makeProjectile({ x: 400, y: surfaceY(400) + 5 }, { tankId: 'player' });
+      const result = stepProjectiles([proj], ctxWith([], { powerUps: [crate] }));
+      expect(result.events.some((e) => e.type === 'PowerUpCollected')).toBe(false);
     });
 
     it('should BUILD a mound (not a crater) for the Dirt Bomb (tanks-312)', () => {

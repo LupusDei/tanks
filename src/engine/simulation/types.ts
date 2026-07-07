@@ -18,7 +18,7 @@ import type {
   MoneyAnimationState,
   WindParticleSystemState,
 } from '../index';
-import type { TankState, TerrainData, WeaponType } from '../../types/game';
+import type { TankState, TerrainData, WeaponType, PowerUp, PowerUpType } from '../../types/game';
 
 /** All transient per-frame simulation data (previously App.tsx refs). */
 export interface SimulationState {
@@ -43,6 +43,8 @@ export interface TickContext {
   canvasHeight: number;
   /** Absolute timestamp (ms) of the current simulation step, for time-based logic. */
   now: number;
+  /** Battlefield power-up crates (blast overlap collects them). Optional. */
+  powerUps?: readonly PowerUp[];
 }
 
 /** A projectile dealt blast damage to a tank within its radius. */
@@ -119,6 +121,18 @@ export interface MoundCreatedEvent {
   height: number;
 }
 
+/** A tank's blast overlapped a power-up crate; the shooter collects it. */
+export interface PowerUpCollectedEvent {
+  type: 'PowerUpCollected';
+  powerUpId: string;
+  powerUpType: PowerUpType;
+  /** Tank that fired the collecting shot. */
+  tankId: string;
+  /** Crate world position (for the collect toast/effect). */
+  x: number;
+  y: number;
+}
+
 /** Discriminated union of everything the pure simulation reports to the host. */
 export type SimEvent =
   | TankHitEvent
@@ -128,7 +142,8 @@ export type SimEvent =
   | ExplosionSpawnedEvent
   | ProjectileResolvedEvent
   | CraterCreatedEvent
-  | MoundCreatedEvent;
+  | MoundCreatedEvent
+  | PowerUpCollectedEvent;
 
 /** Standard return shape for a simulation step. */
 export interface StepResult {
@@ -173,3 +188,5 @@ export const isCraterCreated = (e: SimEvent): e is CraterCreatedEvent =>
   e.type === 'CraterCreated';
 export const isMoundCreated = (e: SimEvent): e is MoundCreatedEvent =>
   e.type === 'MoundCreated';
+export const isPowerUpCollected = (e: SimEvent): e is PowerUpCollectedEvent =>
+  e.type === 'PowerUpCollected';

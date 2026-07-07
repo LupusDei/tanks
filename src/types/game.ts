@@ -139,12 +139,25 @@ export interface TankState {
   fallTargetY?: number | null;
   /** Absolute ms when the fall should begin (impact time + delay). */
   fallStartTime?: number | null;
+  /** Remaining shots that ricochet off terrain (Bouncy power-up). */
+  bouncyShotsRemaining?: number;
 }
 
 export interface TerrainData {
   points: number[];
   width: number;
   height: number;
+}
+
+/** Battlefield power-up crate types (tanks-317). */
+export type PowerUpType = 'shield' | 'fuel' | 'bouncy';
+
+export interface PowerUp {
+  id: string;
+  type: PowerUpType;
+  /** World-space center of the floating crate (y is up from the bottom). */
+  x: number;
+  y: number;
 }
 
 export interface GameState {
@@ -166,6 +179,8 @@ export interface GameState {
   wind: number;
   /** Easy Mode: calmer wind + more starting money. */
   easyMode: boolean;
+  /** Battlefield power-up crates (tanks-317). */
+  powerUps: PowerUp[];
 }
 
 export interface GameActions {
@@ -195,6 +210,9 @@ export interface GameActions {
   decrementAmmo: (weapon: WeaponType) => void;
   setWind: (wind: number) => void;
   setEasyMode: (easyMode: boolean) => void;
+  setPowerUps: (powerUps: PowerUp[]) => void;
+  collectPowerUp: (powerUpId: string, tankId: string, type: PowerUpType) => void;
+  consumeBouncyShot: (tankId: string) => void;
   startTankFall: (tankId: string, startY: number, targetY: number, startTime: number) => void;
   completeTankFall: (tankId: string, finalY: number) => void;
   /** Start tank movement animation to target X position */

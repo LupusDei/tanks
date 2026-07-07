@@ -31,6 +31,7 @@ import {
   checkTankHit,
   getWeaponConfig,
   getInterpolatedHeightAt,
+  findCollectedPowerUp,
 } from '../index';
 import type { SimEvent, TickContext } from './types';
 
@@ -64,6 +65,9 @@ export function stepProjectiles(
   const resultProjectiles: ProjectileState[] = [];
   const newExplosions: ExplosionState[] = [];
   const events: SimEvent[] = [];
+  // Crates already collected this step (so one blast can't collect the same crate
+  // twice, and simultaneous blasts don't double-award it).
+  const collectedPowerUpIds = new Set<string>();
 
   /**
    * Resolve a landing/impact: spawn an explosion, optionally a crater, emit a
@@ -91,6 +95,24 @@ export function stepProjectiles(
       weaponType: proj.weaponType,
       blastRadius,
     });
+
+    // Power-up crate collection: if this blast overlaps an (uncollected) crate, the
+    // shooter grabs it. Sub-projectiles can collect too (a cluster raining on a crate).
+    if (ctx.powerUps && ctx.powerUps.length > 0) {
+      const available = ctx.powerUps.filter((pu) => !collectedPowerUpIds.has(pu.id));
+      const crate = findCollectedPowerUp(available, landingPos, canvasHeight, blastRadius);
+      if (crate) {
+        collectedPowerUpIds.add(crate.id);
+        events.push({
+          type: 'PowerUpCollected',
+          powerUpId: crate.id,
+          powerUpType: crate.type,
+          tankId: proj.tankId,
+          x: crate.x,
+          y: crate.y,
+        });
+      }
+    }
 
     // Terrain deformation. A Dirt Bomb (moundRadius) BUILDS terrain instead of
     // digging; every other impact craters the ground. Weapons with an explicit
